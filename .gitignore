@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# 코드 되돌리기용 백업(tar). 깃에는 올리지 않는다.
+/backup/
+
+# Claude Code 작업 파일
+/.claude/
+
+# web·engine의 나머지 제외 목록은 각 폴더의 .gitignore에 있다(키 파일 .env.local, node_modules, .venv, 작업 데이터 등).

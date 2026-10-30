@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <rect width="400" height="200" rx="24" fill="#EEF3E6"/>
+  <path d="M78 40 L118 120 H38 Z" fill="#4D7A3A"/>
+  <rect x="70" y="120" width="16" height="34" rx="4" fill="#6B4A2B"/>
+  <text x="140" y="120" font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif" font-size="46" font-weight="300" letter-spacing="6" fill="#2F4A24">숲속공방</text>
+</svg>

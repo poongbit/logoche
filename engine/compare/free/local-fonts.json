@@ -1,0 +1,166 @@
+{
+  "copied": "2026-10-28",
+  "origin": "사용자 맥 ~/Library/Fonts에 설치돼 있던 무료 폰트",
+  "fonts": [
+    {
+      "file": "Pretendard-Regular.otf",
+      "family": "Pretendard",
+      "sha256": "3ffbacde6ab8411f1d2db54bb9b1f0b3ee2a738932033722cf0388c06aed1c93",
+      "copyright": "Copyright © 2023 Kil Hyung-jin",
+      "licenseField": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL",
+      "license": "OFL 1.1"
+    },
+    {
+      "file": "Pretendard-Bold.otf",
+      "family": "Pretendard",
+      "sha256": "2e91915fab54df71cc9598ebf608b2bdb54c6fe3c066ac61dff0bc44fca71cc7",
+      "copyright": "Copyright © 2023 Kil Hyung-jin",
+      "licenseField": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This license is available with a FAQ at: http://scripts.sil.org/OFL",
+      "license": "OFL 1.1"
+    },
+    {
+      "file": "SUIT-Regular.otf",
+      "family": "SUIT",
+      "sha256": "75559147fba6cf373d3a9b5e4a2ea3ba2f8dfb22e5debaabb90277365b8831ad",
+      "copyright": "Copyright © 2022 Sun.",
+      "licenseField": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or impl",
+      "license": "OFL 1.1"
+    },
+    {
+      "file": "SUIT-Bold.otf",
+      "family": "SUIT",
+      "sha256": "40178aa07b8ce5ef7bfe8381641272de8e6020095245995d95ed71c26f54f2a8",
+      "copyright": "Copyright © 2022 Sun.",
+      "licenseField": "This Font Software is licensed under the SIL Open Font License, Version 1.1. This Font Software is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or impl",
+      "license": "OFL 1.1"
+    },
+    {
+      "file": "GmarketSansTTFMedium.ttf",
+      "family": "Gmarket Sans TTF",
+      "sha256": "c6b9a2c10bfdb55975948ce191f9cf638955b5cfdc99149969add5b579262fc1",
+      "copyright": "Copyright © 2019 eBay Korea Co., Ltd. All rights reserved.",
+      "licenseField": "[LICENSE]\r\n\r\nCopyright © < 2019.>, <eBay Korea Co., Ltd.> (<www.gmarket.co.kr>),\r\nwith Reserved Font Name <Gmarket Sans Font>.\r\n\r\nThis Font Software is licensed under the SIL Open Font License, Versio",
+      "license": "OFL 1.1"
+    },
+    {
+      "file": "GmarketSansTTFBold.ttf",
+      "family": "Gmarket Sans TTF",
+      "sha256": "ff7c354dd1a324e4cecc1223c4f71e74fa81be7027e0c7f6324c475909cacefc",
+      "copyright": "Copyright © 2019 eBay Korea Co., Ltd. All rights reserved.",
+      "licenseField": "[LICENSE]\r\n\r\nCopyright © < 2019.>, <eBay Korea Co., Ltd.> (<www.gmarket.co.kr>),\r\nwith Reserved Font Name <Gmarket Sans Font>.\r\n\r\nThis Font Software is licensed under the SIL Open Font License, Versio",
+      "license": "OFL 1.1"
+    },
+    {
+      "file": "NEXON Lv1 Gothic OTF.otf",
+      "family": "NEXON Lv1 Gothic OTF",
+      "sha256": "c985cd8e12317cf9d5db7b972a135ebbd3a35fd352b5e8005a62613494ea05d1",
+      "copyright": "Copyright (c) 2017 NEXON. All rights reserved. Font designed by FONTRIX Inc.",
+      "licenseField": "",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "NEXON Lv1 Gothic OTF Bold.otf",
+      "family": "NEXON Lv1 Gothic OTF",
+      "sha256": "0eaa11e4b19c2904cc9baa6f40befc75df7ced8751fead22d67a6f408c256096",
+      "copyright": "Copyright (c) 2017 NEXON. All rights reserved. Font designed by FONTRIX Inc.",
+      "licenseField": "",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "Hakgyoansim Allimjang OTF R.otf",
+      "family": "Hakgyoansim Allimjang OTF",
+      "sha256": "8bee90ddf43ba14d6c58d125145a365402ce7dbb96b91937f69c2950007d81a8",
+      "copyright": "Copyright © KERIS. All rights reserved.",
+      "licenseField": "https://www.keris.or.kr/",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "Hakgyoansim Allimjang OTF B.otf",
+      "family": "Hakgyoansim Allimjang OTF",
+      "sha256": "ae77221aea041b4b10d10f3781eba021bf9bab3a32773a4840a6f1b1bd7a2e66",
+      "copyright": "Copyright © KERIS. All rights reserved.",
+      "licenseField": "https://www.keris.or.kr/",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "강원교육모두 Light.otf",
+      "family": "GangwonEduAll OTF",
+      "sha256": "aa41c3b39d39bec32c6e9f793e92683054365e25024bd4cacc3b28bdb00f383f",
+      "copyright": "COPYRIGHT BY GANGWON PROVINCIAL OFFICE OF EDUCATION. ALL RIGHTS RESERVED.",
+      "licenseField": "http://www.gwe.go.kr",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "강원교육모두 Bold.otf",
+      "family": "GangwonEduAll OTF",
+      "sha256": "f1195234ef93750ad8f299bf8600b50413df677ffd88a8aeb493bf47ed65a1b9",
+      "copyright": "COPYRIGHT BY GANGWON PROVINCIAL OFFICE OF EDUCATION. ALL RIGHTS RESERVED.",
+      "licenseField": "http://www.gwe.go.kr",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "강원교육새음.otf",
+      "family": "GangwonEduSaeeum OTF",
+      "sha256": "b18d17309541ba2a2c469098c52121883ae96d08e7068310555c0222b193c3d7",
+      "copyright": "COPYRIGHT BY GANGWON PROVINCIAL OFFICE OF EDUCATION. ALL RIGHTS RESERVED.",
+      "licenseField": "http://www.gwe.go.kr",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "강원교육튼튼.otf",
+      "family": "GangwonEduPower",
+      "sha256": "62db7c653a10db9c94f03c914cb9a39709354f6be818540a9aae65fa66829562",
+      "copyright": "COPYRIGHT BY GANGWON PROVINCIAL OFFICE OF EDUCATION. ALL RIGHTS RESERVED.",
+      "licenseField": "http://www.gwe.go.kr",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "강원교육현옥샘.otf",
+      "family": "GangwonEduHyeonokT OTF",
+      "sha256": "9b57e0351c0383e5bd4e54c57396aa1227eba96e9d516bdb064a19bc554ee230",
+      "copyright": "COPYRIGHT BY GANGWON PROVINCIAL OFFICE OF EDUCATION. ALL RIGHTS RESERVED.",
+      "licenseField": "http://www.gwe.go.kr",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "심경하체.ttf",
+      "family": "SimKyungha",
+      "sha256": "cdf0a7acc630ae6503c72f20e5f04bef4f4669f723179625db767737f5e07713",
+      "copyright": "Copyright (c) 2021 by Heungkuk Life Insurance Co., Ltd. All rights reserved.",
+      "licenseField": "Heungkuk Life Insurance Co., Ltd",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "전남교육또박체 TTF ExtraBold.ttf",
+      "family": "JNE Ttobak TTF",
+      "sha256": "e152131df38b5a61c38eb9ee130f22151e1a7330e9002c6047e3c65bd1c644a2",
+      "copyright": "Copyright © 2024 Jeollanamdo Office of Education(JNE) & Heumm Design. All rights reserved. Font designed by Heumm Design.",
+      "licenseField": "Jeollanamdo Office of Education",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "전남교육바른체 TTF Light.ttf",
+      "family": "JNE Bareun TTF",
+      "sha256": "fc5975b88ec0eb0a11f70729ef28bd4bcd693956c4b9adbc343f8c64a7e9f724",
+      "copyright": "Copyright © 2024 Jeollanamdo Office of Education(JNE) & Heumm Design. All rights reserved. Font designed by Heumm Design.",
+      "licenseField": "Jeollanamdo Office of Education",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "전남교육바른체 TTF Bold.ttf",
+      "family": "JNE Bareun TTF",
+      "sha256": "ced72d5792aedb878c123fd9ad19274db2a9a5b4c7ec38e86c8ba618918579b8",
+      "copyright": "Copyright © 2024 Jeollanamdo Office of Education(JNE) & Heumm Design. All rights reserved. Font designed by Heumm Design.",
+      "licenseField": "Jeollanamdo Office of Education",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    },
+    {
+      "file": "전남교육유나체 TTF Regular.ttf",
+      "family": "JNE Yuna TTF",
+      "sha256": "7641e56d05be6de63c992348f0c66ab1cc42af199b05094300b19c288fa97b60",
+      "copyright": "Copyright © 2024 Jeollanamdo Office of Education(JNE) & Heumm Design. All rights reserved. Font designed by Heumm Design.",
+      "licenseField": "Jeollanamdo Office of Education",
+      "license": "무료 배포 폰트, 배포처 약관 확인 필요"
+    }
+  ]
+}

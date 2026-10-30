@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <rect width="400" height="200" rx="24" fill="#FFF5E8"/>
+  <circle cx="78" cy="100" r="42" fill="#F26B3A"/>
+  <circle cx="48" cy="64" r="14" fill="#F26B3A"/>
+  <circle cx="108" cy="64" r="14" fill="#F26B3A"/>
+  <circle cx="64" cy="96" r="5" fill="#3B2A1E"/>
+  <circle cx="92" cy="96" r="5" fill="#3B2A1E"/>
+  <ellipse cx="78" cy="114" rx="10" ry="7" fill="#3B2A1E"/>
+  <text x="140" y="120" font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif" font-size="52" font-weight="800" fill="#3B2A1E">달콤한집</text>
+</svg>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#FFFFFF"><svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="800" fill="#fff"/><text x="600" y="500" text-anchor="middle" font-family="sans-serif" font-size="360" font-weight="800" fill="#111">가</text></svg></template>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap"><style>@font-face{font-family:"DalkomChe";src:url(fonts/issued-b.ttf) format("truetype");font-display:block}body{margin:0;background:#e9e7e2;font-family:SUIT,system-ui,sans-serif;word-break:keep-all}a{color:#111}a:hover{color:#5C5C5C}button{font:inherit;cursor:pointer}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:700 15px/1.2 SUIT,system-ui,sans-serif;color:#1a1a1a}.dv-row{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin:0 0 40px}.dv-rowname{font:800 20px/1.2 SUIT;color:#1a1a1a;margin:28px 0 14px}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:500 13px/1.3 SUIT,system-ui,sans-serif;color:rgba(0,0,0,.65)}.dv-card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 0 0 1px rgba(17,17,17,.12),0 18px 40px -26px rgba(17,17,17,.45);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:8px 0 0;font:13px/1.5 SUIT,system-ui,sans-serif;color:rgba(0,0,0,.6)}</style></helmet>
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">화면 1 정보량 줄이기 — 한 페이지 안에서 묶음별로 차례로 열기 (<a class="dv-oid" href="#3a">3a</a> 대체안)</span></div>
+<div class="dv-row" style="margin-top:20px">
+
+<div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a><b style="color:#1E7A46">✓ 확정</b> 펼침형 · 눌러 볼 수 있어요. 끝낸 묶음은 한 줄 요약으로 접히고 '바꾸기'로 다시 열어요. 샘플 '달콤한집'을 누르면 한 번에 채워져요.<button onClick="{{ p.reset }}" style="border:1px solid rgba(0,0,0,.2);background:#fff;border-radius:5px;padding:2px 8px;font-size:12px">처음으로</button></div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="1" hint-size="1440px,72px"></dc-import>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:420px minmax(0,1fr);gap:48px;padding:20px 48px 0">
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em">로고를 올려 주세요</div><div style="font-size:15px;line-height:1.5;color:#5C5C5C;font-weight:500">로고 글자는 잘라 쓰지 않고, 재고 참고하는 데만 써요.</div></div>
+<div style="height:300px;border-radius:20px;background:#EFEEEA;border:2px dashed #767676;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px">
+<img src="assets/dalkom.svg" alt="올린 로고" style="width:320px;border-radius:12px">
+<sc-if value="{{ p.sampleNone }}" hint-placeholder-val="{{ true }}"><span style="font-size:14px;font-weight:500;color:#5C5C5C">달콤한집_로고.png · 다른 파일로 바꾸기</span></sc-if>
+<sc-if value="{{ p.sampleDalkom }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;font-weight:500;color:#5C5C5C">샘플 · 달콤한집 · 다른 파일로 바꾸기</span></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;padding-top:4px">
+<span style="font-size:15px;font-weight:700">샘플 로고로 체험 <span style="font-weight:500;color:#5C5C5C">고르면 가게 정보와 분위기가 채워져요</span></span>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+<sc-if value="{{ p.sampleDalkom }}" hint-placeholder-val="{{ false }}"><button onClick="{{ p.pickSample }}" style="display:flex;flex-direction:column;gap:6px;padding:8px;border:2px solid #111;border-radius:12px;background:#F6F6F4;color:#111;font-size:13px;font-weight:700"><img src="assets/dalkom.svg" alt="" style="width:100%;border-radius:6px">달콤한집 ✓</button></sc-if>
+<sc-if value="{{ p.sampleNone }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.pickSample }}" style="display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:13px;font-weight:600"><img src="assets/dalkom.svg" alt="" style="width:100%;border-radius:6px">달콤한집</button></sc-if>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:13px;font-weight:600"><img src="assets/bada.svg" alt="" style="width:100%;border-radius:6px">바다식당</button>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;flex-direction:column;gap:6px;padding:8px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:13px;font-weight:600"><img src="assets/supsok.svg" alt="" style="width:100%;border-radius:6px">숲속공방</button>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+<div style="display:flex;align-items:baseline;gap:14px;padding-bottom:4px"><span style="font-size:22px;font-weight:800">가게에 대해 알려 주세요</span><span style="font-size:15px;font-weight:700">{{ p.progress }} 끝</span><span style="display:flex;gap:4px;margin-left:auto;width:120px"><sc-if value="{{ p.bar0 }}" hint-placeholder-val="{{ true }}"><span style="flex:1;height:4px;border-radius:2px;background:#111"></span></sc-if><sc-if value="{{ p.bar0n }}" hint-placeholder-val="{{ false }}"><span style="flex:1;height:4px;border-radius:2px;background:#DADAD6"></span></sc-if><sc-if value="{{ p.bar1 }}" hint-placeholder-val="{{ false }}"><span style="flex:1;height:4px;border-radius:2px;background:#111"></span></sc-if><sc-if value="{{ p.bar1n }}" hint-placeholder-val="{{ true }}"><span style="flex:1;height:4px;border-radius:2px;background:#DADAD6"></span></sc-if><sc-if value="{{ p.bar2 }}" hint-placeholder-val="{{ false }}"><span style="flex:1;height:4px;border-radius:2px;background:#111"></span></sc-if><sc-if value="{{ p.bar2n }}" hint-placeholder-val="{{ true }}"><span style="flex:1;height:4px;border-radius:2px;background:#DADAD6"></span></sc-if></span></div>
+
+<sc-if value="{{ p.g0.isDone }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 12px 0 18px;border:1.5px solid #8A8A8A;border-radius:16px"><span style="width:26px;height:26px;border-radius:50%;background:#EFEEEA;display:grid;place-items:center;font-size:13px;font-weight:700">✓</span><span style="font-size:16px;font-weight:700">가게 정보</span><span style="font-size:15px;font-weight:500;color:#5C5C5C">{{ p.g0.summary }}</span><button onClick="{{ p.g0.edit }}" style="margin-left:auto;min-height:36px;padding:0 12px;border:0;border-radius:18px;background:none;color:#111;font-size:14px;font-weight:700;text-decoration:underline">바꾸기</button></div></sc-if>
+<sc-if value="{{ p.g0.open }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:16px;padding:20px 22px;border-radius:16px;background:#F6F6F4">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700">1</span><span style="font-size:18px;font-weight:700">가게 정보</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">가게 이름</span><div style="height:48px;max-width:420px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;display:flex;align-items:center;padding:0 20px;font-size:16px;font-weight:500">{{ p.g0.name }}</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">업종</span><div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ p.industries }}" as="c" hint-placeholder-count="14"><sc-if value="{{ c.sel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ c.onClick }}" style="height:38px;padding:0 16px;border:0;border-radius:19px;background:#111;color:#fff;font-size:15px;font-weight:700">{{ c.label }}</button></sc-if><sc-if value="{{ c.unsel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ c.onClick }}" style="height:38px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:19px;background:#fff;color:#111;font-size:15px;font-weight:600">{{ c.label }}</button></sc-if></sc-for>
+</div></div>
+</div></sc-if>
+
+<sc-if value="{{ p.g1.isDone }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 12px 0 18px;border:1.5px solid #8A8A8A;border-radius:16px"><span style="width:26px;height:26px;border-radius:50%;background:#EFEEEA;display:grid;place-items:center;font-size:13px;font-weight:700">✓</span><span style="font-size:16px;font-weight:700">분위기</span><span style="font-size:15px;font-weight:500;color:#5C5C5C">{{ p.g1.summary }}</span><button onClick="{{ p.g1.edit }}" style="margin-left:auto;min-height:36px;padding:0 12px;border:0;border-radius:18px;background:none;color:#111;font-size:14px;font-weight:700;text-decoration:underline">바꾸기</button></div></sc-if>
+<sc-if value="{{ p.g1.open }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:18px;padding:20px 22px;border-radius:16px;background:#F6F6F4">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700">2</span><span style="font-size:18px;font-weight:700">분위기</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700;display:flex;gap:10px;align-items:center">브랜드 톤 <span style="font-weight:500;color:#5C5C5C">2~3개 · {{ p.toneCount }}</span><sc-if value="{{ p.toneMissing }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#5C5C5C"><span aria-hidden="true" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #5C5C5C;box-sizing:border-box;display:grid;place-items:center;font-size:10px;font-weight:700;line-height:1">!</span>골라 주세요</span></sc-if></span><div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ p.tones }}" as="c" hint-placeholder-count="14"><sc-if value="{{ c.sel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ c.onClick }}" style="height:38px;padding:0 16px;border:0;border-radius:19px;background:#111;color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px">{{ c.label }}<sc-if value="{{ c.rec }}"><span style="font-size:13px;font-weight:600">추천</span></sc-if></button></sc-if><sc-if value="{{ c.unsel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ c.onClick }}" style="height:38px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:19px;background:#fff;color:#111;font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px">{{ c.label }}<sc-if value="{{ c.rec }}"><span style="font-size:13px;font-weight:700;color:#1E7A46">추천</span></sc-if></button></sc-if><sc-if value="{{ c.full }}" hint-placeholder-val="{{ false }}"><button disabled style="height:38px;padding:0 16px;border:1.5px dashed #8A8A8A;border-radius:19px;background:#F6F6F4;color:#5C5C5C;font-size:15px;font-weight:600;cursor:not-allowed">{{ c.label }}</button></sc-if></sc-for>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700;display:flex;gap:10px;align-items:center">주 사용처 <span style="font-weight:500;color:#5C5C5C">1개 이상</span><sc-if value="{{ p.usageMissing }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#5C5C5C"><span aria-hidden="true" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #5C5C5C;box-sizing:border-box;display:grid;place-items:center;font-size:10px;font-weight:700;line-height:1">!</span>골라 주세요</span></sc-if></span><div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ p.usages }}" as="c" hint-placeholder-count="3"><sc-if value="{{ c.sel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ c.onClick }}" style="height:38px;padding:0 16px;border:0;border-radius:19px;background:#111;color:#fff;font-size:15px;font-weight:700">{{ c.label }}</button></sc-if><sc-if value="{{ c.unsel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ c.onClick }}" style="height:38px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:19px;background:#fff;color:#111;font-size:15px;font-weight:600">{{ c.label }}</button></sc-if></sc-for>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">원하는 느낌 한 줄 <span style="font-weight:500;color:#5C5C5C">비워도 돼요</span></span><div style="height:48px;max-width:520px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;display:flex;align-items:center;padding:0 20px;font-size:16px;font-weight:500;color:#5C5C5C">예: 따뜻하고 손맛 있는</div></div>
+</div></sc-if>
+<sc-if value="{{ p.g1.locked }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 18px;border:1.5px dashed #8A8A8A;border-radius:16px"><span style="width:26px;height:26px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;display:grid;place-items:center;font-size:13px;color:#5C5C5C">2</span><span style="font-size:16px;font-weight:700;color:#5C5C5C">분위기</span><span style="font-size:14px;font-weight:500;color:#5C5C5C">브랜드 톤 · 주 사용처 · 원하는 느낌</span></div></sc-if>
+
+<sc-if value="{{ p.g2.isDone }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 12px 0 18px;border:1.5px solid #8A8A8A;border-radius:16px"><span style="width:26px;height:26px;border-radius:50%;background:#EFEEEA;display:grid;place-items:center;font-size:13px;font-weight:700">✓</span><span style="font-size:16px;font-weight:700">권리 확인</span><span style="font-size:15px;font-weight:500;color:#5C5C5C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.g2.summary }}</span><button onClick="{{ p.g2.edit }}" style="margin-left:auto;min-height:36px;padding:0 12px;border:0;border-radius:18px;background:none;color:#111;font-size:14px;font-weight:700;text-decoration:underline">바꾸기</button></div></sc-if>
+<sc-if value="{{ p.g2.open }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:16px;padding:20px 22px;border-radius:16px;background:#F6F6F4">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700">3</span><span style="font-size:18px;font-weight:700">권리 확인</span><span style="font-size:14px;font-weight:500;color:#5C5C5C">제작 기록에 남아요</span></div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">이 로고의 권리가 나에게 있나요?</span>
+<sc-for list="{{ p.rights }}" as="r" hint-placeholder-count="3"><sc-if value="{{ r.sel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.onClick }}" style="min-height:46px;display:flex;align-items:center;gap:12px;padding:0 16px;border:2px solid #111;border-radius:12px;background:#fff;color:#111;font-size:15px;font-weight:700;text-align:left"><span style="width:20px;height:20px;border-radius:50%;border:2px solid #111;box-sizing:border-box;display:grid;place-items:center;flex:none"><span style="width:10px;height:10px;border-radius:50%;background:#111"></span></span>{{ r.label }}</button></sc-if><sc-if value="{{ r.unsel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.onClick }}" style="min-height:46px;display:flex;align-items:center;gap:12px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:15px;font-weight:500;text-align:left"><span style="width:20px;height:20px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;flex:none"></span>{{ r.label }}</button></sc-if></sc-for>
+<sc-if value="{{ p.outsourced }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;font-weight:500;line-height:1.5">외주로 만든 로고는 저작권 양도 계약서를 확인해 주세요.</span></sc-if>
+<sc-if value="{{ p.rightUnknown }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;font-weight:500;line-height:1.5">진행은 할 수 있어요. 서체를 쓰기 전에 로고 권리를 확인해 주세요.</span></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">로고 글자는 어떻게 만들었나요?</span>
+<sc-for list="{{ p.fonts }}" as="r" hint-placeholder-count="5"><sc-if value="{{ r.sel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.onClick }}" style="min-height:42px;display:flex;align-items:center;gap:12px;padding:0 16px;border:2px solid #111;border-radius:12px;background:#fff;color:#111;font-size:15px;font-weight:700;text-align:left"><span style="width:20px;height:20px;border-radius:50%;border:2px solid #111;box-sizing:border-box;display:grid;place-items:center;flex:none"><span style="width:10px;height:10px;border-radius:50%;background:#111"></span></span>{{ r.label }}</button></sc-if><sc-if value="{{ r.unsel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ r.onClick }}" style="min-height:42px;display:flex;align-items:center;gap:12px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:15px;font-weight:500;text-align:left"><span style="width:20px;height:20px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;flex:none"></span>{{ r.label }}</button></sc-if></sc-for>
+</div>
+</div>
+</div></sc-if>
+<sc-if value="{{ p.g2.locked }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:14px;min-height:60px;padding:0 18px;border:1.5px dashed #8A8A8A;border-radius:16px"><span style="width:26px;height:26px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;display:grid;place-items:center;font-size:13px;color:#5C5C5C">3</span><span style="font-size:16px;font-weight:700;color:#5C5C5C">권리 확인</span><span style="font-size:14px;font-weight:500;color:#5C5C5C">로고 권리 · 로고 글자를 만든 방법</span></div></sc-if>
+</div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;border-top:1px solid #E4E3DF">
+<span style="font-size:15px;font-weight:500">{{ p.status }}</span>
+<sc-if value="{{ p.prevOn }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.prev }}" style="margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전 묶음</button></sc-if>
+<sc-if value="{{ p.prevOff }}" hint-placeholder-val="{{ false }}"><span style="margin-left:auto"></span></sc-if>
+<sc-if value="{{ p.nextOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ p.next }}" style="height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">다음</button></sc-if>
+<sc-if value="{{ p.nextOff }}" hint-placeholder-val="{{ true }}"><button disabled style="height:56px;padding:0 40px;border:0;border-radius:28px;background:#E4E3DF;color:#5C5C5C;font-size:17px;font-weight:700;cursor:not-allowed">다음</button></sc-if>
+<sc-if value="{{ p.analyzeOn }}" hint-placeholder-val="{{ false }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">분석하기</button></sc-if>
+<sc-if value="{{ p.analyzeOff }}" hint-placeholder-val="{{ false }}"><button disabled style="height:56px;padding:0 40px;border:0;border-radius:28px;background:#E4E3DF;color:#5C5C5C;font-size:17px;font-weight:700;cursor:not-allowed">분석하기</button></sc-if>
+</footer>
+</div></div>
+
+</div>
+<div class="dv-opt" id="4c"><div class="dv-olabel"><a class="dv-oid" href="#4c">4c</a>✓ 확정 <a class="dv-oid" href="#4a">4a</a> · 390px — 로고는 작게 위로, 묶음은 아래로 쌓기</div>
+<div class="dv-card" style="width:390px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<header style="padding:14px 20px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid #E4E3DF"><div style="display:flex;align-items:center"><span style="font-size:18px;font-weight:800">로고체</span><span style="margin-left:auto;font-size:14px;font-weight:700">1/6 로고 업로드</span></div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"><span style="height:4px;border-radius:2px;background:#111"></span><span style="height:4px;border-radius:2px;background:#DADAD6"></span><span style="height:4px;border-radius:2px;background:#DADAD6"></span><span style="height:4px;border-radius:2px;background:#DADAD6"></span><span style="height:4px;border-radius:2px;background:#DADAD6"></span><span style="height:4px;border-radius:2px;background:#DADAD6"></span></div></header>
+<div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+<div style="font-size:26px;font-weight:800;letter-spacing:-.02em">로고를 올려 주세요</div>
+<div style="display:flex;align-items:center;gap:14px;padding:12px;border-radius:16px;background:#EFEEEA;border:2px dashed #767676"><img src="assets/dalkom.svg" alt="올린 로고" style="width:120px;border-radius:8px"><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;font-weight:700">달콤한집_로고.png</span><span style="min-height:28px;display:flex;align-items:center;font-size:14px;font-weight:700;text-decoration:underline">다른 파일로 바꾸기</span></div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">샘플 로고로 체험</span><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;flex-direction:column;gap:4px;padding:6px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:13px;font-weight:600"><img src="assets/dalkom.svg" alt="" style="width:100%;border-radius:6px">달콤한집</button><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;flex-direction:column;gap:4px;padding:6px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:13px;font-weight:600"><img src="assets/bada.svg" alt="" style="width:100%;border-radius:6px">바다식당</button><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;flex-direction:column;gap:4px;padding:6px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;font-size:13px;font-weight:600"><img src="assets/supsok.svg" alt="" style="width:100%;border-radius:6px">숲속공방</button></div></div>
+<div style="display:flex;align-items:baseline;gap:10px;padding-top:6px"><span style="font-size:20px;font-weight:800">가게에 대해 알려 주세요</span><span style="margin-left:auto;font-size:14px;font-weight:700">1/3 끝</span></div>
+<div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 6px 6px 14px;border:1.5px solid #8A8A8A;border-radius:14px"><span style="width:24px;height:24px;border-radius:50%;background:#EFEEEA;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none">✓</span><span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">가게 정보</span><span style="font-size:14px;font-weight:500;color:#5C5C5C">달콤한집 · 카페·디저트</span></span><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;min-height:44px;padding:0 12px;border:0;background:none;color:#111;font-size:14px;font-weight:700;text-decoration:underline">바꾸기</button></div>
+<div style="display:flex;flex-direction:column;gap:16px;padding:16px;border-radius:14px;background:#F6F6F4">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700">2</span><span style="font-size:17px;font-weight:700">분위기</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700;display:flex;flex-wrap:wrap;gap:8px;align-items:center">브랜드 톤 <span style="font-weight:500;color:#5C5C5C">2~3개 · 1/3</span><span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#5C5C5C"><span aria-hidden="true" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #5C5C5C;box-sizing:border-box;display:grid;place-items:center;font-size:10px;font-weight:700;line-height:1">!</span>골라 주세요</span></span><div style="display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{ r1.tones }}" as="c" hint-placeholder-count="14"><sc-if value="{{ c.sel }}" hint-placeholder-val="{{ false }}"><span style="height:40px;padding:0 14px;border-radius:20px;background:#111;color:#fff;display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700">{{ c.label }}<sc-if value="{{ c.rec }}"><span style="font-size:13px;font-weight:600">추천</span></sc-if></span></sc-if><sc-if value="{{ c.unsel }}" hint-placeholder-val="{{ true }}"><span style="height:40px;padding:0 14px;border-radius:20px;border:1.5px solid #8A8A8A;background:#fff;box-sizing:border-box;display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600">{{ c.label }}<sc-if value="{{ c.rec }}"><span style="font-size:13px;font-weight:700;color:#1E7A46">추천</span></sc-if></span></sc-if></sc-for>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700;display:flex;flex-wrap:wrap;gap:8px;align-items:center">주 사용처<span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#5C5C5C"><span aria-hidden="true" style="width:14px;height:14px;border-radius:50%;border:1.5px solid #5C5C5C;box-sizing:border-box;display:grid;place-items:center;font-size:10px;font-weight:700;line-height:1">!</span>골라 주세요</span></span><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="height:40px;padding:0 14px;border-radius:20px;border:1.5px solid #8A8A8A;background:#fff;box-sizing:border-box;display:flex;align-items:center;font-size:15px;font-weight:600">간판·메뉴판</span><span style="height:40px;padding:0 14px;border-radius:20px;border:1.5px solid #8A8A8A;background:#fff;box-sizing:border-box;display:flex;align-items:center;font-size:15px;font-weight:600">SNS·썸네일</span><span style="height:40px;padding:0 14px;border-radius:20px;border:1.5px solid #8A8A8A;background:#fff;box-sizing:border-box;display:flex;align-items:center;font-size:15px;font-weight:600">포장·스티커</span></div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:700">원하는 느낌 한 줄 <span style="font-weight:500;color:#5C5C5C">비워도 돼요</span></span><div style="height:48px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;display:flex;align-items:center;padding:0 18px;font-size:16px;font-weight:500;color:#5C5C5C">예: 따뜻하고 손맛 있는</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;border:1.5px dashed #8A8A8A;border-radius:14px"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;display:grid;place-items:center;font-size:12px;color:#5C5C5C;flex:none">3</span><span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:700;color:#5C5C5C">권리 확인</span><span style="font-size:13px;font-weight:500;color:#5C5C5C">로고 권리 · 로고 글자를 만든 방법</span></span></div>
+</div>
+<footer style="position:sticky;bottom:0;padding:12px 20px 20px;background:#fff;border-top:1px solid #E4E3DF;display:flex;flex-direction:column;gap:10px"><span style="font-size:14px;font-weight:500;line-height:1.45">남은 항목: 브랜드 톤 1개 더, 주 사용처</span><div style="display:grid;grid-template-columns:auto 1fr;gap:10px"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 18px;border:1.5px solid #8A8A8A;border-radius:28px;background:#fff;color:#111;font-size:15px;font-weight:700">이전 묶음</button><button disabled style="height:56px;border:0;border-radius:28px;background:#E4E3DF;color:#5C5C5C;font-size:17px;font-weight:700;cursor:not-allowed">다음</button></div></footer>
+</div></div>
+</div>
+
+</section>
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">C 확정 수정 — 여섯 화면 · 컴포넌트 상태 · 반응형</span></div>
+<p class="dv-next" style="margin:0">공통: 위 단계 표시(지나온 단계는 눌러서 돌아가기), 아래 동작 막대(왼쪽 상태 한 줄 · 오른쪽 이전과 주 버튼). 강조는 검정 하나, 로고 색은 화면 5 시안과 로고 미리보기에만.</p>
+
+<div class="dv-rowname">화면 2 · AI가 읽은 방향</div>
+<div class="dv-row">
+<sc-for list="{{ s2 }}" as="v" hint-placeholder-count="2">
+<div class="dv-opt" id="{{ v.id }}"><div class="dv-olabel"><a class="dv-oid" href="#{{ v.id }}">{{ v.id }}</a>{{ v.name }}</div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="2" hint-size="1440px,72px"></dc-import>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:0;margin:0 24px 24px;border-radius:20px;overflow:hidden">
+<div style="background:#EFEEEA;padding:40px 48px;display:flex;flex-direction:column;gap:28px">
+<div style="font-size:15px;font-weight:700;color:#5C5C5C">로고에서 읽은 것</div>
+<div style="position:relative;align-self:center"><img src="assets/dalkom.svg" alt="달콤한집 로고" style="width:520px;display:block;border-radius:16px;box-shadow:0 0 0 1px rgba(17,17,17,.12),0 18px 40px -26px rgba(17,17,17,.45)">
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;left:70px;top:-10px;width:28px;height:28px;border-radius:50%;background:#5C5C5C;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700">1</span><span style="position:absolute;left:300px;top:-10px;width:28px;height:28px;border-radius:50%;background:#5C5C5C;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700">2</span></sc-if>
+<sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 3px #5C5C5C"></div></sc-if>
+</div>
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:28px 120px 1fr;gap:14px 12px;align-items:center;font-size:17px">
+<span style="width:28px;height:28px;border-radius:50%;background:#5C5C5C;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700">1</span><span style="font-weight:700">시그니처 요소</span><span style="font-weight:500">곰 얼굴 모양의 동그라미 세 개</span>
+<span style="width:28px;height:28px;border-radius:50%;background:#5C5C5C;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700">2</span><span style="font-weight:700">획 끝</span><span style="font-weight:500">두껍고 둥글게 마감</span>
+<span></span><span style="font-weight:700">색</span><span style="display:flex;gap:16px;font-size:14px;font-weight:600"><span style="display:flex;gap:6px;align-items:center"><span style="width:26px;height:26px;border-radius:50%;background:#F26B3A;box-shadow:0 0 0 1.5px #fff,0 0 0 3px #8A8A8A"></span>주황</span><span style="display:flex;gap:6px;align-items:center"><span style="width:26px;height:26px;border-radius:50%;background:#3B2A1E;box-shadow:0 0 0 1.5px #fff,0 0 0 3px #8A8A8A"></span>밤색</span><span style="display:flex;gap:6px;align-items:center"><span style="width:26px;height:26px;border-radius:50%;background:#FFF5E8;box-shadow:0 0 0 1.5px #fff,0 0 0 3px #8A8A8A"></span>크림</span><span style="font-weight:500;color:#5C5C5C">적용 시안에만 써요</span></span>
+</div>
+</sc-if>
+<sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px;font-size:17px">
+<div style="display:flex;gap:12px;align-items:center;font-weight:700"><span style="width:24px;height:24px;border-radius:50%;background:#EFEEEA;color:#111;display:grid;place-items:center;font-size:13px">✓</span>로고 재기 <span style="font-weight:500;color:#5C5C5C">획 굵기·너비·기울기</span></div>
+<div style="display:flex;gap:12px;align-items:center;font-weight:700"><span style="width:24px;height:24px;border-radius:50%;border:3px solid #DADAD6;border-top-color:#111;box-sizing:border-box"></span>분위기 읽는 중 <span style="font-weight:500;color:#5C5C5C">획 끝·시그니처 요소·색</span></div>
+<div style="display:flex;gap:12px;align-items:center;font-weight:600;color:#5C5C5C"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box"></span>표현 방식 제안</div>
+</div>
+</sc-if>
+</div>
+<div style="padding:40px 48px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:8px"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em">어떤 획으로 그릴까요?</div><div style="font-size:16px;line-height:1.5;color:#5C5C5C;font-weight:500">로고와 고른 톤(따뜻한·귀여운)을 보고 AI가 세 가지를 제안했어요. 고르거나 직접 써 주세요.</div></div>
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:14px;padding:18px 20px;border:2px solid #111;border-radius:14px;background:#F6F6F4"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #111;box-sizing:border-box;display:grid;place-items:center;flex:none"><span style="width:11px;height:11px;border-radius:50%;background:#111"></span></span><span style="font-size:18px;font-weight:700">끝을 동그랗게 마감한 통통한 획</span><span style="margin-left:auto;font-size:13px;font-weight:700;color:#1E7A46">기록됨</span></div>
+<div style="display:flex;align-items:center;gap:14px;padding:18px 20px;border:1.5px solid #8A8A8A;border-radius:14px"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;flex:none"></span><span style="font-size:18px;font-weight:600">곰 귀처럼 둥글게 부푼 획</span></div>
+<div style="display:flex;align-items:center;gap:14px;padding:18px 20px;border:1.5px solid #8A8A8A;border-radius:14px"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box;flex:none"></span><span style="font-size:18px;font-weight:600">크림을 짠 듯 부드럽게 이어진 획</span></div>
+<div style="display:flex;align-items:center;gap:14px;padding:0 20px;height:58px;border:1.5px solid #8A8A8A;border-radius:14px;font-size:17px;color:#5C5C5C"><span style="font-weight:700;color:#111">직접 쓰기</span>예: 풍선처럼 부풀린 획</div>
+</div>
+</sc-if>
+<sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="height:62px;border-radius:14px;background:#F6F6F4"></div><div style="height:62px;border-radius:14px;background:#F6F6F4"></div><div style="height:62px;border-radius:14px;background:#F6F6F4"></div>
+<div style="font-size:15px;font-weight:500;color:#5C5C5C">분위기를 다 읽으면 제안이 여기에 나와요.</div>
+</div>
+</sc-if>
+</div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;border-top:1px solid #E4E3DF">
+<sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}"><span style="width:20px;height:20px;border-radius:50%;border:3px solid #DADAD6;border-top-color:#111;box-sizing:border-box"></span></sc-if>
+<span style="font-size:15px;font-weight:500">{{ v.status }}</span>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button>
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">초안 그리기</button></sc-if>
+<sc-if value="{{ v.loading }}" hint-placeholder-val="{{ false }}"><button disabled style="height:56px;padding:0 40px;border:0;border-radius:28px;background:#E4E3DF;color:#5C5C5C;font-size:17px;font-weight:700;cursor:not-allowed">초안 그리기</button></sc-if>
+</footer>
+</div></div>
+</sc-for>
+</div>
+
+<div class="dv-rowname">화면 3 · AI 초안</div>
+<div class="dv-row">
+<sc-for list="{{ s3 }}" as="v" hint-placeholder-count="2">
+<div class="dv-opt" id="{{ v.id }}"><div class="dv-olabel"><a class="dv-oid" href="#{{ v.id }}">{{ v.id }}</a>{{ v.name }}</div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="3" hint-size="1440px,72px"></dc-import>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:32px;padding:12px 48px 20px">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:baseline;gap:14px"><span style="font-size:28px;font-weight:800;letter-spacing:-.02em">AI가 그린 글자 조각(자소) 초안</span><span style="font-size:16px;font-weight:700">{{ v.count }}</span></div>
+<sc-for list="{{ v.groups }}" as="g" hint-placeholder-count="3">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;gap:10px;align-items:baseline;font-size:15px"><b>{{ g.name }}</b><span style="font-weight:600;color:#5C5C5C">{{ g.note }}</span></div>
+<div style="display:grid;grid-template-columns:repeat(11,72px);gap:8px">
+<sc-for list="{{ g.cards }}" as="k" hint-placeholder-count="11">
+<sc-if value="{{ k.ready }}" hint-placeholder-val="{{ true }}"><div style="width:72px;height:72px;border-radius:12px;background:#EFEEEA;position:relative;display:grid;place-items:center"><span style="position:absolute;left:7px;top:5px;font-size:13px;font-weight:700;color:#5C5C5C">{{ k.j }}</span><span style="font-family:DalkomChe;font-size:38px;line-height:1;margin-top:8px">{{ k.s }}</span></div></sc-if>
+<sc-if value="{{ k.redraw }}" hint-placeholder-val="{{ false }}"><div style="width:72px;height:72px;border-radius:12px;border:2px solid #5C5C5C;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="position:absolute;left:6px;top:4px;font-size:13px;font-weight:700">{{ k.j }}</span><span style="width:18px;height:18px;border-radius:50%;border:3px solid #DADAD6;border-top-color:#111;box-sizing:border-box;margin-top:10px"></span><span style="font-size:13px;font-weight:700">다시</span></div></sc-if>
+<sc-if value="{{ k.pending }}" hint-placeholder-val="{{ false }}"><div style="width:72px;height:72px;border-radius:12px;border:1.5px dashed #8A8A8A;box-sizing:border-box;position:relative"><span style="position:absolute;left:7px;top:5px;font-size:13px;font-weight:700;color:#5C5C5C">{{ k.j }}</span></div></sc-if>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="flex:1;border-radius:20px;background:#EFEEEA;padding:28px;display:flex;flex-direction:column;gap:16px">
+<div style="font-size:15px;font-weight:700;color:#5C5C5C">초안으로 조합한 글씨</div>
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}"><div style="font-family:DalkomChe;font-size:84px;line-height:1.05">달콤한집</div><div style="font-family:DalkomChe;font-size:30px;line-height:1.35">딸기 생크림 케이크와 따뜻한 라테 한 잔</div></sc-if>
+<sc-if value="{{ v.drawing }}" hint-placeholder-val="{{ false }}"><div style="font-family:DalkomChe;font-size:84px;line-height:1.05;display:flex"><span>달콤한</span><span style="width:80px;border-radius:10px;border:1.5px dashed #8A8A8A;margin-left:6px"></span></div><div style="font-size:15px;font-weight:500;line-height:1.5">받침을 다 그리면 나머지 글자도 보여요.</div></sc-if>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:600">{{ v.checkLine }}</div>
+</div>
+<sc-if value="{{ v.drawing }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:10px;padding:18px 20px;border:1.5px solid #8A8A8A;border-radius:16px"><div style="display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700"><span style="width:20px;height:20px;border-radius:50%;border:3px solid #DADAD6;border-top-color:#111;box-sizing:border-box"></span>중성 표 그리는 중<span style="margin-left:auto;font-weight:600;color:#5C5C5C;font-size:14px">남은 시간 약 1분</span></div><div style="height:6px;border-radius:3px;background:#DADAD6"><div style="width:59%;height:100%;border-radius:3px;background:#111"></div></div><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;align-self:flex-start;height:40px;padding:0 18px;border:1.5px solid #8A8A8A;border-radius:20px;background:#fff;color:#111;font-size:15px;font-weight:700">멈추기</button></div></sc-if>
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:12px;padding:4px 4px"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:40px;padding:0 18px;border:1.5px solid #8A8A8A;border-radius:20px;background:#fff;color:#111;font-size:15px;font-weight:700">처음부터 다시 그리기…</button><span style="font-size:13px;font-weight:500;color:#5C5C5C;line-height:1.4">지금 초안은 보관돼요</span></div></sc-if>
+</div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;border-top:1px solid #E4E3DF">
+<span style="font-size:15px;font-weight:500">{{ v.status }}</span>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button>
+<sc-if value="{{ v.done }}" hint-placeholder-val="{{ true }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">폰트 만들기</button></sc-if>
+<sc-if value="{{ v.drawing }}" hint-placeholder-val="{{ false }}"><button disabled style="height:56px;padding:0 40px;border:0;border-radius:28px;background:#E4E3DF;color:#5C5C5C;font-size:17px;font-weight:700;cursor:not-allowed">폰트 만들기</button></sc-if>
+</footer>
+</div></div>
+</sc-for>
+</div>
+
+<div class="dv-rowname">화면 4 · 폰트 만들기·다듬기</div>
+<div class="dv-row">
+<sc-for list="{{ s4 }}" as="v" hint-placeholder-count="4">
+<div class="dv-opt" id="{{ v.id }}"><div class="dv-olabel"><a class="dv-oid" href="#{{ v.id }}">{{ v.id }}</a>{{ v.name }}</div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="4" hint-size="1440px,72px"></dc-import>
+<div style="flex:1;margin:0 24px;border-radius:20px;background:#EFEEEA;position:relative;overflow:hidden;min-height:0">
+<sc-if value="{{ v.pillOk }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:48px;top:28px;padding:7px 14px;border-radius:16px;background:#fff;font-size:14px;font-weight:700">{{ v.pill }}</div></sc-if><sc-if value="{{ v.pillBad }}" hint-placeholder-val="{{ false }}"><div role="alert" style="position:absolute;left:48px;top:24px;padding:10px 18px;border-radius:20px;background:#fff;border:2px solid #B3261E;font-size:16px;font-weight:700;color:#B3261E">{{ v.pill }}</div></sc-if>
+<div style="position:absolute;left:48px;right:420px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:22px">
+<div style="font-family:DalkomChe;font-size:156px;line-height:1">달콤한집</div>
+<div style="font-family:DalkomChe;font-size:40px;line-height:1.3">딸기 생크림 케이크와 따뜻한 라테 한 잔</div>
+<label style="display:flex;align-items:center;gap:14px;padding:8px 18px;border:1.5px solid #767676;border-radius:18px;background:#fff;max-width:880px"><span style="flex:none;font-size:13px;font-weight:700;color:#5C5C5C">직접 쳐 보기</span><span style="font-family:DalkomChe;font-size:32px;line-height:1.25;white-space:nowrap;overflow:hidden">달콤한집 딸기 생크림 케이크 바닐라 마들렌</span><span style="width:2px;height:32px;background:#111;flex:none"></span></label>
+</div>
+<div style="position:absolute;right:24px;top:24px;bottom:24px;width:360px;background:#fff;border-radius:16px;padding:22px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+<sc-if value="{{ v.building }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:baseline"><span style="font-size:18px;font-weight:700">만드는 중</span><span style="margin-left:auto;font-size:15px;font-weight:700">남은 시간 약 12초</span></div>
+<div style="display:flex;flex-direction:column;gap:12px;font-size:15px">
+<div style="display:flex;gap:10px;align-items:center;font-weight:600"><span style="width:22px;height:22px;border-radius:50%;background:#EFEEEA;color:#111;display:grid;place-items:center;font-size:12px">✓</span>자소 보내기<span style="margin-left:auto;color:#5C5C5C">1초</span></div>
+<div style="display:flex;gap:10px;align-items:center;font-weight:600"><span style="width:22px;height:22px;border-radius:50%;background:#EFEEEA;color:#111;display:grid;place-items:center;font-size:12px">✓</span>자리별 글자 조각(자소) 56개<span style="margin-left:auto;color:#5C5C5C">4초</span></div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:12px;margin:0 -12px;border-radius:12px;background:#F6F6F4"><div style="display:flex;gap:10px;align-items:center;font-weight:700"><span style="width:22px;height:22px;border-radius:50%;border:3px solid #DADAD6;border-top-color:#111;box-sizing:border-box"></span>음절 조합<span style="margin-left:auto">1,240 / 2,350자</span></div><div style="height:6px;border-radius:3px;background:#DADAD6"><div style="width:53%;height:100%;border-radius:3px;background:#111"></div></div></div>
+<div style="display:flex;gap:10px;align-items:center;font-weight:600;color:#5C5C5C"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box"></span>TTF 파일 만들기</div>
+<div style="display:flex;gap:10px;align-items:center;font-weight:600;color:#5C5C5C"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box"></span>상업용 검사 7항목</div>
+<div style="display:flex;gap:10px;align-items:center;font-weight:600;color:#5C5C5C"><span style="width:22px;height:22px;border-radius:50%;border:2px solid #8A8A8A;box-sizing:border-box"></span>AI 판독 60자</div>
+</div>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-top:auto;height:44px;border:1.5px solid #8A8A8A;border-radius:22px;background:#fff;color:#111;font-size:15px;font-weight:700">멈추기</button>
+</sc-if>
+<sc-if value="{{ v.notBuilding }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:baseline"><span style="font-size:18px;font-weight:700">검사</span><span style="margin-left:auto;font-size:15px;font-weight:700;color:{{ v.sumColor }}">{{ v.summary }}</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;row-gap:6px;font-size:14px;font-weight:600">
+<sc-for list="{{ v.checks }}" as="c" hint-placeholder-count="7"><span>{{ c.label }}</span><sc-if value="{{ c.ok }}" hint-placeholder-val="{{ true }}"><span style="color:#1E7A46;font-weight:700">통과</span></sc-if><sc-if value="{{ c.bad }}" hint-placeholder-val="{{ false }}"><span style="color:#B3261E;font-weight:800">기준 넘음</span></sc-if></sc-for>
+</div>
+<sc-if value="{{ v.simOk }}" hint-placeholder-val="{{ true }}"><div style="background:#F6F6F4;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:28px;font-weight:800">0.31</span><span style="font-size:14px;font-weight:500;color:#5C5C5C">유사도 · 기준 0.85 미만</span></div><div style="font-size:13px;font-weight:500;color:#5C5C5C;line-height:1.5">가장 가까운 폰트: 무료 고딕<br>비교: 무료 폰트 69종·발급 서체 (상용 폰트는 비교 안 함)</div></div></sc-if>
+<sc-if value="{{ v.simBad }}" hint-placeholder-val="{{ false }}"><div style="border:2px solid #B3261E;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:28px;font-weight:800;color:#B3261E">0.86</span><span style="font-size:14px;font-weight:700">유사도 · 기준 0.85를 넘었어요</span></div><div style="font-size:13px;font-weight:500;color:#5C5C5C;line-height:1.5">가장 가까운 폰트: 무료 둥근 고딕 (예시)<br>비교: 무료 폰트 69종·발급 서체 (상용 폰트는 비교 안 함)</div><div style="font-size:14px;font-weight:500;line-height:1.45">글자 조각(자소)을 다시 그리면 덜 닮게 바뀌어요.</div><div style="display:flex;gap:8px"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:40px;padding:0 16px;border:0;border-radius:20px;background:#111;color:#fff;font-size:14px;font-weight:700">초안 다시 그리기</button><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:40px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:20px;background:#fff;color:#111;font-size:14px;font-weight:700">자소 골라 다시 그리기</button></div></div></sc-if>
+<sc-if value="{{ v.noMis }}" hint-placeholder-val="{{ true }}"><div style="margin-top:auto;font-size:14px;font-weight:600;color:#5C5C5C">AI가 60자를 모두 바르게 읽었어요.</div></sc-if>
+<sc-if value="{{ v.mis }}" hint-placeholder-val="{{ false }}"><div style="margin-top:auto;display:flex;flex-direction:column;gap:8px"><div style="font-size:14px;font-weight:700">AI가 다르게 읽은 글자 2개 <span style="font-weight:500;color:#5C5C5C">· 60자 중 6자까지 통과</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;text-align:left"><span style="font-family:DalkomChe;font-size:36px;line-height:1">헌</span><span style="font-size:16px">→</span><span style="font-size:28px;font-weight:600;line-height:1;color:#5C5C5C">현</span><span style="font-size:13px;font-weight:700;margin-left:auto">ㅓ<br>다듬기</span></button>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #8A8A8A;border-radius:12px;background:#fff;color:#111;text-align:left"><span style="font-family:DalkomChe;font-size:36px;line-height:1">보</span><span style="font-size:16px">→</span><span style="font-size:28px;font-weight:600;line-height:1;color:#5C5C5C">부</span><span style="font-size:13px;font-weight:700;margin-left:auto">ㅗ<br>다듬기</span></button>
+</div></div></sc-if>
+</sc-if>
+</div>
+</div>
+<div style="flex:none;height:216px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:48px;padding:18px 48px 16px;box-sizing:border-box">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-size:16px;font-weight:700">전체 다듬기</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 28px">
+<div style="display:grid;gap:6px"><div style="display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:700">굵기<sc-if value="{{ v.changed }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#1E7A46">기록됨</span></sc-if><span style="margin-left:auto">{{ v.weight }}</span><sc-if value="{{ v.changed }}" hint-placeholder-val="{{ false }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;border:0;background:none;padding:0 8px;min-height:28px;margin:-6px -8px -6px 0;border-radius:14px;font-size:13px;font-weight:600;text-decoration:underline;color:#111">AI 제안으로 (600)</button></sc-if><sc-if value="{{ v.unchanged }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></sc-if></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:{{ v.wPct }};height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:4px;left:62.5%;width:2px;height:12px;background:#5C5C5C"></div><div style="position:absolute;top:0;left:calc({{ v.wPct }} - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:700">너비<span style="margin-left:auto">104%</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:60%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(60% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:700">기울기<span style="margin-left:auto">0°</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:50%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:700">자간<span style="margin-left:auto">3%</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:43%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(43% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+</div>
+<div style="height:42px;border:1.5px solid #8A8A8A;border-radius:21px;display:flex;align-items:center;padding:0 18px;font-size:15px;font-weight:500;color:#5C5C5C">말로 고치기 · 예: 조금 더 가늘고 넓게</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:16px;font-weight:700">글자 조각(자소) 다듬기</span><span style="margin-left:auto;display:flex;gap:4px;font-size:14px;font-weight:700"><span style="padding:4px 12px;color:#5C5C5C">초성</span><span style="padding:4px 12px;background:#111;color:#fff;border-radius:14px">중성</span><span style="padding:4px 12px;color:#5C5C5C">받침</span></span></div>
+<div style="display:flex;gap:6px;font-size:18px;font-weight:700">
+<span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅏ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅐ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅑ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#111;color:#fff">ㅓ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅔ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅕ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅗ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅜ</span><span style="width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅡ</span><span style="height:40px;padding:0 12px;display:grid;place-items:center;border-radius:20px;background:#EFEEEA;font-size:14px">전체 21</span>
+</div>
+<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:20px;align-items:center"><span style="font-family:DalkomChe;font-size:40px;line-height:1">헌 거 너</span>
+<div style="display:grid;gap:6px"><div style="display:flex;font-size:14px;font-weight:700">ㅓ 굵기<span style="margin-left:auto">+0</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:50%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;font-size:14px;font-weight:700">ㅓ 곡률<span style="margin-left:auto">+0</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:50%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+</div>
+</div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;border-top:1px solid #E4E3DF">
+<span style="font-size:15px;font-weight:500">{{ v.status }}</span>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button>
+<sc-if value="{{ v.on }}" hint-placeholder-val="{{ true }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">적용해 보기</button></sc-if>
+<sc-if value="{{ v.off }}" hint-placeholder-val="{{ false }}"><button disabled style="height:56px;padding:0 40px;border:0;border-radius:28px;background:#E4E3DF;color:#5C5C5C;font-size:17px;font-weight:700;cursor:not-allowed">적용해 보기</button></sc-if>
+</footer>
+</div></div>
+</sc-for>
+</div>
+
+<div class="dv-rowname">화면 5 · 브랜드 적용 키트</div>
+<div class="dv-row">
+<div class="dv-opt" id="3k"><div class="dv-olabel"><a class="dv-oid" href="#3k">3k</a>기본 · 시안 표시</div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="5" hint-size="1440px,72px"></dc-import>
+<div style="flex:none;display:flex;align-items:flex-end;gap:20px;padding:4px 48px 18px">
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:800;letter-spacing:-.02em">달콤한집체를 가게에 입혀 봤어요</span><span style="font-size:15px;color:#5C5C5C;font-weight:500">로고 색으로 만든 시안 3종 · 가격 숫자는 기본 글꼴</span></div>
+<div style="margin-left:auto;display:flex;background:#EFEEEA;border-radius:24px;padding:4px;font-size:15px;font-weight:700"><span style="padding:10px 18px;background:#fff;border-radius:20px;box-shadow:0 1px 2px #0002">달콤한집체</span><span style="padding:10px 18px;color:#5C5C5C">기본 고딕과 비교</span></div>
+</div>
+<div style="flex:1;display:grid;grid-template-columns:1.2fr 1fr 0.9fr;gap:8px;margin:0 24px;border-radius:20px;overflow:hidden;min-height:0">
+<div style="position:relative;background:linear-gradient(#D7D1C7,#B9B1A4)">
+<div style="position:absolute;left:0;right:0;top:0;height:56px;background:repeating-linear-gradient(90deg,#F26B3A 0 56px,#FFF5E8 56px 112px);box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"></div>
+<div style="position:absolute;left:40px;right:40px;top:100px;height:170px;background:#F26B3A;border-radius:10px;display:grid;place-items:center;box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"><span style="font-family:DalkomChe;font-size:104px;color:#3B2A1E;line-height:1">달콤한집</span></div>
+<div style="position:absolute;left:40px;right:40px;top:300px;bottom:0;display:grid;grid-template-columns:1.6fr 1fr;gap:12px"><div style="background:linear-gradient(135deg,#7B7168,#2E2925 55%,#5C534A)"></div><div style="background:#2E2925"></div></div>
+<span style="position:absolute;left:20px;bottom:20px;padding:8px 16px;border-radius:18px;background:#fff;font-size:15px;font-weight:700">간판 <span style="font-weight:500;color:#5C5C5C">· 가게 앞</span></span>
+</div>
+<div style="position:relative;background:radial-gradient(ellipse at 40% 30%,#BE916A,#7E5737 80%)">
+<div style="position:absolute;left:50%;top:46%;width:310px;transform:translate(-50%,-50%) rotate(-3deg);background:#FFF5E8;color:#3B2A1E;padding:32px 30px;box-shadow:0 22px 36px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:16px">
+<div style="font-family:DalkomChe;font-size:46px;line-height:1;text-align:center">달콤한집</div><div style="height:1px;background:#3B2A1E33"></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:22px">딸기 생크림 케이크</span><span style="font-family:'Noto Sans KR';font-size:16px">6,500</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:22px">바닐라 마들렌</span><span style="font-family:'Noto Sans KR';font-size:16px">3,000</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:22px">얼그레이 스콘</span><span style="font-family:'Noto Sans KR';font-size:16px">3,800</span></div>
+</div>
+<span style="position:absolute;left:20px;bottom:20px;padding:8px 16px;border-radius:18px;background:#fff;font-size:15px;font-weight:700">메뉴판 <span style="font-weight:500;color:#5C5C5C">· 테이블 위</span></span>
+</div>
+<div style="position:relative;background:#E4E0D9;display:grid;place-items:center">
+<div style="width:250px;height:510px;border-radius:40px;background:#111;padding:10px;box-sizing:border-box;box-shadow:0 30px 70px -30px rgba(17,17,17,.55);transform:translateY(-24px)"><div style="width:100%;height:100%;border-radius:32px;background:#fff;overflow:hidden">
+<div style="height:40px"></div><div style="display:flex;align-items:center;gap:8px;padding:8px 12px"><img src="assets/dalkom.svg" alt="" style="width:30px;height:30px;border-radius:50%;object-fit:cover;object-position:left"><span style="font-size:13px;font-weight:700;color:#111">달콤한집</span></div>
+<div style="aspect-ratio:1;background:#FFF5E8;color:#3B2A1E;display:flex;flex-direction:column;justify-content:space-between;padding:18px"><span style="font-family:DalkomChe;font-size:17px">오늘의 추천</span><span style="font-family:DalkomChe;font-size:36px;line-height:1.15">딸기 생크림 케이크</span><span style="font-family:DalkomChe;font-size:19px;color:#3B2A1E">달콤한집</span></div>
+</div></div>
+<span style="position:absolute;left:20px;bottom:20px;padding:8px 16px;border-radius:18px;background:#fff;font-size:15px;font-weight:700">인스타그램 <span style="font-weight:500;color:#5C5C5C">· 휴대폰</span></span>
+</div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;margin-top:16px;border-top:1px solid #E4E3DF">
+<span style="font-size:15px;font-weight:500">시안 3종이 준비됐어요.</span>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">받기</button>
+</footer>
+</div></div>
+
+<div class="dv-opt" id="3l"><div class="dv-olabel"><a class="dv-oid" href="#3l">3l</a>비교 · 기본 고딕과 나란히</div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="5" hint-size="1440px,72px"></dc-import>
+<div style="flex:none;display:flex;align-items:flex-end;gap:20px;padding:4px 48px 18px">
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:800;letter-spacing:-.02em">기본 고딕과 비교해 보세요</span><span style="font-size:15px;color:#5C5C5C;font-weight:500">위는 달콤한집체, 아래는 기본 고딕이에요. 색과 배치는 같아요.</span></div>
+<div style="margin-left:auto;display:flex;background:#EFEEEA;border-radius:24px;padding:4px;font-size:15px;font-weight:700"><span style="padding:10px 18px;color:#5C5C5C">달콤한집체</span><span style="padding:10px 18px;background:#fff;border-radius:20px;box-shadow:0 1px 2px #0002">기본 고딕과 비교</span></div>
+</div>
+<div style="flex:1;display:grid;grid-template-columns:112px 1.2fr 1fr 0.9fr;grid-template-rows:1fr 1fr;gap:8px;margin:0 24px;min-height:0">
+<div style="display:flex;align-items:center;font-size:16px;font-weight:700;line-height:1.3">달콤한집체</div>
+<div style="border-radius:14px;background:linear-gradient(#D7D1C7,#B9B1A4);display:grid;place-items:center"><div style="width:84%;height:120px;background:#F26B3A;border-radius:8px;display:grid;place-items:center;box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"><span style="font-family:DalkomChe;font-size:76px;color:#3B2A1E;line-height:1">달콤한집</span></div></div>
+<div style="border-radius:14px;background:radial-gradient(ellipse at 40% 30%,#BE916A,#7E5737 80%);display:grid;place-items:center"><div style="width:270px;background:#FFF5E8;color:#3B2A1E;padding:16px 22px;display:flex;flex-direction:column;gap:8px;box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"><div style="font-family:DalkomChe;font-size:30px;line-height:1;text-align:center">달콤한집</div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:19px">딸기 생크림 케이크</span><span style="font-family:'Noto Sans KR';font-size:14px">6,500</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:19px">바닐라 마들렌</span><span style="font-family:'Noto Sans KR';font-size:14px">3,000</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:19px">얼그레이 스콘</span><span style="font-family:'Noto Sans KR';font-size:14px">3,800</span></div></div></div>
+<div style="border-radius:14px;background:#E4E0D9;display:grid;place-items:center"><div style="width:220px;aspect-ratio:1;background:#FFF5E8;color:#3B2A1E;display:flex;flex-direction:column;justify-content:space-between;padding:16px;box-sizing:border-box;box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"><span style="font-family:DalkomChe;font-size:15px">오늘의 추천</span><span style="font-family:DalkomChe;font-size:32px;line-height:1.15">딸기 생크림 케이크</span><span style="font-family:DalkomChe;font-size:17px;color:#3B2A1E">달콤한집</span></div></div>
+<div style="display:flex;align-items:center;font-size:16px;font-weight:700;line-height:1.3;color:#5C5C5C">기본 고딕</div>
+<div style="border-radius:14px;background:linear-gradient(#D7D1C7,#B9B1A4);display:grid;place-items:center"><div style="width:84%;height:120px;background:#F26B3A;border-radius:8px;display:grid;place-items:center;box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"><span style="font-family:'Noto Sans KR';font-weight:400;font-size:70px;color:#3B2A1E;line-height:1">달콤한집</span></div></div>
+<div style="border-radius:14px;background:radial-gradient(ellipse at 40% 30%,#BE916A,#7E5737 80%);display:grid;place-items:center"><div style="width:270px;background:#FFF5E8;color:#3B2A1E;padding:16px 22px;display:flex;flex-direction:column;gap:8px;box-shadow:0 30px 70px -30px rgba(17,17,17,.55);font-family:'Noto Sans KR'"><div style="font-size:28px;line-height:1;text-align:center">달콤한집</div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px">딸기 생크림 케이크</span><span style="font-size:14px">6,500</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px">바닐라 마들렌</span><span style="font-size:14px">3,000</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px">얼그레이 스콘</span><span style="font-size:14px">3,800</span></div></div></div>
+<div style="border-radius:14px;background:#E4E0D9;display:grid;place-items:center"><div style="width:220px;aspect-ratio:1;background:#FFF5E8;color:#3B2A1E;display:flex;flex-direction:column;justify-content:space-between;padding:16px;box-sizing:border-box;box-shadow:0 30px 70px -30px rgba(17,17,17,.55);font-family:'Noto Sans KR'"><span style="font-size:14px">오늘의 추천</span><span style="font-size:29px;line-height:1.15">딸기 생크림 케이크</span><span style="font-size:16px;color:#3B2A1E">달콤한집</span></div></div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;margin-top:16px;border-top:1px solid #E4E3DF">
+<span style="font-size:15px;font-weight:500">비교 중이에요. 받는 파일은 달콤한집체예요.</span>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">받기</button>
+</footer>
+</div></div>
+</div>
+
+<div class="dv-rowname">화면 6 · 다운로드</div>
+<div class="dv-row">
+<sc-for list="{{ s6 }}" as="v" hint-placeholder-count="2">
+<div class="dv-opt" id="{{ v.id }}"><div class="dv-olabel"><a class="dv-oid" href="#{{ v.id }}">{{ v.id }}</a>{{ v.name }}</div>
+<div class="dv-card" style="width:1440px;height:900px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="6" hint-size="1440px,72px"></dc-import>
+<div style="flex:none;height:250px;margin:0 24px;border-radius:20px;background:#EFEEEA;display:flex;align-items:center;gap:40px;padding:0 48px">
+<div style="display:flex;flex-direction:column;gap:12px"><span style="font-size:22px;font-weight:800">달콤한집체가 완성됐어요</span><span style="font-family:DalkomChe;font-size:150px;line-height:1">달콤한집체</span></div>
+<span style="margin-left:auto;align-self:flex-end;margin-bottom:32px;font-size:15px;font-weight:600;color:#5C5C5C;text-align:right;line-height:1.5">한글 2,350자 · 검사 7항목 통과<br>구독이나 서버 확인 없이 계속 써요</span>
+</div>
+<div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:36px;padding:24px 48px 16px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-size:18px;font-weight:700">받을 파일</div>
+<sc-for list="{{ v.files }}" as="f" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:14px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:700">{{ f.name }}</span><span style="font-size:13px;font-weight:500;color:#5C5C5C">{{ f.note }}</span></div>
+<sc-if value="{{ f.got }}" hint-placeholder-val="{{ false }}"><span style="margin-left:auto;font-size:15px;font-weight:700;color:#1E7A46">받았어요 ✓</span></sc-if>
+<sc-if value="{{ f.idle }}" hint-placeholder-val="{{ true }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:40px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:20px;background:#fff;color:#111;font-size:14px;font-weight:700">받기</button></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{ v.got }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 16px;border-radius:12px;background:#F6F6F4;font-size:15px;font-weight:600;line-height:1.5">간판·인쇄 업체에 TTF와 제작 기록을 함께 보내세요.</div></sc-if>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:18px;font-weight:700">권리 카드</span><span style="font-size:14px;font-weight:700;padding:3px 10px;border-radius:12px;background:#F6F6F4;border:1.5px solid #8A8A8A;color:#111">모든 이용권 + 제작 기록</span></div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:14px;background:#F6F6F4">
+<span style="font-size:15px;font-weight:700;color:#1E7A46">할 수 있어요</span>
+<div style="display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:500;line-height:1.45"><span>· 상업 사용: 간판·메뉴판·현수막, 영상·SNS, 쇼핑몰·앱 임베딩</span><span>· BI/CI 사용과 수정</span><span>· 간판·인쇄 업체에 맡겨 제작하기</span><span>· 가게를 넘길 때 함께 넘기기</span></div>
+<span style="font-size:15px;font-weight:700;color:#B3261E;margin-top:6px">할 수 없어요</span>
+<span style="font-size:15px;font-weight:500">· 폰트 파일 자체를 판매·배포하기</span>
+</div>
+<span style="font-size:13px;font-weight:500;color:#5C5C5C;line-height:1.5">이 서체는 AI를 활용해 만들었습니다. 유사도 검사는 닮은 폰트를 걸러 내는 선별 검사이고, 권리 보증은 아니에요.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+<div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px;font-weight:700">제작 기록</span>
+<sc-if value="{{ v.idleCopy }}" hint-placeholder-val="{{ true }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:36px;padding:0 16px;border:1.5px solid #8A8A8A;border-radius:18px;background:#fff;color:#111;font-size:14px;font-weight:700">복사</button></sc-if>
+<sc-if value="{{ v.copied }}" hint-placeholder-val="{{ false }}"><span style="margin-left:auto;height:36px;padding:0 16px;border-radius:18px;background:#111;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center">복사했어요 ✓</span></sc-if>
+</div>
+<div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;border:1.5px solid #8A8A8A;border-radius:14px">
+<sc-for list="{{ records }}" as="r" hint-placeholder-count="7">
+<div style="display:grid;grid-template-columns:44px 84px 1fr;gap:10px;padding:8px 14px;border-bottom:1px solid #E4E3DF;font-size:13px;line-height:1.45"><span style="font-weight:700;font-variant-numeric:tabular-nums">{{ r.t }}</span><span style="font-weight:700;color:#5C5C5C">{{ r.k }}</span><span style="font-weight:500">{{ r.m }}</span></div>
+</sc-for>
+</div>
+</div>
+</div>
+<footer style="flex:none;height:88px;display:flex;align-items:center;gap:14px;padding:0 48px;border-top:1px solid #E4E3DF">
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:44px;padding:0 18px;border:0;background:none;color:#111;font-size:15px;font-weight:700;text-decoration:underline">처음부터 다시 만들기…</button>
+<span style="margin-left:24px;font-size:15px;font-weight:600">{{ v.status }}</span>
+<button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:48px;padding:0 24px;border:1.5px solid #8A8A8A;border-radius:24px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button>
+<sc-if value="{{ v.idleAll }}" hint-placeholder-val="{{ true }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">모두 받기</button></sc-if>
+<sc-if value="{{ v.got }}" hint-placeholder-val="{{ false }}"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 40px;border:1.5px solid #8A8A8A;border-radius:28px;background:#fff;color:#111;font-size:17px;font-weight:700">다시 받기</button></sc-if>
+</footer>
+</div></div>
+</sc-for>
+</div>
+
+<div class="dv-rowname">컴포넌트 상태</div>
+<div class="dv-row">
+<div class="dv-opt" id="3o"><div class="dv-olabel"><a class="dv-oid" href="#3o">3o</a>버튼·칩·라디오·입력칸·슬라이더·단계 표시 · 기본/호버/포커스/비활성</div>
+<div class="dv-card" style="width:1440px;height:900px"><dc-import name="C States" hint-size="1440px,900px"></dc-import></div></div>
+</div>
+
+<div class="dv-rowname">반응형</div>
+<div class="dv-row">
+<div class="dv-opt" id="3q"><div class="dv-olabel"><a class="dv-oid" href="#3q">3q</a>1280×800 · 화면 4 — 견본 크기 줄이고 검사 카드 300px</div>
+<div class="dv-card" style="width:1280px;height:800px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<dc-import name="C Stepbar" step="4" compact="{{ true }}" hint-size="1280px,72px"></dc-import>
+<div style="flex:1;margin:0 16px;border-radius:20px;background:#EFEEEA;position:relative;overflow:hidden;min-height:0">
+<div style="position:absolute;left:32px;top:20px;padding:6px 12px;border-radius:16px;background:#fff;font-size:14px;font-weight:700">다 만들었어요 · 2,350자 · 22초</div>
+<div style="position:absolute;left:32px;right:350px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:16px;padding-top:24px">
+<div style="font-family:DalkomChe;font-size:124px;line-height:1">달콤한집</div>
+<div style="font-family:DalkomChe;font-size:32px;line-height:1.3">딸기 생크림 케이크와 따뜻한 라테 한 잔</div>
+<label style="display:flex;align-items:center;gap:12px;padding:6px 16px;border:1.5px solid #767676;border-radius:16px;background:#fff"><span style="flex:none;font-size:13px;font-weight:700;color:#5C5C5C">직접 쳐 보기</span><span style="font-family:DalkomChe;font-size:26px;line-height:1.25;white-space:nowrap;overflow:hidden">달콤한집 딸기 생크림 케이크 바닐라 마들렌</span><span style="width:2px;height:26px;background:#111;flex:none"></span></label>
+</div>
+<div style="position:absolute;right:16px;top:16px;bottom:16px;width:310px;background:#fff;border-radius:16px;padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline"><span style="font-size:18px;font-weight:700">검사</span><span style="margin-left:auto;font-size:14px;font-weight:700;color:#1E7A46">7항목 모두 통과</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;row-gap:5px;font-size:14px;font-weight:500"><span>글자 세트 2,350자</span><span style="color:#1E7A46;font-weight:700">통과</span><span>깨진 글자 0개</span><span style="color:#1E7A46;font-weight:700">통과</span><span>문서 포함 허용</span><span style="color:#1E7A46;font-weight:700">통과</span><span>이름·라이선스 정보</span><span style="color:#1E7A46;font-weight:700">통과</span><span>기기별 표시</span><span style="color:#1E7A46;font-weight:700">통과</span><span>크기 12–96px 가독</span><span style="color:#1E7A46;font-weight:700">통과</span><span>유사도 0.31 · 기준 0.85</span><span style="color:#1E7A46;font-weight:700">통과</span></div>
+<div style="font-size:13px;font-weight:500;color:#5C5C5C;line-height:1.5">가장 가까운 폰트: 무료 고딕 · 비교: 무료 폰트 69종·발급 서체 (상용 폰트는 비교 안 함)</div>
+<div style="margin-top:auto;font-size:14px;font-weight:500;color:#5C5C5C">AI가 60자를 모두 바르게 읽었어요.</div>
+</div>
+</div>
+<div style="flex:none;height:204px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:32px;padding:16px 32px 14px;box-sizing:border-box">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-size:16px;font-weight:700">전체 다듬기</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px">
+<div style="display:grid;gap:6px"><div style="display:flex;gap:8px;font-size:14px;font-weight:700">굵기<span style="margin-left:auto">600</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:62.5%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(62.5% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;gap:8px;font-size:14px;font-weight:700">너비<span style="margin-left:auto">104%</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:60%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(60% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;gap:8px;font-size:14px;font-weight:700">기울기<span style="margin-left:auto">0°</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:50%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;gap:8px;font-size:14px;font-weight:700">자간<span style="margin-left:auto">3%</span><span style="font-size:13px;color:#5C5C5C;font-weight:600">AI 제안</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:43%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(43% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+</div>
+<div style="height:40px;border:1.5px solid #8A8A8A;border-radius:20px;display:flex;align-items:center;padding:0 16px;font-size:14px;font-weight:500;color:#5C5C5C">말로 고치기 · 예: 조금 더 가늘고 넓게</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:16px;font-weight:700">글자 조각(자소) 다듬기</span><span style="margin-left:auto;display:flex;gap:2px;font-size:14px;font-weight:700"><span style="padding:4px 10px;color:#5C5C5C">초성</span><span style="padding:4px 10px;background:#111;color:#fff;border-radius:14px">중성</span><span style="padding:4px 10px;color:#5C5C5C">받침</span></span></div>
+<div style="display:flex;gap:6px;font-size:18px;font-weight:700"><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅏ</span><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅐ</span><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅑ</span><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#111;color:#fff">ㅓ</span><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅔ</span><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅕ</span><span style="width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#EFEEEA">ㅗ</span><span style="height:38px;padding:0 12px;display:grid;place-items:center;border-radius:19px;background:#EFEEEA;font-size:14px">전체 21</span></div>
+<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:16px;align-items:center"><span style="font-family:DalkomChe;font-size:34px;line-height:1">헌 거</span>
+<div style="display:grid;gap:6px"><div style="display:flex;font-size:14px;font-weight:700">ㅓ 굵기<span style="margin-left:auto">+0</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:50%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+<div style="display:grid;gap:6px"><div style="display:flex;font-size:14px;font-weight:700">ㅓ 곡률<span style="margin-left:auto">+0</span></div><div style="position:relative;height:20px"><div style="position:absolute;top:8px;left:0;right:0;height:4px;border-radius:2px;background:#DADAD6"></div><div style="position:absolute;top:8px;left:0;width:50%;height:4px;border-radius:2px;background:#111"></div><div style="position:absolute;top:0;left:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #111;box-sizing:border-box"></div></div></div>
+</div>
+</div>
+</div>
+<footer style="flex:none;height:80px;display:flex;align-items:center;gap:14px;padding:0 32px;border-top:1px solid #E4E3DF"><span style="font-size:15px;font-weight:500">모두 통과했어요. 적용해 보기를 누르면 시안으로 가요.</span><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;margin-left:auto;height:46px;padding:0 22px;border:1.5px solid #8A8A8A;border-radius:23px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:52px;padding:0 36px;border:0;border-radius:26px;background:#111;color:#fff;font-size:17px;font-weight:700">적용해 보기</button></footer>
+</div></div>
+
+<div class="dv-opt" id="3s"><div class="dv-olabel"><a class="dv-oid" href="#3s">3s</a>390px · 화면 5 — 시안을 세로로 쌓고, 비교는 시안마다 위아래</div>
+<div class="dv-card" style="width:390px;background:#fff;color:#111;font-family:SUIT;font-variant-numeric:tabular-nums;display:flex;flex-direction:column">
+<header style="padding:14px 20px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid #E4E3DF"><div style="display:flex;align-items:center"><span style="font-size:18px;font-weight:800">로고체</span><span style="margin-left:auto;font-size:14px;font-weight:700">5/6 브랜드 적용 키트</span></div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"><span style="height:4px;border-radius:2px;background:#111"></span><span style="height:4px;border-radius:2px;background:#111"></span><span style="height:4px;border-radius:2px;background:#111"></span><span style="height:4px;border-radius:2px;background:#111"></span><span style="height:4px;border-radius:2px;background:#111"></span><span style="height:4px;border-radius:2px;background:#DADAD6"></span></div></header>
+<div style="padding:20px 20px 8px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.25">달콤한집체를 가게에 입혀 봤어요</span><span style="font-size:14px;color:#5C5C5C;font-weight:500">로고 색으로 만든 시안 3종 · 가격 숫자는 기본 글꼴</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;background:#EFEEEA;border-radius:24px;padding:4px;font-size:15px;font-weight:700;text-align:center"><span style="padding:10px 0;background:#fff;border-radius:20px;box-shadow:0 1px 2px #0002">달콤한집체</span><span style="padding:10px 0;color:#5C5C5C">기본 고딕과 비교</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 12px 16px">
+<div style="height:260px;border-radius:16px;overflow:hidden;position:relative;background:linear-gradient(#D7D1C7,#B9B1A4)"><div style="position:absolute;left:0;right:0;top:0;height:36px;background:repeating-linear-gradient(90deg,#F26B3A 0 40px,#FFF5E8 40px 80px)"></div><div style="position:absolute;left:20px;right:20px;top:64px;height:104px;background:#F26B3A;border-radius:8px;display:grid;place-items:center;box-shadow:0 30px 70px -30px rgba(17,17,17,.55)"><span style="font-family:DalkomChe;font-size:62px;color:#3B2A1E;line-height:1">달콤한집</span></div><div style="position:absolute;left:20px;right:20px;top:186px;bottom:0;background:linear-gradient(135deg,#7B7168,#2E2925 55%,#5C534A)"></div><span style="position:absolute;left:12px;bottom:12px;padding:6px 12px;border-radius:16px;background:#fff;font-size:14px;font-weight:700">간판 <span style="font-weight:500;color:#5C5C5C">· 가게 앞</span></span></div>
+<div style="height:300px;border-radius:16px;overflow:hidden;position:relative;background:radial-gradient(ellipse at 40% 30%,#BE916A,#7E5737 80%)"><div style="position:absolute;left:50%;top:46%;width:270px;transform:translate(-50%,-50%) rotate(-3deg);background:#FFF5E8;color:#3B2A1E;padding:20px 22px;box-shadow:0 30px 70px -30px rgba(17,17,17,.55);display:flex;flex-direction:column;gap:10px"><div style="font-family:DalkomChe;font-size:34px;line-height:1;text-align:center">달콤한집</div><div style="height:1px;background:#3B2A1E33"></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:19px">딸기 생크림 케이크</span><span style="font-family:'Noto Sans KR';font-size:15px">6,500</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:19px">바닐라 마들렌</span><span style="font-family:'Noto Sans KR';font-size:15px">3,000</span></div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:DalkomChe;font-size:19px">얼그레이 스콘</span><span style="font-family:'Noto Sans KR';font-size:15px">3,800</span></div></div><span style="position:absolute;left:12px;bottom:12px;padding:6px 12px;border-radius:16px;background:#fff;font-size:14px;font-weight:700">메뉴판 <span style="font-weight:500;color:#5C5C5C">· 테이블 위</span></span></div>
+<div style="height:360px;border-radius:16px;overflow:hidden;position:relative;background:#E4E0D9;display:grid;place-items:center"><div style="width:180px;height:300px;border-radius:28px;background:#111;padding:7px;box-sizing:border-box;transform:translateY(-14px)"><div style="width:100%;height:100%;border-radius:22px;background:#fff;overflow:hidden"><div style="height:26px"></div><div style="display:flex;align-items:center;gap:6px;padding:4px 10px"><img src="assets/dalkom.svg" alt="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:left"><span style="font-size:13px;font-weight:700;color:#111">달콤한집</span></div><div style="aspect-ratio:1;background:#FFF5E8;color:#3B2A1E;display:flex;flex-direction:column;justify-content:space-between;padding:12px"><span style="font-family:DalkomChe;font-size:13px">오늘의 추천</span><span style="font-family:DalkomChe;font-size:26px;line-height:1.15">딸기 생크림 케이크</span><span style="font-family:DalkomChe;font-size:14px;color:#3B2A1E">달콤한집</span></div></div></div><span style="position:absolute;left:12px;bottom:12px;padding:6px 12px;border-radius:16px;background:#fff;font-size:14px;font-weight:700">인스타그램 <span style="font-weight:500;color:#5C5C5C">· 휴대폰</span></span></div>
+</div>
+<footer style="position:sticky;bottom:0;padding:12px 20px 20px;background:#fff;border-top:1px solid #E4E3DF;display:grid;grid-template-columns:auto 1fr;gap:10px"><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;padding:0 20px;border:1.5px solid #8A8A8A;border-radius:28px;background:#fff;color:#111;font-size:15px;font-weight:700">이전</button><button style="transition:background .15s ease,border-color .15s ease,color .15s ease;height:56px;border:0;border-radius:28px;background:#111;color:#fff;font-size:17px;font-weight:700">받기</button></footer>
+</div></div>
+</div>
+
+<p class="dv-next">다음에 해 볼 것: "<a class="dv-oid" href="#3g">3g</a> 직접 쳐 보기 줄을 견본 맨 위로" · "<a class="dv-oid" href="#3o">3o</a> 상태를 코드 이름과 맞추기" · "디자인 시스템 파일을 web/에 반영"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { g: 1, name: "달콤한집", industry: "카페·디저트", tones: ["따뜻한"], usages: [], right: null, font: null, sample: null };
+  proto() {
+    const st = this.state;
+    const set = (o) => this.setState(o);
+    const IND = { "카페·디저트": ["따뜻한", "귀여운"], "베이커리": ["따뜻한", "자연스러운"], "분식·한식": ["따뜻한", "믿음직한"], "양식·브런치": ["모던한", "산뜻한"], "일식·아시안": ["차분한", "전통적인"], "술집·바": ["레트로한", "힙한"], "공방": ["따뜻한", "전통적인"], "뷰티·네일": ["고급스러운", "귀여운"], "꽃·식물": ["자연스러운", "우아한"], "옷·소품샵": ["힙한", "모던한"], "반려동물": ["귀여운", "장난스러운"], "운동·요가": ["강렬한", "산뜻한"], "학원·교육": ["믿음직한", "차분한"], "크리에이터": ["장난스러운", "힙한"] };
+    const TONES = ["귀여운", "따뜻한", "장난스러운", "고급스러운", "믿음직한", "전통적인", "모던한", "자연스러운", "레트로한", "힙한", "강렬한", "차분한", "산뜻한", "우아한"];
+    const rec = IND[st.industry] || [];
+    const toggle = (arr, v, max) => (arr.includes(v) ? arr.filter((x) => x !== v) : arr.length >= max ? arr : [...arr, v]);
+    const done = [!!st.name && !!st.industry, st.tones.length >= 2 && st.usages.length >= 1, !!st.right && !!st.font];
+    const missing = [
+      [!st.industry && "업종"],
+      [st.tones.length < 2 && `브랜드 톤 ${2 - st.tones.length}개 더`, !st.usages.length && "주 사용처"],
+      [!st.right && "로고 권리", !st.font && "로고 글자"],
+    ].map((a) => a.filter(Boolean));
+    const names = ["가게 정보", "분위기", "권리 확인"];
+    const summaries = [`${st.name} · ${st.industry || "업종 미정"}`, `${st.tones.join(", ") || "톤 미정"} · ${st.usages.join(", ") || "사용처 미정"}`, `${st.right || "—"} · ${st.font || "—"}`];
+    const groups = names.map((name, i) => ({ n: i + 1, name, summary: summaries[i], isDone: i !== st.g && done[i], open: i === st.g, locked: i !== st.g && !done[i], edit: () => set({ g: i }) }));
+    const last = st.g === 2;
+    const allDone = done.every(Boolean);
+    const cur = done[st.g];
+    const doneCount = done.filter(Boolean).length;
+    return {
+      ...Object.fromEntries(groups.map((g, i) => [`g${i}`, g])),
+      industries: Object.keys(IND).map((label) => ({ label, sel: st.industry === label, unsel: st.industry !== label, onClick: () => set({ industry: label }) })),
+      tones: TONES.map((label) => {
+        const sel = st.tones.includes(label);
+        return { label, sel, unsel: !sel && st.tones.length < 3, full: !sel && st.tones.length >= 3, rec: rec.includes(label), onClick: () => set({ tones: toggle(st.tones, label, 3) }) };
+      }),
+      usages: ["간판·메뉴판", "SNS·썸네일", "포장·스티커"].map((label) => ({ label, sel: st.usages.includes(label), unsel: !st.usages.includes(label), onClick: () => set({ usages: toggle(st.usages, label, 3) }) })),
+      rights: ["직접 만들었어요", "외주로 만들고 저작권을 넘겨받았어요", "잘 모르겠어요"].map((label) => ({ label, sel: st.right === label, unsel: st.right !== label, onClick: () => set({ right: label }) })),
+      fonts: ["글자를 직접 그렸어요 (손글씨·레터링)", "무료 폰트를 썼어요", "유료(상용) 폰트를 썼어요", "로고에 글자가 없어요", "잘 모르겠어요"].map((label) => ({ label, sel: st.font === label, unsel: st.font !== label, onClick: () => set({ font: label }) })),
+      rightUnknown: st.right === "잘 모르겠어요",
+      outsourced: st.right === "외주로 만들고 저작권을 넘겨받았어요",
+      toneMissing: st.tones.length < 2, usageMissing: !st.usages.length,
+      toneCount: `${st.tones.length}/3`,
+      sampleDalkom: st.sample === "dalkom", sampleNone: st.sample !== "dalkom",
+      pickSample: () => set({ sample: "dalkom", name: "달콤한집", industry: "카페·디저트", tones: ["따뜻한", "귀여운"], usages: ["간판·메뉴판"], g: 2 }),
+      reset: () => set({ g: 1, name: "달콤한집", industry: "카페·디저트", tones: ["따뜻한"], usages: [], right: null, font: null, sample: null }),
+      progress: `${doneCount}/3`,
+      bar0: done[0], bar1: done[1], bar2: done[2], bar0n: !done[0], bar1n: !done[1], bar2n: !done[2], prevOff: st.g === 0,
+      status: cur ? (last ? "준비됐어요." : `다음은 ${names[st.g + 1]}${(names[st.g + 1].charCodeAt(names[st.g + 1].length - 1) - 0xac00) % 28 ? "이에요" : "예요"}.`) : `남은 항목: ${missing[st.g].join(", ")}`,
+      nextOn: cur && !last, nextOff: !cur && !last,
+      analyzeOn: last && allDone, analyzeOff: last && !allDone,
+      next: () => cur && set({ g: Math.min(2, st.g + 1) }),
+      prevOn: st.g > 0, prev: () => set({ g: Math.max(0, st.g - 1) }),
+    };
+  }
+  renderVals() {
+    const chips = (list, sel = [], rec = []) => list.map((label) => ({ label, sel: sel.includes(label), unsel: !sel.includes(label), rec: rec.includes(label) }));
+    const IND = ["카페·디저트", "베이커리", "분식·한식", "양식·브런치", "일식·아시안", "술집·바", "공방", "뷰티·네일", "꽃·식물", "옷·소품샵", "반려동물", "운동·요가", "학원·교육", "크리에이터"];
+    const TONES = ["귀여운", "따뜻한", "장난스러운", "고급스러운", "믿음직한", "전통적인", "모던한", "자연스러운", "레트로한", "힙한", "강렬한", "차분한", "산뜻한", "우아한"];
+    const USE = ["간판·메뉴판", "SNS·썸네일", "포장·스티커"];
+    const RIGHTS = ["직접 만들었어요", "외주로 만들고 저작권을 넘겨받았어요", "잘 모르겠어요"];
+    const FONTS = ["글자를 직접 그렸어요 (손글씨·레터링)", "무료 폰트를 썼어요", "유료(상용) 폰트를 썼어요", "로고에 글자가 없어요", "잘 모르겠어요"];
+    const samples = (sel) => [["dalkom", "달콤한집"], ["bada", "바다식당"], ["supsok", "숲속공방"]].map(([id, name]) => ({ src: `assets/${id}.svg`, name, sel: id === sel, unsel: id !== sel }));
+    const rec = ["따뜻한", "귀여운"];
+    const s1 = [
+      { id: "3a", name: "입력 중 · 빈 항목 표시", fileName: "달콤한집_로고.png", samples: samples(null), industries: chips(IND, ["카페·디저트"]), tones: chips(TONES, ["따뜻한"], rec), usages: chips(USE), rights: chips(RIGHTS), fonts: chips(FONTS), feelEmpty: true, feelFilled: false, toneMissing: true, usageMissing: true, rightsMissing: true, fontMissing: true, ready: false, notReady: true, status: "남은 항목: 브랜드 톤 1개 더, 주 사용처, 로고 권리, 로고 글자" },
+      { id: "3b", name: "입력 완료 (샘플 로고로 채운 뒤)", fileName: "dalkom.svg · 샘플", samples: samples("dalkom"), industries: chips(IND, ["카페·디저트"]), tones: chips(TONES, ["따뜻한", "귀여운"], rec), usages: chips(USE, ["간판·메뉴판"]), rights: chips(RIGHTS, ["직접 만들었어요"]), fonts: chips(FONTS, ["글자를 직접 그렸어요 (손글씨·레터링)"]), feelEmpty: false, feelFilled: true, toneMissing: false, usageMissing: false, rightsMissing: false, fontMissing: false, ready: true, notReady: false, status: "준비됐어요." },
+    ];
+    const s2 = [
+      { id: "3c", name: "기본 · 결과 표시", done: true, loading: false, status: "이 방향으로 AI가 글자 조각(자소) 초안 56개를 그려요." },
+      { id: "3d", name: "분석 중", done: false, loading: true, status: "로고를 재고 분위기를 읽는 중이에요 · 약 10초" },
+    ];
+    const G = [
+      ["초성", "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ", "가까나다따라마바빠사싸아자짜차카타파하"],
+      ["중성", "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ", "아애야얘어에여예오와왜외요우워웨위유으의이"],
+      ["받침", "ㄱㄲㄴㄷㄹㅁㅂㅅㅆㅇㅈㅊㅋㅌㅍㅎ", "각깎간갇갈감갑갓갔강갖갗엌같갚갛"],
+    ];
+    const groups = (drawn, redraw, notes) => {
+      let n = 0;
+      return G.map(([name, js, ss], gi) => ({
+        name, note: notes[gi],
+        cards: [...js].map((j, i) => {
+          const idx = n++;
+          const st = idx >= drawn ? "pending" : redraw.includes(j + gi) ? "redraw" : "ready";
+          return { j, s: [...ss][i], ready: st === "ready", redraw: st === "redraw", pending: st === "pending" };
+        }),
+      }));
+    };
+    const s3 = [
+      { id: "3e", name: "기본 · 초안 다 그림", done: true, drawing: false, count: "56 / 56", groups: groups(56, [], ["19개 · 검사 통과", "21개 · 검사 통과", "16개 · 검사 통과"]), checkLine: "56개 모두 검사를 통과했어요.", status: "초안을 다 그렸어요. 이 초안으로 2,350자를 만들어요." },
+      { id: "3f", name: "그리는 중 (그린 수/전체)", done: false, drawing: true, count: "33 / 56", groups: groups(33, ["ㅊ0", "ㅘ1"], ["19개 · 다 그렸어요", "그리는 중", "대기"]), checkLine: "검사에 떨어진 ㅊ·ㅘ를 다시 그리고 있어요.", status: "글자 조각(자소) 그리는 중 33/56 · 남은 시간 약 1분" },
+    ];
+    const CK = ["글자 세트 2,350자", "깨진 글자 0개", "문서 포함 허용", "이름·라이선스 정보", "기기별 표시", "크기 12–96px 가독", "유사도"];
+    const checks = (badSim) => CK.map((label, i) => ({ label, ok: !(badSim && i === 6), bad: badSim && i === 6 }));
+    const base = { building: false, notBuilding: true, changed: false, unchanged: true, weight: "600", wPct: "62.5%", simOk: true, simBad: false, noMis: true, mis: false, on: true, off: false, summary: "7항목 모두 통과", sumColor: "#1E7A46", checks: checks(false) };
+    const s4 = [
+      { ...base, id: "3g", name: "기본 · 모두 통과", pill: "다 만들었어요 · 2,350자 · 22초", status: "모두 통과했어요. 적용해 보기를 누르면 시안으로 가요." },
+      { ...base, id: "3h", name: "조합 중", building: true, notBuilding: false, changed: true, unchanged: false, weight: "620", wPct: "65%", on: false, off: true, pill: "미리보기 · 폰트 파일을 다시 만드는 중", status: "굵기 600 → 620으로 다시 만드는 중 · 음절 조합 1,240/2,350자" },
+      { ...base, id: "3i", name: "다르게 읽은 글자", noMis: false, mis: true, pill: "다 만들었어요 · 2,350자 · 22초", status: "AI가 2자를 다르게 읽었어요. 눌러서 다듬거나 그대로 진행해요." },
+      { ...base, id: "3j", name: "유사도 초과", simOk: false, simBad: true, on: false, off: true, summary: "7항목 중 1개 넘음", sumColor: "#B3261E", checks: checks(true), pill: "받을 수 없어요 · 유사도 기준을 넘었어요", pillBad: true, status: "초안을 다시 그리거나 자소를 골라 다시 그려 주세요." },
+    ];
+    const files = (got) => [
+      { name: "달콤한집체.ttf", note: "한글 2,350자 · 숫자는 없어요", got, idle: !got },
+      { name: "제작 기록.txt", note: "고르고 고친 과정 · 시각 포함", got, idle: !got },
+      { name: "적용 시안 3종", note: "간판·메뉴판·인스타그램 PNG", got, idle: !got },
+    ];
+    const s6 = [
+      { id: "3m", name: "기본 · 받을 준비", files: files(false), got: false, idleAll: true, idleCopy: true, copied: false, status: "세 파일을 한 번에 받을 수 있어요." },
+      { id: "3n", name: "받음 · 복사됨", files: files(true), got: true, idleAll: false, idleCopy: false, copied: true, status: "다 받았어요." },
+    ];
+    const records = [
+      { t: "14:02", k: "선택", m: "로고 원본 dalkom.svg (샘플) · 해시 72fc7b99" },
+      { t: "14:02", k: "선택", m: "로고 권리: 직접 만들었어요 · 로고 글자: 직접 그렸어요" },
+      { t: "14:02", k: "창작 의도", m: "카페·디저트 · 따뜻한, 귀여운 · 간판·메뉴판" },
+      { t: "14:03", k: "AI 모델명", m: "스타일 분석: claude-opus-5-5" },
+      { t: "14:04", k: "창작 의도", m: "표현 방식(AI 제안에서 고름): 끝을 동그랗게 마감한 통통한 획" },
+      { t: "14:06", k: "AI 모델명", m: "글자 조각(자소) 초안: gpt-image-2.5-flare · 56개" },
+      { t: "14:09", k: "선택·수정", m: "굵기 600 → 620 (사용자 결정)" },
+      { t: "14:10", k: "검사 결과", m: "7항목 통과 · 유사도 0.31 · AI 판독 60자 중 58자" },
+    ];
+    s1.forEach((v) => { v.dalkomSel = v.samples[0].sel; v.dalkomUnsel = !v.samples[0].sel; });
+    s4.forEach((v) => { v.pillOk = !v.pillBad; v.pillBad = !!v.pillBad; });
+    return { s1, s2, s3, s4, s6, records, r1: s1[0], p: this.proto() };
+  }
+}
+</script>
+</body>
+</html>
+

@@ -1,0 +1,20 @@
+[project]
+name = "logoche-engine"
+version = "0.1.0"
+description = "로고체 서체 엔진: 로고 측정, 글자표 분할·자리 맞추기, 그린 2,350자 TTF 빌드와 검사"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "numpy>=2.0",
+    "opencv-python-headless>=4.10",
+    "pillow>=11.0",
+    "fonttools>=4.55",
+    "skia-pathops>=0.8",
+    "vtracer>=0.6.11",
+    "freetype-py>=2.5",
+    "brotli>=1.1",
+]
+
+[tool.uv]
+package = false
