@@ -1,3 +1,4 @@
+import { requireGlyphJob } from "@/lib/server/auth";
 import { MOCK, RouteError, handle } from "@/lib/server/env";
 import { retryFailedGlyphs, retryGlyph } from "@/lib/server/glyphs";
 import type { RetryGlyphsRequest, StartJobResponse } from "@/lib/types";
@@ -6,9 +7,11 @@ import type { RetryGlyphsRequest, StartJobResponse } from "@/lib/types";
 // - index가 있으면 그 글자만 한 번(글자 카드의 '다시 그리기', 글자당 3번까지). 처음 글자표를 스타일 참고로 붙인다.
 //   통과한 글자를 다시 그리면 전 글자를 남겨 두고, 새 글자가 떨어지면 전 글자를 그대로 둔다.
 // - 없으면 '실패한 글자 모두 다시 그리기': 실패한 글자를 글자당 2번까지 다시 그린다.
+// 11/2 구글 로그인: 예전 화면(연결 끊음)용 API라 지금 화면은 부르지 않는다. AI·엔진을 부르는 길이라 로그인해야 부른다.
 export async function POST(request: Request, ctx: RouteContext<"/api/glyphs/jobs/[id]/retry">) {
   return handle(async () => {
     const { id } = await ctx.params;
+    await requireGlyphJob(request, id);
     if (MOCK) throw new RouteError(501, "모의 응답 모드에서는 다시 그리기가 없어요");
     const body = (await request.json()) as RetryGlyphsRequest;
     if (typeof body.index === "number") await retryGlyph(id, body.index, body);

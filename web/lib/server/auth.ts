@@ -9,7 +9,7 @@ import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
 import { SHOWCASE_FONTS } from "@/lib/constants";
 import { RouteError } from "./env";
-import { ownsFont } from "./projects";
+import { ownsFont, ownsGlyphJob } from "./projects";
 
 const DATA = path.join(process.cwd(), ".data");
 mkdirSync(DATA, { recursive: true });
@@ -56,4 +56,10 @@ export async function requireFont(request: Request, fontId: string): Promise<voi
   if (SHOWCASE_FONTS.some((f) => f.fontId === fontId)) return;
   const user = await requireUser(request);
   if (!(await ownsFont(user, fontId))) throw new RouteError(404, "폰트를 찾을 수 없어요");
+}
+
+/** 글자 그림 작업(참고 글자·나머지 글자)을 보거나 고칠 수 있는지: 그 작업을 쓴 폰트의 주인만 */
+export async function requireGlyphJob(request: Request, jobId: string): Promise<void> {
+  const user = await requireUser(request);
+  if (!(await ownsGlyphJob(user, jobId))) throw new RouteError(404, "글자를 찾을 수 없어요");
 }

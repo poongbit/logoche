@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/server/auth";
 import { MOCK, handle } from "@/lib/server/env";
 import { startGlyphJob } from "@/lib/server/glyphs";
 import { createJob } from "@/lib/server/jobs";
@@ -7,8 +8,10 @@ import type { StartGlyphJobRequest, StartJobResponse } from "@/lib/types";
 // - 이미지 API에 로고(획 끝·질감을 가볍게 참고), 표현 방식·톤(글), 기준 글자표(철자·칸)를 주고 참고 글자 30자를 한 장에 그린다.
 //   로고 글자는 잘라 쓰지 않고, 프롬프트에 "로고 글자 모양은 옮기지 마라"를 넣는다(lib/server/glyphs.ts).
 // - 오래 걸리므로 작업 id만 바로 돌려주고, 진행은 GET /api/glyphs/jobs/[id]로 본다.
+// 11/2 구글 로그인: 예전 화면(연결 끊음)용 API라 지금 화면은 부르지 않는다. AI·엔진을 부르는 길이라 로그인해야 부른다.
 export async function POST(request: Request) {
   return handle(async () => {
+    await requireUser(request);
     const body = (await request.json()) as StartGlyphJobRequest;
     const jobId = MOCK ? createJob(body).id : startGlyphJob(body);
     return Response.json({ jobId } satisfies StartJobResponse);

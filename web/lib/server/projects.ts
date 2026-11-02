@@ -138,6 +138,10 @@ export async function ownsFont(owner: string, fontId: string): Promise<boolean> 
   return (await ownedProjects(owner)).some((p) => p.fontId === fontId || p.buildJobId === fontId);
 }
 
+export async function ownsGlyphJob(owner: string, jobId: string): Promise<boolean> {
+  return (await ownedProjects(owner)).some((p) => p.glyphJobId === jobId);
+}
+
 async function glyphRequest(p: Stored): Promise<StartGlyphJobRequest> {
   if (!p.style) throw new RouteError(409, "로고를 아직 읽는 중이에요");
   return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: p.style, sampleId: null, quality: p.quality };
