@@ -92,7 +92,7 @@ export function FontList() {
         <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border-[1.5px] border-dashed border-edge bg-bg px-6 py-14 text-center">
           <p className="text-17 font-bold">아직 만든 폰트가 없어요</p>
           <p className="text-15 text-muted">로고 한 장으로 첫 폰트를 만들어 보세요.</p>
-          <Link href="/new" className="inline-flex h-12 items-center gap-1.5 rounded-full bg-ink px-6 text-15 font-bold text-bg transition-colors hover:bg-hover">
+          <Link href="/#make" className="inline-flex h-12 items-center gap-1.5 rounded-full bg-ink px-6 text-15 font-bold text-bg transition-colors hover:bg-hover">
             <PlusIcon />새 폰트 만들기
           </Link>
         </div>

@@ -36,7 +36,7 @@ function ListLink({ current }: { current: boolean }) {
 
 function NewLink() {
   return (
-    <Link href="/new" className="inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-15 font-bold text-bg transition-colors hover:bg-hover">
+    <Link href="/#make" className="inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-15 font-bold text-bg transition-colors hover:bg-hover">
       <PlusIcon />
       <span className="hidden sm:inline">새 폰트 만들기</span>
       <span className="sm:hidden">새 폰트</span>
@@ -47,10 +47,6 @@ function NewLink() {
 function CurrentListLink() {
   const path = usePathname();
   return <ListLink current={path === "/fonts" || path.startsWith("/fonts/")} />;
-}
-
-function CurrentNewLink() {
-  return usePathname() === "/new" ? null : <NewLink />;
 }
 
 function SignInButton() {
@@ -150,9 +146,7 @@ export function AppHeader() {
           </Suspense>
         </nav>
         <div className="ml-auto flex items-center gap-2 lg:gap-3">
-          <Suspense fallback={<NewLink />}>
-            <CurrentNewLink />
-          </Suspense>
+          <NewLink />
           <Account />
         </div>
       </div>

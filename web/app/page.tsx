@@ -148,7 +148,7 @@ export default function HomePage() {
             <span className="text-15 text-muted">로고 한 장으로 만드는 한글 브랜드 폰트</span>
           </div>
           <nav aria-label="아래 메뉴" className="flex flex-wrap gap-x-6 gap-y-2 text-15 font-semibold">
-            <Link href="/new" className="hover:underline">
+            <Link href="/#make" className="hover:underline">
               새 폰트 만들기
             </Link>
             <Link href="/fonts" className="hover:underline">
