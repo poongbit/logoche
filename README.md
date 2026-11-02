@@ -15,6 +15,12 @@
 | 걸리는 시간 | 폰트를 만드는 데 약 5분 |
 | 만드는 방식 | AI(GPT Image)가 글자를 모두 새로 그리고, 다른 AI(Claude)가 한 장씩 검사하고, 엔진이 폰트 파일로 묶습니다 |
 
+### 만든 결과 예시
+
+![바다식당 로고로 만든 폰트를 입힌 간판 시안](docs/sign-mockup.jpg)
+
+'바다식당' 로고로 만든 폰트를 스튜디오의 간판 시안에 입힌 모습입니다. 간판 사진은 AI로 만든 것이고, 그 위의 글자는 만든 폰트로 그대로 쓴 것입니다. 이 폰트는 비용을 아끼려고 한글 90자만 그린 시험본입니다.
+
 ## 왜 만들었나
 
 예비 청년 창업가가 브랜드를 기획해도, 개업할 때 간판과 메뉴판 글씨는 시공 업체가 정합니다. 업체에는 로고만 넘어가고, 나머지 글씨는 업체가 늘 쓰는 기본 폰트로 채워집니다. 그렇다고 전용 서체를 외주로 맡기면 평균 120만 원쯤 들고, 짧아도 15일이 걸립니다.
@@ -128,15 +134,19 @@ MX-Font 코드와 가중치는 저장소에서 뺐습니다.
 
 ## 직접 실행하기
 
-Python 3.12와 [uv](https://docs.astral.sh/uv/), Node.js가 필요하고, 터미널 두 개를 씁니다.
+Python 3.12와 [uv](https://docs.astral.sh/uv/), Node.js 24가 필요하고, 터미널 두 개를 씁니다.
 
 ```bash
-# 1. 엔진
+git clone https://github.com/poongbit/logoche.git
+cd logoche
+
+# 1. 엔진 (터미널 하나)
 cd engine
 uv sync
+uv run python scripts/fetch_compare_fonts.py   # 처음 한 번: 닮은 폰트 검사에 쓸 무료 폰트 받기
 uv run uvicorn logoche_engine.main:app --port 8000 --reload
 
-# 2. 웹
+# 2. 웹 (다른 터미널에서 logoche 폴더로 가서)
 cd web
 cp .env.example .env.local   # AI 키 두 개와 구글 로그인 키를 채운다
 npm install
@@ -145,6 +155,7 @@ npm run dev                  # http://localhost:3000
 
 - 폰트를 만들려면 로그인해야 합니다. 그래서 구글 OAuth 클라이언트(리디렉션 URI `http://localhost:3000/api/auth/callback/google`)와 `BETTER_AUTH_SECRET`이 필요합니다. 자세한 내용은 `web/.env.example`에 있습니다.
 - 키 없이 화면만 보려면 `web/.env.local`에 `LOGOCHE_MOCK=1`을 넣습니다. 모의 응답을 쓰기 때문에 엔진도 켜지 않아도 됩니다.
+- 닮은 폰트 검사용 폰트는 저장소에 넣지 않았습니다. 위 명령은 Google Fonts의 한글 폰트 47개 파일만 받습니다. 저희가 쓴 나머지 20개 파일(Pretendard·SUIT 등)은 목록만 `engine/compare/free/local-fonts.json`에 있어서, 필요하면 직접 받아 `engine/compare/free/`에 넣습니다.
 - 싸게 시험하려면 `GLYPH_REST_LIMIT=90`처럼 폰트에 넣을 글자 수를 줄입니다. 자주 쓰는 글자만 그리는 대신 글자 세트 검사는 떨어집니다.
 - 나머지 설정도 `web/.env.example`에 있습니다.
 
