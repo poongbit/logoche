@@ -63,6 +63,13 @@ def _box(ch: str) -> tuple[float, float, float, float]:
     return bounds
 
 
+@cache
+def ref_advance(ch: str) -> int:
+    """기준 서체 같은 글자의 글자 폭(폰트 단위). 숫자·문장부호는 이 폭을 쓴다(자리도 기준 서체 잉크 상자에 맞췄다)."""
+    font, cmap = _reference()
+    return font["hmtx"][cmap[ord(ch)]][0]
+
+
 # ---------- 자리 맞추기 ----------
 
 

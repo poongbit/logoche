@@ -1,17 +1,20 @@
-@import url("https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css");
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap");
+/* 글꼴(SUIT·Noto Sans KR)은 app/layout.tsx의 <link>로 불러온다. CSS @import면 이 파일을 다 받은 뒤에야 받기 시작해 첫 화면이 늦다(11/2 다시 점검). */
 @import "tailwindcss";
 
 /* 10/29 Claude Design 'Logoche Final'(C안 확정): 흰 바탕 + 검정 강조 하나. 로고 색은 화면 5 시안과 로고 미리보기에만 쓴다.
-   대비(흰 바탕): 글자 #111 18.9:1, 보조 글자 #5C5C5C 6.7:1(무대 위 5.8:1), 통과 5.4:1, 실패 6.5:1, 테두리 #8A8A8A 3.4:1. 무대(#EFEEEA) 위 테두리는 #767676(3.9:1). */
+   11/2 메인 화면(YoFont 메인 차용): 화면 바탕은 크림(--paper), 카드·입력칸은 흰색(--bg). 꼬리표·단계 표시에 파랑(--accent)과 고정폭 글씨.
+   대비(크림 바탕): 글자 #111 17:1, 보조 글자 #5C5C5C 6.0:1, 파랑 5.8:1, 테두리 #8A8A8A 3.1:1. 흰 카드 위는 보조 6.7:1·테두리 3.4:1.
+   무대는 크림 위에서도 보이게 한 단계 어둡게 했다(#EBE9E3, 보조 글자 5.5:1, 무대 위 테두리 #767676 3.7:1). */
 :root {
-  --bg: #ffffff;
+  --paper: #f5f3ee; /* 화면 바탕(크림) */
+  --bg: #ffffff; /* 카드·입력칸 */
   --ink: #111111;
   --muted: #5c5c5c;
+  --accent: #2c56c9; /* 꼬리표 점·단계 표시 */
   --line: #e4e3df; /* 구분선 */
   --edge: #8a8a8a; /* 칩·버튼·입력칸 테두리 */
   --edge-stage: #767676; /* 무대 위 테두리 */
-  --stage: #efeeea; /* 무대(견본·로고를 놓는 바탕) */
+  --stage: #ebe9e3; /* 무대(견본·로고를 놓는 바탕) */
   --subtle: #f6f6f4; /* 열린 묶음·선택한 행 */
   --track: #dadad6; /* 슬라이더 길·진행 막대 */
   --hover: #3a3a3a; /* 주 버튼 호버 */
@@ -23,9 +26,11 @@
    어색했다. 색은 모두 위 변수로 쓰므로, 나중에 어두운 모드를 넣을 때는 글자 그림을 반전하는 것까지 함께 설계한다. */
 
 @theme inline {
+  --color-paper: var(--paper);
   --color-bg: var(--bg);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
+  --color-accent: var(--accent);
   --color-line: var(--line);
   --color-edge: var(--edge);
   --color-edge-stage: var(--edge-stage);
@@ -37,6 +42,8 @@
   --color-bad: var(--bad);
   --font-sans: "SUIT", system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-gothic: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  /* 꼬리표·단계·글자 수(11/2). 시스템 고정폭이라 따로 받지 않는다. 한글은 고정폭 글꼴에 없어 SUIT로 넘어간다. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "SUIT", monospace;
 }
 
 /* 글자 크기(10/30 접근성 검토): rem으로 둬서 브라우저 글자 크기 설정을 따른다. 이름은 기본 크기(16px)일 때의 px 값이다.
@@ -85,10 +92,17 @@ html {
 }
 
 body {
-  background: var(--bg);
+  background: var(--paper); /* 11/2 크림 바탕: 모든 화면 */
   color: var(--ink);
+  caret-color: var(--ink);
   word-break: keep-all;
   font-variant-numeric: tabular-nums;
+}
+
+/* 고른 글자(드래그)도 검정 하나로 */
+::selection {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 /* 키보드 포커스: 2px #111 테두리 + 2px 흰 틈 (C States) */
@@ -103,7 +117,7 @@ body {
 .ds-range {
   appearance: none;
   width: 100%;
-  height: 20px;
+  height: 28px; /* 누르는 높이는 28px(손가락으로 잡기 쉽게), 보이는 손잡이는 20px */
   background: transparent;
   cursor: pointer;
 }
@@ -139,10 +153,19 @@ body {
 .ds-range:hover::-webkit-slider-thumb {
   box-shadow: 0 0 0 6px var(--stage);
 }
+.ds-range:hover::-moz-range-thumb {
+  box-shadow: 0 0 0 6px var(--stage);
+}
 .ds-range:focus-visible {
   box-shadow: none;
 }
 .ds-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ink);
+}
+/* 파이어폭스도 키보드로 잡으면 손잡이에 테두리(위에서 입력칸 자체의 테두리를 껐다) */
+.ds-range:focus-visible::-moz-range-thumb {
   box-shadow:
     0 0 0 2px var(--bg),
     0 0 0 4px var(--ink);
@@ -240,8 +263,12 @@ body {
   }
 }
 
+/* 움직임 줄이기: 옮겨 가거나 커지는 움직임은 끈다. 도는 표시(animate-spin)는 '아직 하는 중'을 알리는 신호라 천천히 남긴다(11/2 점검). */
 @media (prefers-reduced-motion: reduce) {
-  *,
+  .animate-spin {
+    animation-duration: 2.4s !important;
+  }
+  *:not(.animate-spin),
   *::before,
   *::after,
   ::view-transition-group(*),

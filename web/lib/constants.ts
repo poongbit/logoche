@@ -113,6 +113,12 @@ export const SAMPLE_LOGOS: {
   },
 ];
 
+/** 메인 화면 '로고체로 만든 폰트'(11/2). 팀이 시험으로 만든 폰트만 넣는다(사용자 폰트는 늘 비공개).
+ * 10/30 GPT 직접 그리기 시험 빌드(작업 b6080f71). 숫자·문장부호는 없어 기본 글꼴로 보인다. 다른 표현의 폰트를 만들면 여기에 더한다. */
+export const SHOWCASE_FONTS: { fontId: string; name: string; hangul: number }[] = [
+  { fontId: "e84e953b35ed43cf8eeb1cef4480a025", name: "굵고 둥근 고딕", hangul: 2298 },
+];
+
 // ---------- 화면 2 ----------
 
 export const AXIS_ORDER: AxisKey[] = ["weight", "roundness", "width", "contrast", "slant", "wobble", "tracking"];
@@ -155,6 +161,8 @@ export function formatAxis(key: AxisKey, v: number): string {
 export const REFERENCE_CHARS = "가다타파하서이에내고로무수의쥐퀴한헌람것있밥면빵쳇는를들국왕";
 /** 폰트를 만들려면 검사를 통과한 참고 글자가 이만큼은 있어야 한다(떨어진 글자는 빼고 만든다). 임시 값. */
 export const MIN_REFERENCE_READY = 20;
+/** 숫자·문장부호 30자(11/2 사용자 결정: 그리기에 넣는다). 나머지 글자와 따로 한 장에 그린다. 엔진(engine/logoche_engine/hangul.py EXTRA_CHARS)과 같은 순서. */
+export const EXTRA_CHARS = "0123456789.,!?:;'\"()-~/%&+·*#₩";
 
 // ---------- 화면 4 ----------
 

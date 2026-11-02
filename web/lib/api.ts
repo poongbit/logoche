@@ -1,5 +1,10 @@
 import type {
   AnalyzeStyleRequest,
+  CreateProjectRequest,
+  ProjectSummary,
+  ProjectView,
+  ReviewAction,
+  UpdateProjectRequest,
   BuildJob,
   GlyphEditSource,
   GlyphEditSourceRequest,
@@ -74,6 +79,15 @@ export const api = {
   },
   /** 모두 받기(zip) */
   fontBundleUrl: (fontId: string) => `/api/font/${fontId}/bundle`,
+
+  // 11/2 B안: 폰트 작업(서버가 로고 읽기부터 폰트 파일까지 이어서 돌린다)
+  listProjects: () => request<ProjectSummary[]>("/api/projects"),
+  createProject: (body: CreateProjectRequest) => post<{ id: string }>("/api/projects", body),
+  getProject: (id: string) => request<ProjectView>(`/api/projects/${id}`),
+  updateProject: (id: string, body: UpdateProjectRequest) => post<{ ok: boolean }>(`/api/projects/${id}`, body, undefined, "PATCH"),
+  deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
+  reviewProject: (id: string, body: ReviewAction) => post<{ ok: boolean }>(`/api/projects/${id}/review`, body),
+  rebuildProject: (id: string) => post<{ ok: boolean }>(`/api/projects/${id}/rebuild`, {}),
 };
 
 export function errorMessage(err: unknown): string {

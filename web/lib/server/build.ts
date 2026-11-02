@@ -227,7 +227,8 @@ export async function getBuild(buildId: string): Promise<BuildJob> {
             ? null
             : e.remaining + ocrEstimate(ocr.chars.length);
   const phase: BuildJob["phase"] = e.phase === "failed" ? "failed" : e.phase === "done" ? (ocrFinished ? "done" : "checking") : e.phase;
-  const passed = phase === "done" && ocr.passed === true && e.checks.every((c) => c.status === "pass");
+  // 10/30 사용자 결정(시연): 검사에 떨어져도, 유사도를 넘어도 만든 폰트로 넘어가 받을 수 있다. 검사 결과는 화면과 제작 기록에 그대로 남는다.
+  const usable = phase === "done";
   return {
     jobId: buildId,
     phase,
@@ -241,7 +242,7 @@ export async function getBuild(buildId: string): Promise<BuildJob> {
     ocrPassed: ocrFinished ? ocr.passed : null,
     misreads: ocr.misreads,
     similarity: e.similarity,
-    fontId: passed ? buildId : null,
+    fontId: usable ? buildId : null,
     models: ocr.model ? [modelLabel("ocr", ocr.model)] : [],
     error: e.error ?? (ocr.state === "failed" ? `OCR 판독 실패: ${ocr.error}` : null),
   };

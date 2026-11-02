@@ -17,7 +17,7 @@ import { CHECKS, FREQUENT_CHARS, MENU_BY_INDUSTRY, NEAREST_KIND_LABELS, PANGRAM,
 import { useGeneratedFont } from "@/lib/font";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { GLYPH_FONT_STACK } from "@/lib/preview";
-import { isBuildPassed, isGlyphsDone, specimenLines, useApp } from "@/lib/store";
+import { isBuildPassed, isBuildUsable, isGlyphsDone, specimenLines, useApp } from "@/lib/store";
 import type { BuildJob } from "@/lib/types";
 
 const POLL_MS = 500;
@@ -47,7 +47,8 @@ function BuildScreen() {
   const { buildJobId, build, buildDirty } = state;
   const finished = !!build && (build.phase === "done" || build.phase === "failed");
   const passed = isBuildPassed(build);
-  // 엔진이 TTF를 다 만들었으면(OCR 중이거나 검사에 떨어졌어도) 그 파일로 견본을 그린다. 받기는 통과한 fontId로만 한다.
+  const usable = isBuildUsable(build);
+  // 엔진이 TTF를 다 만들었으면(OCR 중이거나 검사에 떨어졌어도) 그 파일로 견본을 그린다. 다음 화면과 받기는 fontId로 한다(10/30 시연: 검사 결과와 상관없이 다 만들면 생긴다).
   const fontFile = build && (build.phase === "checking" || build.phase === "done") ? build.jobId : null;
   const font = useGeneratedFont(fontFile, state.fontRevision);
 
@@ -98,7 +99,7 @@ function BuildScreen() {
             // 다시 만드는 동안 또 다듬었으면 넘어가지 않는다(그 내용은 아직 파일에 없다).
             if (proceed) {
               setProceed(false);
-              if (isBuildPassed(job) && !buildDirty) {
+              if (isBuildUsable(job) && !buildDirty) {
                 dispatch({ type: "reachStep", step: 4 });
                 router.push("/kit");
               }
@@ -113,6 +114,17 @@ function BuildScreen() {
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [buildJobId, finished, error, dispatch, record, proceed, buildDirty, router]);
+
+  // 10/30에 검사에 떨어져도 넘어가게 바꾸기 전에 끝난 빌드는 fontId가 비어 있다. 이 화면에 들어오면 빌드마다 한 번 다시 받는다.
+  const refreshedJob = useRef<string | null>(null);
+  useEffect(() => {
+    if (!buildJobId || build?.phase !== "done" || build.fontId || refreshedJob.current === buildJobId) return;
+    refreshedJob.current = buildJobId;
+    api
+      .getBuildJob(buildJobId)
+      .then((job) => dispatch({ type: "setBuild", build: job }))
+      .catch(() => {});
+  }, [buildJobId, build, dispatch]);
 
   function rebuild() {
     started.current = false;
@@ -191,7 +203,7 @@ function BuildScreen() {
       : buildDirty
         ? { text: "미리보기 · 다듬은 내용은 '적용해 보기'를 누르면 파일에 반영돼요" }
         : simBad
-          ? { text: "받을 수 없어요 · 유사도 기준을 넘었어요", bad: true }
+          ? { text: "유사도 기준을 넘었어요", bad: true }
           : passed
             ? { text: `다 만들었어요 · ${(build?.totalGlyphs ?? 2350).toLocaleString()}자 · ${formatSeconds(build?.elapsedSeconds ?? 0, true)}` }
             : { text: "통과하지 못한 항목이 있어요", bad: true };
@@ -199,7 +211,7 @@ function BuildScreen() {
   const status = buildDirty
     ? "다듬은 내용은 '적용해 보기'를 누르면 폰트 파일에 반영하고 다시 검사해요."
     : proceeding
-      ? "다듬은 내용으로 폰트를 다시 만들고 검사하는 중이에요. 통과하면 바로 넘어가요."
+      ? "다듬은 내용으로 폰트를 다시 만들고 검사하는 중이에요. 다 만들면 바로 넘어가요."
       : drawing
         ? "나머지 글자를 그리는 중이에요. 그동안 아래에서 굵기·너비를 미리 다듬어 볼 수 있어요."
         : isBuilding
@@ -208,9 +220,11 @@ function BuildScreen() {
           ? misreads.length > 0
             ? `AI가 ${misreads.length}자를 다르게 읽었어요. 그대로 진행할 수 있어요.`
             : "모두 통과했어요. 적용해 보기를 누르면 시안으로 가요."
-          : simBad
+          : simBad && !usable
             ? "초안을 다시 그려 주세요."
-            : "통과하지 못한 항목이 있어요.";
+            : usable
+              ? "통과하지 못한 항목이 있어요. 지금 폰트로 진행할 수 있어요."
+              : "통과하지 못한 항목이 있어요.";
 
   return (
     <>
@@ -388,7 +402,7 @@ function BuildScreen() {
 
       <Footer status={status}>
         <ButtonLink href="/draft">이전</ButtonLink>
-        <Button disabled={!(passed || buildDirty) || proceeding} onClick={next}>
+        <Button disabled={!(usable || buildDirty) || proceeding} onClick={next}>
           {proceeding ? "다시 만드는 중" : "적용해 보기"}
         </Button>
       </Footer>

@@ -21,7 +21,7 @@ import { isImitationRequest } from "@/lib/rules";
 import type { AxisKey, GlyphItem, GlyphJob, StartGlyphJobRequest, StyleSampleRequest } from "@/lib/types";
 import { listEdits } from "./edits";
 import { engine, type EngineGlyphSheet, type EngineRef } from "./engine";
-import { MODELS, RouteError, SAMPLE_QUALITY, modelLabel } from "./env";
+import { DRAW_QUALITY, MODELS, RouteError, SAMPLE_QUALITY, modelLabel, type ImageQuality } from "./env";
 import { generateJson } from "./anthropic";
 import { generateImage } from "./openai";
 import { imagePart, type Part } from "./parts";
@@ -237,6 +237,7 @@ export interface Context {
   weight: number;
   expression: string;
   direction: string[]; // AI 제안에서 바뀐 그리기 방향(둥글기·대비·흔들림)
+  quality: ImageQuality; // 그리기 수준(11/2: 만들 때 고른다)
 }
 
 function axisValue(req: StartGlyphJobRequest, key: AxisKey): number {
@@ -256,6 +257,7 @@ function makeContext(req: StartGlyphJobRequest, sample: string | null = null): C
     weight: axisValue(req, "weight"),
     expression: req.style.expression?.trim() && !isImitationRequest(req.style.expression) ? req.style.expression.trim() : DEFAULT_EXPRESSION,
     direction: directionLines(req),
+    quality: DRAW_QUALITY[req.quality ?? "fine"],
   };
 }
 
@@ -396,6 +398,7 @@ function sheetParts(ctx: Context, sheet: EngineGlyphSheet): Part[] {
  * 10/30 시험(바다식당·고양이, 어려운 짜임 30자): 30칸 한 장이 모두 통과했고 16칸으로 줄여도 나아지지 않았다. */
 export function restSheetParts(ctx: Context, sheet: EngineGlyphSheet, approved: string | null): Part[] {
   const chars = [...sheet.chars];
+  const symbols = isSymbolSheet(chars);
   const refs = references(
     ctx,
     { image: sheet.image, text: "기준 글자표입니다. 칸 배치, 어떤 글자인지, 획이 어디서 이어지고 떨어지는지만 따르고 굵기·곡선·비례·획 끝은 따르지 마세요." },
@@ -404,11 +407,15 @@ export function restSheetParts(ctx: Context, sheet: EngineGlyphSheet, approved: 
       : null,
   );
   const text = [
-    `한글 서체 하나의 나머지 글자 ${chars.length}자를 한 장에 그립니다. 이미 확정한 참고 글자와 같은 서체로 보여야 합니다.`,
+    symbols
+      ? `같은 한글 서체의 숫자와 문장부호 ${chars.length}자를 한 장에 그립니다. 이미 확정한 한글 참고 글자와 같은 서체로 보여야 합니다.`
+      : `한글 서체 하나의 나머지 글자 ${chars.length}자를 한 장에 그립니다. 이미 확정한 참고 글자와 같은 서체로 보여야 합니다.`,
     ...styleLines(ctx),
     ...refs.lines,
     `기준 글자표와 같은 ${sheet.cols}열×${sheet.rows}행 칸에 같은 순서(왼쪽 위부터 줄 순서)로 한 자씩 그리세요: ${chars.map((c, i) => `${i + 1}.${c}`).join(" ")}.`,
-    "각 글자는 그 글자로 읽혀야 합니다. 칸 안에 크게 그리되 이웃 글자와 닿지 않게 띄우세요.",
+    symbols
+      ? "각 칸은 그 숫자나 기호로 읽혀야 합니다. 크기는 기준 글자표를 따르세요(숫자는 크게, 마침표·쉼표·따옴표·가운뎃점은 작게). 이웃 칸에 닿지 않게 띄우세요."
+      : "각 글자는 그 글자로 읽혀야 합니다. 칸 안에 크게 그리되 이웃 글자와 닿지 않게 띄우세요.",
     ...structureHints(chars),
     NO_EXTRAS,
   ]
@@ -491,14 +498,25 @@ const CHECK_RULES = [
   "다른 글자로 읽히거나, 획이 빠지거나 더 있거나, 글자와 떨어진 그림·글씨·테두리가 섞였거나, 속이 빈 외곽선만 있으면 ok=false와 짧은 이유(한국어 15자 안)를 주세요.",
 ].join("\n");
 
+/** 숫자·문장부호만 든 장(11/2) */
+const isSymbolSheet = (chars: string[]) => chars.every((c) => !KSX1001_HANGUL.has(c));
+
 export async function checkSheet(job: JobState, contactSheet: string, chars: string[]): Promise<Map<number, { ok: boolean; problem: string | null }>> {
+  const symbols = isSymbolSheet(chars);
   const prompt = [
-    "한글 서체의 참고 글자 검사입니다. 칸 아래에 번호가 있고, 칸마다 다음 글자가 있어야 합니다.",
+    symbols
+      ? "한글 서체에 딸린 숫자·문장부호 검사입니다. 칸 아래에 번호가 있고, 칸마다 다음 기호가 있어야 합니다."
+      : "한글 서체의 참고 글자 검사입니다. 칸 아래에 번호가 있고, 칸마다 다음 글자가 있어야 합니다.",
     chars.map((c, i) => `${i + 1}: ${c}`).join(", "),
     CHECK_RULES,
+    symbols
+      ? "마침표·쉼표·따옴표·가운뎃점은 칸 안에서 작게 보이는 것이 맞습니다. 마침표(.)와 가운뎃점(·), 작은따옴표(')와 쉼표(,)는 모양이 같아도 됩니다."
+      : "",
     "다른 칸들과 굵기·획 끝·질감이 눈에 띄게 다른 칸도 ok=false(이유 '스타일 다름')입니다. 작은 차이는 통과시키세요.",
     "X 표시가 있는 빈 칸은 ok=false, 이유 '빈 칸'입니다. 모든 번호에 대해 답하세요.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
   const { value, model } = await checkLimit(() => generateJson(MODELS.check, [{ text: prompt }, imagePart(contactSheet)], SheetCheckSchema, "medium"));
   job.models.add(modelLabel("check", model));
   return new Map(value.cells.map((c) => [c.index, { ok: c.ok, problem: c.problem }]));
@@ -520,8 +538,8 @@ export function isFatal(err: unknown): boolean {
   return /\.env\.local|키를 확인|(OpenAI|Claude) (400|401|403|404)|엔진 서버/.test(message);
 }
 
-async function draw(job: JobState, parts: Part[], aspectRatio: string): Promise<string> {
-  const { value, model } = await imageLimit(() => generateImage(MODELS.image, parts, aspectRatio));
+async function draw(job: JobState, ctx: Context, parts: Part[], aspectRatio: string): Promise<string> {
+  const { value, model } = await imageLimit(() => generateImage(MODELS.image, parts, aspectRatio, ctx.quality));
   job.models.add(modelLabel("image", model));
   job.imageCalls++;
   return value;
@@ -538,7 +556,7 @@ async function drawSheet(job: JobState, ctx: Context): Promise<string | null> {
   const chars = job.items.map((i) => i.char);
   try {
     const sheet = await engine.glyphSheet(chars.join(""));
-    const image = await draw(job, sheetParts(ctx, sheet), sheet.aspectRatio);
+    const image = await draw(job, ctx, sheetParts(ctx, sheet), sheet.aspectRatio);
     await saveFile(job.id, "sheet.png", image);
     const split = await engine.splitGlyphs(sheet.chars, image);
     // 검사 호출만 실패하면 엔진이 문제를 찾지 못한 칸은 통과로 둔다(검사 오류로 다시 그리기가 몰리지 않게).
@@ -593,7 +611,7 @@ async function redrawOnce(job: JobState, ctx: Context, item: ItemState, styleRef
   if (canSwitch) switchIfStuck(job, item);
   try {
     const reference = await engine.glyphSingle(item.char);
-    const image = await draw(job, singleParts(ctx, item, reference.image, styleRef), "1:1");
+    const image = await draw(job, ctx, singleParts(ctx, item, reference.image, styleRef), "1:1");
     const normalized = await engine.normalizeGlyph(image, item.char);
     if (!normalized.image || normalized.problem) {
       item.charFails++;

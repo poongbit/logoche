@@ -288,3 +288,8 @@ export function isGlyphsDone(state: AppState): boolean {
 export function isBuildPassed(build: BuildJob | null): boolean {
   return !!build && build.phase === "done" && build.ocrPassed === true && build.checks.every((c) => c.status === "pass");
 }
+
+/** 만든 폰트로 다음 화면에 갈 수 있다. 10/30 사용자 결정(시연): 검사에 떨어져도, 유사도를 넘어도 넘어간다. */
+export function isBuildUsable(build: BuildJob | null): boolean {
+  return !!build && build.phase === "done" && !!build.fontId;
+}

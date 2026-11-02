@@ -242,7 +242,7 @@ export interface BuildJob {
   ocrPassed: boolean | null;
   misreads: OcrMisread[]; // OCR이 다르게 읽은 글자
   similarity: SimilarityResult | null;
-  fontId: string | null; // 다 만들어지면 /api/font/[fontId]로 TTF를 받는다
+  fontId: string | null; // 다 만들어지면 /api/font/[fontId]로 TTF를 받는다. 검사에 떨어져도, 유사도를 넘어도 준다(10/30 시연)
   models: string[];
   error?: string | null; // 조합이나 OCR이 실패한 이유
 }
@@ -269,10 +269,14 @@ export interface AnalyzeStyleRequest {
   upload: UploadInput;
 }
 
+/** 그리기 수준(11/2): 표준은 이미지 품질을 한 단계 낮춰 싸고 빠르다. 정밀은 지금까지 쓴 품질. */
+export type DrawQuality = "standard" | "fine";
+
 export interface StartGlyphJobRequest {
   upload: UploadInput; // logoImage는 이미지 API의 참고 이미지로 쓴다
   style: StyleCard;
   sampleId?: string | null; // 화면 2에서 고른 견본. 초안이 이 견본의 글씨를 따른다
+  quality?: DrawQuality; // 없으면 정밀
 }
 
 /** 화면 3 다시 그리기. index가 있으면 그 글자만 한 번(글자 카드의 '다시 그리기'), 없으면 실패한 글자를 모두 다시 그린다. */
@@ -316,4 +320,58 @@ export interface PreviewResponse {
   ascender: number;
   descender: number;
   glyphs: PreviewGlyph[];
+}
+
+// ---------- 폰트 작업(11/2 B안: 만들기 → 만드는 중 → 스튜디오) ----------
+
+/** 서버가 이어서 돌리는 단계. analyzing 로고 읽기 → drawing 참고 글자 30자 → reviewing 사용자 확인(20초 뒤 저절로 계속)
+ * → building 나머지 글자·숫자·문장부호 그리기와 폰트 파일·검사 → done. */
+export type ProjectPhase = "analyzing" | "drawing" | "reviewing" | "building" | "done" | "failed";
+
+export interface CreateProjectRequest {
+  upload: UploadInput;
+  quality: DrawQuality;
+}
+
+export interface ProjectSummary {
+  id: string;
+  name: string; // 폰트 이름. 처음에는 '가게 이름 + 체'
+  storeName: string;
+  desiredFeel: string;
+  favorite: boolean;
+  phase: ProjectPhase;
+  quality: DrawQuality;
+  createdAt: string; // ISO
+  logoUrl: string;
+  fontId: string | null; // 다 만들면 /api/font/[fontId]
+  glyphCount: number | null; // 서체에 든 한글 수(다 만든 뒤)
+  extraCount: number | null; // 서체에 든 숫자·문장부호 수(다 만든 뒤)
+  progress: { done: number; total: number } | null; // 그리는 중이면 그린 글자 수
+  remainingSeconds: number | null;
+  error: string | null;
+}
+
+/** reviewing: 참고 글자 30자 확인. continueAt이 지나면 서버가 저절로 다음 단계로 간다. held면 사용자가 '계속'을 누를 때까지 기다린다. */
+export interface ProjectReview {
+  items: GlyphItem[];
+  continueAt: number | null; // epoch ms
+  held: boolean;
+}
+
+export interface ProjectView extends ProjectSummary {
+  upload: Omit<UploadInput, "logoImage">;
+  colors: string[]; // 로고에서 뽑은 색(시안에만 쓴다)
+  review: ProjectReview | null;
+  build: BuildJob | null;
+  recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자(그리는 중)
+  missing: string[]; // 서체에 없는 한글(다 만든 뒤)
+  extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
+  record: RecordEvent[];
+}
+
+export type ReviewAction = { action: "hold" } | { action: "release" } | { action: "continue" } | { action: "redraw"; indices: number[] };
+
+export interface UpdateProjectRequest {
+  name?: string;
+  favorite?: boolean;
 }

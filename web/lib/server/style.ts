@@ -161,10 +161,12 @@ export async function analyzeStyle(upload: UploadInput): Promise<StyleCard> {
     if (m) measured[key as AxisKey] = m;
   }
   const top = interpretation.readTones[0];
+  // 11/2 B안: 브랜드 톤은 고르지 않아도 된다. 비우면 AI가 로고에서 읽은 톤으로 범위를 정한다.
+  const chosen = upload.brandTones.length > 0;
   const toneMismatch =
-    top && !upload.brandTones.includes(top) ? `로고는 '${toneLabel(top)}' 느낌으로도 읽혀요.` : null;
+    chosen && top && !upload.brandTones.includes(top) ? `로고는 '${toneLabel(top)}' 느낌으로도 읽혀요.` : null;
   return buildStyleCard(
-    upload,
+    chosen ? upload : { ...upload, brandTones: interpretation.readTones.slice(0, 3) },
     measured,
     { strokeEnd: interpretation.strokeEnd, signature: interpretation.signature, toneMismatch, expressions: [...new Set(interpretation.expressions.map((e) => e.trim()).filter(Boolean))].slice(0, 3) },
     measure.colors,

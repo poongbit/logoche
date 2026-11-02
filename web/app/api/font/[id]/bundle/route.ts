@@ -1,3 +1,4 @@
+import { requireFont } from "@/lib/server/auth";
 import { engine } from "@/lib/server/engine";
 import { MOCK, RouteError, handle } from "@/lib/server/env";
 
@@ -7,6 +8,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/font/[id]/b
     const { id } = await ctx.params;
     if (MOCK) throw new RouteError(501, "모의 응답 모드(LOGOCHE_MOCK=1)에서는 폰트 파일이 없어요");
     if (!/^[0-9a-f]{32}$/.test(id)) throw new RouteError(404, "폰트를 찾을 수 없어요");
+    await requireFont(request, id);
     const body = (await request.json()) as { fontName: string; record: string };
     const fontName = body.fontName.trim() || "로고체";
     const res = await engine.bundle(id, { fileStem: fontName, family: fontName, files: [{ name: `${fontName} 제작 기록.txt`, text: body.record }] });

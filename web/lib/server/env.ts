@@ -22,6 +22,8 @@ const chain = (value: string | undefined, fallback: string[]) =>
 // 참고 글자표 품질. low·medium은 더 싸지만 획 끝이 거칠어질 수 있다.
 export type ImageQuality = "low" | "medium" | "high" | "xhigh" | "max";
 export const OPENAI_IMAGE_QUALITY = (process.env.OPENAI_IMAGE_QUALITY || "high") as ImageQuality;
+// 11/2: 만들 때 고르는 그리기 수준. 정밀은 지금까지 쓴 품질(OPENAI_IMAGE_QUALITY), 표준은 한 단계 낮춰 싸고 빠르다.
+export const DRAW_QUALITY: Record<"standard" | "fine", ImageQuality> = { standard: "medium", fine: OPENAI_IMAGE_QUALITY };
 // 화면 2 견본 품질. 세 장을 그리는 동안 기다리므로 한 단계 낮춰 빨리 그린다.
 export const SAMPLE_QUALITY = (process.env.OPENAI_SAMPLE_QUALITY || "medium") as ImageQuality;
 

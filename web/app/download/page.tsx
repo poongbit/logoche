@@ -14,14 +14,14 @@ import { RIGHTS } from "@/lib/constants";
 import { saveBlob } from "@/lib/files";
 import { useGeneratedFont } from "@/lib/font";
 import { buildRecordText } from "@/lib/record";
-import { isBuildPassed, useApp } from "@/lib/store";
+import { isBuildPassed, isBuildUsable, useApp } from "@/lib/store";
 
 type FileKey = FontFormat | "license" | "record" | "all";
 
 export default function DownloadPage() {
   const { state } = useApp();
   return (
-    <RequireStep ready={isBuildPassed(state.build) && state.maxStep >= 5} message="화면 5에서 시안을 확인하고 '받기'를 눌러 주세요." href="/kit">
+    <RequireStep ready={isBuildUsable(state.build) && state.maxStep >= 5} message="화면 5에서 시안을 확인하고 '받기'를 눌러 주세요." href="/kit">
       <DownloadScreen />
     </RequireStep>
   );
@@ -140,7 +140,7 @@ function DownloadScreen() {
               </p>
             </div>
             <p className="text-15 leading-normal font-semibold text-muted lg:mb-8 lg:ml-auto lg:self-end lg:text-right">
-              한글 {glyphCount}자 · 검사 7항목 통과
+              한글 {glyphCount}자{isBuildPassed(state.build) ? " · 검사 7항목 통과" : ""}
               <br />
               구독이나 서버 확인 없이 계속 써요
             </p>

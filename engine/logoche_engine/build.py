@@ -27,7 +27,7 @@ from fontTools.ttLib import TTFont, newTable
 
 from . import drawn
 from .contour import Axes
-from .hangul import KSX1001_HANGUL
+from .hangul import EXTRA_CHARS, KSX1001_HANGUL
 from .layout import get_layout
 
 VENDOR_ID = "LGCH"
@@ -73,17 +73,21 @@ def build_font(
     layout = get_layout()
     offset_px = drawn.weight_offset(axes)
     edits = edits or {}
-    chars = [c for c in KSX1001_HANGUL if c in glyphs or c in edits]
+    hangul = [c for c in KSX1001_HANGUL if c in glyphs or c in edits]
+    # 숫자·문장부호(11/2)는 기준 서체 같은 글자의 폭을 쓴다. 한글은 모두 같은 폭이다.
+    extras = [c for c in EXTRA_CHARS if c in glyphs]
+    chars = hangul + extras
 
     glyph_order = [".notdef", "space"]
     cmap = {0x20: "space"}
     glyphs_out = {}
     metrics = {}
-    for i, syllable in enumerate(chars):
-        path, advance = drawn.outline(glyphs.get(syllable), axes, layout.advance, offset_px, edits.get(syllable))
-        name = f"uni{ord(syllable):04X}"
+    for i, ch in enumerate(chars):
+        width = layout.advance if i < len(hangul) else drawn.ref_advance(ch)
+        path, advance = drawn.outline(glyphs.get(ch), axes, width, offset_px, edits.get(ch))
+        name = f"uni{ord(ch):04X}"
         glyph_order.append(name)
-        cmap[ord(syllable)] = name
+        cmap[ord(ch)] = name
         glyphs_out[name] = _tt_glyph(path)
         metrics[name] = advance
         if i % 25 == 0:

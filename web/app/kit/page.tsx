@@ -11,12 +11,12 @@ import { Button, ButtonLink, Footer, Notice, Spinner } from "@/components/ui";
 import { MENU_BY_INDUSTRY } from "@/lib/constants";
 import { useGeneratedFont } from "@/lib/font";
 import { approxFontStyle, axesToValues } from "@/lib/preview";
-import { isBuildPassed, useApp } from "@/lib/store";
+import { isBuildUsable, useApp } from "@/lib/store";
 
 export default function KitPage() {
   const { state } = useApp();
   return (
-    <RequireStep ready={isBuildPassed(state.build) && state.maxStep >= 4} message="화면 4에서 폰트 만들기와 검사를 먼저 마쳐 주세요." href="/build">
+    <RequireStep ready={isBuildUsable(state.build) && state.maxStep >= 4} message="화면 4에서 폰트를 먼저 만들어 주세요." href="/build">
       <KitScreen />
     </RequireStep>
   );

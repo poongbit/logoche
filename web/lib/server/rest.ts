@@ -5,12 +5,13 @@
 // 떨어진 글자는 한 자씩이 아니라 떨어진 글자끼리 모아 글자표로 다시 그린다(10/30 시험: 모양이 틀리는 건 주로 한 자씩 다시 그릴 때였다).
 // 그래도 떨어진 글자는 서체에서 빠지고, 화면 4 글자 고치기로 그려 넣거나 다시 만들 때 또 그린다.
 // 순서: 가게 이름 → 견본 글 → 자주 쓰는 글자(hangulOrder.ts). GLYPH_REST_LIMIT로 서체 글자 수를 줄여 싸게 시험할 수 있다.
+// 11/2: 숫자·문장부호 30자(EXTRA_CHARS)도 그린다. 한글과 섞지 않고 따로 한 장에 그린다(지시문·검사가 다르다).
 // 그림은 web/.data/glyphs/<참고 글자 작업>/rest/<코드포인트 16진수>.png(엔진이 자리 맞춘 틀 그림), 상태는 rest/index.json.
 // 같은 작업으로 다시 만들면 그린 글자는 그대로 쓰고 못 그린 글자만 다시 그린다. 화면 3에서 참고 글자를 다시 그려도 그린 글자는 남는다.
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { FREQUENT_CHARS, PANGRAM } from "@/lib/constants";
+import { EXTRA_CHARS, FREQUENT_CHARS, PANGRAM } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { HANGUL_BY_FREQUENCY } from "@/lib/hangulOrder";
 import type { StartGlyphJobRequest } from "@/lib/types";
@@ -75,17 +76,32 @@ export async function readRestGlyphs(jobId: string, chars?: Set<string>): Promis
   return glyphs.filter((g): g is EngineRef => g !== null);
 }
 
-/** 그릴 글자: 가게 이름 → 견본 글 → 자주 쓰는 글자. 참고 글자로 이미 있는 글자, 그린 글자, 화면 4에서 직접 그려 넣은 글자는 뺀다. */
+/** 그릴 글자: 가게 이름 → 견본 글 → 자주 쓰는 글자, 그리고 숫자·문장부호(11/2). 참고 글자로 이미 있는 글자, 그린 글자, 화면 4에서 직접 그려 넣은 글자는 뺀다. */
 function plan(job: JobState, index: RestIndex, storeName: string, edited: Set<string>): string[] {
   const refs = new Set(job.items.filter((i) => i.status === "ok").map((i) => i.char));
   const room = Math.max(0, REST_LIMIT - refs.size);
   const order = [...new Set([...storeName, ...PANGRAM, ...FREQUENT_CHARS, ...HANGUL_BY_FREQUENCY])].filter(
     (c) => KSX1001_HANGUL.has(c) && !refs.has(c),
   );
-  return order.slice(0, room).filter((c) => !(c in index.drawn) && !edited.has(c));
+  return [...order.slice(0, room), ...EXTRA_CHARS].filter((c) => !(c in index.drawn) && !edited.has(c));
 }
 
+/** 그린 글자(나머지 글자) 목록. 그린 차례(장 번호)가 늦은 것부터 */
+export async function restDrawnChars(jobId: string): Promise<string[]> {
+  const index = await readIndex(jobId);
+  return Object.entries(index.drawn)
+    .sort((a, b) => b[1] - a[1])
+    .map(([char]) => char);
+}
+
+export const restGlyphFile = restFile;
+
 const chunk = <T,>(items: T[], size: number) => Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size));
+/** 글자표로 나눈다. 숫자·문장부호는 한글과 섞지 않고 따로 그린다(지시문·검사가 다르다). */
+const sheetsOf = (chars: string[]) => [
+  ...chunk(chars.filter((c) => KSX1001_HANGUL.has(c)), SHEET_SIZE),
+  ...chunk(chars.filter((c) => !KSX1001_HANGUL.has(c)), SHEET_SIZE),
+];
 
 /** 한 장을 그려 자르고 검사한다. 떨어진 글자와 이유를 돌려준다. 다시 해도 소용없는 오류는 던진다. */
 async function drawSheet(
@@ -102,7 +118,7 @@ async function drawSheet(
   const startedAt = Date.now();
   try {
     const sheet = await engine.glyphSheet(chars.join(""));
-    const { value: image, model } = await sheetLimit(() => generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio));
+    const { value: image, model } = await sheetLimit(() => generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, ctx.quality));
     job.models.add(modelLabel("image", model));
     const sheetNo = ++index.sheets;
     const placed = await engine.placeGlyphs(sheet.chars, image, refs);
@@ -151,7 +167,7 @@ async function drawAll(job: JobState, ctx: Context, chars: string[], run: RestRu
   let todo = chars;
   let problems = new Map<string, string>();
   for (let round = 0; round <= REDRAW_ROUNDS && todo.length; round++) {
-    const results = await Promise.all(chunk(todo, SHEET_SIZE).map((s) => drawSheet(job, ctx, s, approved, refs, index, run, save)));
+    const results = await Promise.all(sheetsOf(todo).map((s) => drawSheet(job, ctx, s, approved, refs, index, run, save)));
     problems = new Map(results.flatMap((m) => [...m]));
     todo = [...problems.keys()];
     if (todo.length) console.log(`[logoche] 나머지 글자 ${round + 1}바퀴: ${todo.length}자 떨어짐 (${todo.slice(0, 20).join("")})`);

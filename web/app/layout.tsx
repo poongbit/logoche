@@ -1,20 +1,32 @@
 import type { Metadata } from "next";
-import { StepNav } from "@/components/StepNav";
+import { AppHeader } from "@/components/AppHeader";
 import { AppProvider } from "@/lib/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "로고체",
+  title: { default: "로고체", template: "%s · 로고체" },
   description: "로고 한 장으로 만드는 한글 브랜드 폰트",
 };
 
-// 화면 틀(Claude Design 'Logoche Final'): 위 단계 표시 72px · 가운데 화면 · 아래 동작 막대(각 화면의 Footer, 아래에 붙음)
+// 글꼴: 화면 글씨는 SUIT, 빠진 글자 자리는 Noto Sans KR(globals.css의 --font-sans·--font-gothic)
+const SUIT_CSS = "https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css";
+const NOTO_CSS = "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap";
+
+// 화면 틀(Claude Design 'Logoche Final'): 위 머리줄 72px · 가운데 화면. 11/2 B안: 여섯 단계 표시 대신 '내 폰트 · 새 폰트 만들기' 머리줄.
+// AppProvider는 예전 단계 화면(/style 등, 지금은 연결하지 않음)이 쓴다.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className="h-full antialiased">
+      <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href={SUIT_CSS} precedence="default" />
+        <link rel="stylesheet" href={NOTO_CSS} precedence="default" />
+      </head>
       <body className="flex min-h-full flex-col">
         <AppProvider>
-          <StepNav />
+          <AppHeader />
           <main className="flex w-full flex-1 flex-col">{children}</main>
         </AppProvider>
       </body>

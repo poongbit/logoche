@@ -20,7 +20,7 @@ from . import drawn, raster
 from .build import FORMATS, FontMeta, GlyphRejected, bundle, export_font, export_later, patch_glyph
 from .checks import warm_comparison
 from .contour import Axes
-from .hangul import KSX1001_HANGUL
+from .hangul import DRAWN_CHARS, KSX1001_HANGUL
 from .jobs import BuildManager, new_build_id, ocr_sheet
 from .layout import get_layout
 from .measure import measure_logo
@@ -68,9 +68,9 @@ def measure(req: MeasureRequest) -> dict:
 
 def _chars(chars: str) -> str:
     chars = "".join(dict.fromkeys(chars.replace(" ", "")))
-    bad = [c for c in chars if c not in KSX1001_HANGUL]
+    bad = [c for c in chars if c not in DRAWN_CHARS]
     if bad:
-        raise HTTPException(400, f"참고 글자는 한글 완성형 2,350자 안에서 골라요: {''.join(bad)}")
+        raise HTTPException(400, f"글자는 한글 완성형 2,350자와 숫자·문장부호 안에서 골라요: {''.join(bad)}")
     if not chars:
         raise HTTPException(400, "참고 글자가 비었어요")
     return chars
@@ -184,8 +184,8 @@ def _axes(a: BuildAxes) -> Axes:
 
 
 def _gray(r: RefInput):
-    if r.char not in KSX1001_HANGUL:
-        raise HTTPException(400, f"글자는 한글 완성형이어야 해요: {r.char}")
+    if r.char not in DRAWN_CHARS:
+        raise HTTPException(400, f"글자는 한글 완성형이나 숫자·문장부호여야 해요: {r.char}")
     return raster.to_gray(raster.decode_image(r.image))
 
 

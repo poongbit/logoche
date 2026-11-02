@@ -7,7 +7,8 @@ import { GENERATED_FONT_FAMILY, GLYPH_FONT_STACK } from "./preview";
 export type FontState = "loading" | "ready" | "unavailable";
 
 /**
- * 만든 TTF를 FontFace로 불러온다. 화면 4 견본과 화면 5·6 시안이 쓴다.
+ * 만든 폰트를 FontFace로 불러온다. 내 폰트 카드·스튜디오(예전 화면 4~6)가 쓴다.
+ * 11/2 점검: TTF 대신 WOFF2를 받는다(2,350자 TTF는 약 2.5MB라 목록 카드마다 받으면 무겁다. 엔진이 빌드 뒤 미리 만들어 둔다).
  * 빌드마다, 글자를 고쳐 바꿔 끼울 때마다(revision) 글꼴 이름을 달리한다. 같은 이름이면 고친 폰트가 앞 폰트에 가려질 수 있다.
  * 새 파일을 불러오는 동안에는 앞 파일로 그린다(고칠 때마다 글씨가 기본 글꼴로 깜빡이지 않게).
  * fontFamily는 서체에 없는 글자(팬그램 모드)를 기본 글꼴로 그리도록 뒤에 기본 글꼴을 붙인 값이다.
@@ -19,7 +20,7 @@ export function useGeneratedFont(fontId: string | null, revision = 0, attempt = 
 
   useEffect(() => {
     if (!fontId || !key) return;
-    const face = new FontFace(familyOf(key), `url(${api.fontUrl(fontId, { revision })})`);
+    const face = new FontFace(familyOf(key), `url(${api.fontUrl(fontId, { revision, format: "woff2" })})`);
     face
       .load()
       .then((f) => {
