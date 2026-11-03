@@ -5,6 +5,7 @@
 import OpenAI, { toFile } from "openai";
 import { OPENAI_IMAGE_QUALITY, RouteError, requireKey, type ImageQuality } from "./env";
 import { decodeDataUrl, type Part } from "./parts";
+import { guardImageCall, ledger, recordImage } from "./usage";
 
 let client: OpenAI | null = null;
 
@@ -26,6 +27,11 @@ const SIZES: Record<string, string> = {
 };
 
 const OVERLOADED = new Set([429, 500, 502, 503, 504]);
+
+// 429(속도 제한)는 모델을 바꿔도 소용없고 곧 풀리므로, 같은 모델로 2초·4초·8초 쉬었다가 최대 3번 다시 시도한다(11/3).
+// 11/3 실측에서 429 한 번에 글자표 한 장(30자)이 통째로 실패했다.
+const RATE_LIMIT_WAITS_MS = [2000, 4000, 8000];
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function firstLine(message: string): string {
   const text = message.replace(/^\d{3} /, "").replace(/\s+/g, " ");
@@ -51,37 +57,50 @@ export async function generateImage(
       }),
   );
   for (const model of models) {
-    try {
-      const res = await openai().images.edit({
-        model,
-        image: images,
-        prompt,
-        size,
-        quality,
-        background: "opaque",
-        output_format: "png",
-      });
-      const data = res.data?.[0]?.b64_json;
-      if (!data) throw new RouteError(502, "이미지 API가 그림을 돌려주지 않았어요");
-      // 이미지 값은 토큰으로 매긴다. 비용 확인용.
-      if (res.usage) console.log(`[logoche] GPT Image ${model} 토큰: 입력 ${res.usage.input_tokens}, 출력 ${res.usage.output_tokens}`);
-      return { value: `data:image/png;base64,${data}`, model };
-    } catch (err) {
-      if (err instanceof OpenAI.APIConnectionError) {
-        console.warn(`[logoche] OpenAI ${model} 연결 실패·시간 초과, 다음 모델로 넘어감`);
-        continue;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        guardImageCall();
+        const t0 = Date.now();
+        const res = await openai().images.edit({
+          model,
+          image: images,
+          prompt,
+          size,
+          quality,
+          background: "opaque",
+          output_format: "png",
+        });
+        const data = res.data?.[0]?.b64_json;
+        if (!data) throw new RouteError(502, "이미지 API가 그림을 돌려주지 않았어요");
+        // 이미지 값은 토큰으로 매긴다. 비용 확인용.
+        recordImage(model, quality, size, res.usage?.input_tokens ?? 0, res.usage?.output_tokens ?? 0, Date.now() - t0);
+        if (res.usage) console.log(`[logoche] GPT Image ${model} 토큰: 입력 ${res.usage.input_tokens}, 출력 ${res.usage.output_tokens}`);
+        return { value: `data:image/png;base64,${data}`, model };
+      } catch (err) {
+        if (err instanceof OpenAI.APIConnectionError) {
+          console.warn(`[logoche] OpenAI ${model} 연결 실패·시간 초과, 다음 모델로 넘어감`);
+          break;
+        }
+        if (!(err instanceof OpenAI.APIError)) throw err;
+        const status = err.status ?? 0;
+        if (status === 429 && err.code === "insufficient_quota") {
+          throw new RouteError(402, "OpenAI 크레딧이 없어요. platform.openai.com의 결제(Billing)를 확인해 주세요.");
+        }
+        if (status === 401) throw new RouteError(500, "OPENAI_API_KEY가 맞지 않아요. web/.env.local의 키를 확인해 주세요.");
+        if (status === 403 && /verif/i.test(err.message)) {
+          throw new RouteError(403, `${model}은(는) OpenAI 조직 인증이 필요해요. platform.openai.com 설정의 조직 인증을 확인해 주세요.`);
+        }
+        if (!OVERLOADED.has(status)) throw new RouteError(502, `OpenAI ${status} (${model}): ${firstLine(err.message)}`);
+        ledger("image_error", { model, status, attempt });
+        if (status === 429 && attempt < RATE_LIMIT_WAITS_MS.length) {
+          const wait = RATE_LIMIT_WAITS_MS[attempt];
+          console.warn(`[logoche] OpenAI ${model} 429, ${wait / 1000}초 뒤 다시 시도 (${attempt + 1}/${RATE_LIMIT_WAITS_MS.length})`);
+          await sleep(wait);
+          continue;
+        }
+        console.warn(`[logoche] OpenAI ${model} ${status}, 다음 모델로 넘어감`);
+        break;
       }
-      if (!(err instanceof OpenAI.APIError)) throw err;
-      const status = err.status ?? 0;
-      if (status === 429 && err.code === "insufficient_quota") {
-        throw new RouteError(402, "OpenAI 크레딧이 없어요. platform.openai.com의 결제(Billing)를 확인해 주세요.");
-      }
-      if (status === 401) throw new RouteError(500, "OPENAI_API_KEY가 맞지 않아요. web/.env.local의 키를 확인해 주세요.");
-      if (status === 403 && /verif/i.test(err.message)) {
-        throw new RouteError(403, `${model}은(는) OpenAI 조직 인증이 필요해요. platform.openai.com 설정의 조직 인증을 확인해 주세요.`);
-      }
-      if (!OVERLOADED.has(status)) throw new RouteError(502, `OpenAI ${status} (${model}): ${firstLine(err.message)}`);
-      console.warn(`[logoche] OpenAI ${model} ${status}, 다음 모델로 넘어감`);
     }
   }
   throw new RouteError(503, `OpenAI가 응답하지 않아요 (${models.join(", ")}). 잠시 뒤 다시 시도해 주세요.`);

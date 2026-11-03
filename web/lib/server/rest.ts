@@ -25,6 +25,7 @@ import { MODELS, RouteError, modelLabel } from "./env";
 import { listEdits } from "./edits";
 import { checkSheet, isFatal, jobContext, jobDir, limiter, loadJob, readDataUrl, readyRefs, restSheetParts, type Context, type JobState } from "./glyphs";
 import { generateImage } from "./openai";
+import { ledger } from "./usage";
 
 const SHEET_SIZE = 30;
 const REDRAW_ROUNDS = 2; // 떨어진 글자를 글자표로 다시 그리는 횟수(한 번 만들 때마다)
@@ -156,6 +157,8 @@ async function drawSheet(
 ): Promise<Map<string, string>> {
   const failed = new Map<string, string>();
   const startedAt = Date.now();
+  // 실패 원인별 글자 수(11/3 추가): 글자표 그리기 실패(429 등) / 엔진이 칸을 못 씀 / 검사 탈락 / 스타일 재그리기
+  const cause = { draw: 0, engine: 0, check: 0, style: 0 };
   try {
     const sheet = await engine.glyphSheet(chars.join(""));
     const { value: image, model } = await sheetLimit(() => generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, ctx.quality));
@@ -175,6 +178,13 @@ async function drawSheet(
         const verdict = verdicts ? (verdicts.get(i + 1) ?? { ok: false, problem: "검사 결과 없음" }) : { ok: true, problem: null };
         if (!cell.image || cell.problem || !verdict.ok) {
           failed.set(cell.char, cell.problem ?? verdict.problem ?? "검사 실패");
+          if (cell.image && !cell.problem) {
+            cause.check++;
+            // 검사에 떨어진 그림은 따로 남겨, 검사 오판인지 그림 문제인지 나중에 사람이 볼 수 있게 한다(11/3). 가장 최근 시도만 남는다.
+            const dir = path.join(restDir(job.id), "rejected");
+            await fs.mkdir(dir, { recursive: true });
+            await fs.writeFile(path.join(dir, path.basename(restFile(job.id, cell.char))), Buffer.from(cell.image.slice(cell.image.indexOf(",") + 1), "base64"));
+          } else cause.engine++;
           return;
         }
         const off = offOf(cell.style);
@@ -190,6 +200,7 @@ async function drawSheet(
         if (!had || forced) run.done++;
         if (cell.styleProblem && !last && !had) {
           failed.set(cell.char, cell.styleProblem);
+          cause.style++;
           index.styleRedrawn = (index.styleRedrawn ?? 0) + 1;
         }
       }),
@@ -199,7 +210,9 @@ async function drawSheet(
     if (isFatal(err)) throw err;
     console.error("[logoche] 나머지 글자표 실패", err);
     for (const c of chars) failed.set(c, `글자표 그리기 실패: ${err instanceof Error ? err.message : String(err)}`);
+    cause.draw = chars.length;
   }
+  ledger("sheet", { chars: chars.length, failed: failed.size, ...cause, last });
   await save();
   return failed;
 }
@@ -224,6 +237,7 @@ async function drawAll(job: JobState, ctx: Context, chars: string[], run: RestRu
     const results = await Promise.all(sheets.map((s) => drawSheet(job, ctx, s, approved, refs, index, run, save, round === REDRAW_ROUNDS, force)));
     problems = new Map(results.flatMap((m) => [...m]));
     todo = [...problems.keys()];
+    ledger("round", { round: round + 1, sheets: sheets.length, todo: todo.length, styleRedrawn: index.styleRedrawn ?? 0 });
     if (todo.length) console.log(`[logoche] 나머지 글자 ${round + 1}바퀴: ${todo.length}자 떨어짐 (${todo.slice(0, 20).join("")})`);
   }
   // 스타일 검사로 다시 그리다 만 글자는 남겨 둔 그림을 쓴다(떨어진 글자가 아니다)

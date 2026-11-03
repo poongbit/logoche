@@ -7,6 +7,7 @@ import type { BetaContentBlockParam } from "@anthropic-ai/sdk/resources/beta/mes
 import type { z } from "zod";
 import { RouteError, requireKey } from "./env";
 import { decodeDataUrl, type Part } from "./parts";
+import { recordClaude } from "./usage";
 
 let client: Anthropic | null = null;
 
@@ -42,6 +43,7 @@ export async function generateJson<S extends z.ZodType>(
 ): Promise<{ value: z.infer<S>; model: string }> {
   const ordered = [...parts.filter((p) => "image" in p), ...parts.filter((p) => "text" in p)];
   let response;
+  const t0 = Date.now();
   try {
     response = await claude().beta.messages.parse({
       model,
@@ -54,6 +56,8 @@ export async function generateJson<S extends z.ZodType>(
   } catch (err) {
     throw claudeError(err);
   }
+  const u = response.usage;
+  recordClaude(response.model, u?.input_tokens ?? 0, u?.output_tokens ?? 0, u?.cache_read_input_tokens ?? 0, u?.cache_creation_input_tokens ?? 0, Date.now() - t0);
   if (response.stop_reason === "refusal") throw new RouteError(502, "Claude가 이 그림을 판단하지 않았어요(거절)");
   if (!response.parsed_output) throw new RouteError(502, `Claude 응답이 약속한 형식이 아니에요 (${response.stop_reason})`);
   return { value: response.parsed_output as z.infer<S>, model: response.model };
