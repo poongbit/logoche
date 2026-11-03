@@ -35,6 +35,7 @@ import type {
 import { getBuild, startBuild } from "./build";
 import { RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
+import { doneMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { analyzeStyle } from "./style";
 
@@ -61,6 +62,7 @@ interface Stored {
   review: { readyAt: number | null; held: boolean; continued: boolean };
   result: { build: BuildJob; missing: string[]; extras: string[] } | null;
   record: RecordEvent[];
+  notified?: "done" | "failed"; // 완성·멈춤 알림 메일을 이미 보낸 종류(같은 메일을 두 번 보내지 않게)
 }
 
 const store = globalThis as unknown as { __logocheProjectLocks?: Map<string, Promise<unknown>>; __logocheDrivers?: Set<string> };
@@ -271,6 +273,27 @@ function summarize(job: BuildJob): string {
   return parts.join(" · ");
 }
 
+/** 완성·멈춤을 만든 사람에게 메일로 알린다. 같은 종류는 한 번만 보내고, 실패해도 작업에는 영향이 없다. */
+async function notify(id: string, kind: "done" | "failed") {
+  try {
+    let claimed = false;
+    const p = await update(id, (r) => {
+      if (r.notified === kind || r.upload.notifyByEmail === false) return;
+      r.notified = kind;
+      claimed = true;
+    });
+    if (!claimed) return;
+    const to = emailOf(p.owner);
+    if (!to) return; // 로그인 없이 만든 작업
+    const missing = p.result?.missing.length ?? 0;
+    const mail = kind === "done" ? doneMail(to, p.name, p.id, KSX1001_HANGUL.size - missing, p.result?.extras.length ?? 0) : failedMail(to, p.name, p.id);
+    if (!(await sendMail(mail))) await update(id, (r) => void (r.notified = undefined)); // 키가 없어 못 보냈으면 나중에 다시 시도할 수 있게
+  } catch (err) {
+    console.error("[logoche] 알림 메일 실패", id, err);
+    await update(id, (r) => void (r.notified = undefined)).catch(() => {});
+  }
+}
+
 /** 나머지 글자·폰트 파일·검사가 끝나기를 기다린다. */
 async function waitBuild(p: Stored) {
   for (;;) {
@@ -294,6 +317,7 @@ async function waitBuild(p: Stored) {
         if (restyled) r.record.push(event("check", `획 두께·크기가 다른 글자와 달라 다시 그린 글자 ${restyled}자`));
         r.record.push(event("check", summarize(job)));
       });
+      void notify(p.id, "done");
       return;
     }
     await sleep(3000);
@@ -331,6 +355,7 @@ function drive(id: string) {
         p.phase = "failed";
         p.error = message;
       }).catch(() => {});
+      if (!lost) void notify(id, "failed"); // 서버가 다시 켜져 끊긴 것은 이어서 만들면 되니 알리지 않는다
     } finally {
       drivers.delete(id);
     }

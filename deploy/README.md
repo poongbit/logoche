@@ -11,6 +11,7 @@ AWS EC2 한 대(c7i-flex.large, Ubuntu 24.04, 서울)에 웹과 엔진을 함께
 | 엔진 | `logoche-engine` 서비스, 127.0.0.1:8000 (밖에서는 못 부른다) |
 | HTTPS | Caddy가 인증서를 받아 웹으로 넘긴다. `/etc/caddy/Caddyfile` |
 | 키 | 서버의 `~/logoche/web/.env.local` (깃에 없음). `BETTER_AUTH_URL`은 위 주소 |
+| 메일 | 완성·멈춤 알림을 Resend로 보낸다(`web/lib/server/mail.ts`). `.env.local`에 `RESEND_API_KEY=re_...`(선택: `MAIL_FROM="로고체 <noreply@logoche.my>"`). DNS(가비아): resend._domainkey TXT, send·rsend CNAME, _dmarc TXT. 키가 없으면 보내지 않고 기록만 남는다 |
 
 ## 처음 한 번
 

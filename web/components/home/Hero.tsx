@@ -434,7 +434,7 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
             {signIn.inApp && <InAppNotice app={signIn.inApp} />}
             {signIn.problem && <Notice tone="error">{signIn.problem}</Notice>}
             <p className="text-center text-13 leading-normal text-muted">
-              {!session && !sessionPending && "Google 계정으로 로그인하면 바로 만들기 시작해요. "}약 5분 걸리고, 창을 닫아도 계속 만들어요.
+              {!session && !sessionPending && "Google 계정으로 로그인하면 바로 만들기 시작해요. "}창을 닫아도 계속 만들고, 다 되면 메일로 알려 드려요.
             </p>
           </div>
         </div>
