@@ -25,7 +25,7 @@ from .reference import REFERENCE_FONTS, REFERENCE_NAME
 # 뼈대 겹침 점수의 기준값(정할 것 7). 10/28 비교 폰트 69개(52가족)로 다시 잼: 다른 가족끼리 중앙값 0.40·95% 0.84,
 # 0.9를 넘는 쌍은 대부분 같은 뿌리(Pretendard·SUIT ≈ Source Han Sans 0.98~0.99)지만, 따로 만든 본문용 고딕·명조끼리도
 # 0.92~0.93이 나온다(IBM Plex Sans KR ~ 나눔고딕, 나눔명조 ~ Noto Serif KR). 질감만 입힌 사본은 0.76~0.98,
-# 우리 빌드의 최고 점수는 0.24~0.77이다. 사본을 놓치는 쪽이 더 위험해서 0.85를 그대로 둔다(engine/README.md).
+# 우리 빌드의 최고 점수는 10/28까지 0.24~0.77이었고, 11/3 고양이 로고 전체 실측에서 0.83(Pretendard Bold)이 나왔다. 사본을 놓치는 쪽이 더 위험해서 0.85를 그대로 둔다(engine/README.md).
 SIMILARITY_THRESHOLD = 0.85
 FREQUENT_CHARS = "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르"
 COMPLEX_CHARS = "값읽밟뚫쌌꽃흙닭햇볕밖삶젊짧넓흘렀갔왔됐뷔쿄퀘쥐틔펴훼괜찮읊겠많않싫옳힘쓸쐈"
