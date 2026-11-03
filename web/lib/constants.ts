@@ -114,9 +114,9 @@ export const SAMPLE_LOGOS: {
 ];
 
 /** 메인 화면 '로고체로 만든 폰트'(11/2). 팀이 시험으로 만든 폰트만 넣는다(사용자 폰트는 늘 비공개).
- * 10/30 GPT 직접 그리기 시험 빌드(작업 b6080f71). 숫자·문장부호는 없어 기본 글꼴로 보인다. 다른 표현의 폰트를 만들면 여기에 더한다. */
+ * 11/3: 2,350자 전체 실측으로 만든 냥이네체(작업 e025fa79, 한글 2,276자·숫자·부호 30자)로 바꿨다. 빠진 한글 74자는 docs/full-run-20261103.md. */
 export const SHOWCASE_FONTS: { fontId: string; name: string; hangul: number }[] = [
-  { fontId: "e84e953b35ed43cf8eeb1cef4480a025", name: "굵고 둥근 고딕", hangul: 2298 },
+  { fontId: "d94a8fa2a3504e63bc2e7bf97a2d1797", name: "냥이네체", hangul: 2276 },
 ];
 
 // ---------- 화면 2 ----------
