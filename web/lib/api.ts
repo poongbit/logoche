@@ -88,6 +88,7 @@ export const api = {
   deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
   reviewProject: (id: string, body: ReviewAction) => post<{ ok: boolean }>(`/api/projects/${id}/review`, body),
   rebuildProject: (id: string) => post<{ ok: boolean }>(`/api/projects/${id}/rebuild`, {}),
+  redrawGlyphs: (id: string, chars: string[]) => post<{ ok: boolean }>(`/api/projects/${id}/redraw`, { chars }),
 };
 
 export function errorMessage(err: unknown): string {

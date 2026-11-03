@@ -168,11 +168,13 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   // 글자 표
   const missingSet = useMemo(() => new Set(view.missing), [view.missing]);
   const present = useMemo(() => [...KSX1001_HANGUL].filter((c) => !missingSet.has(c)), [missingSet]);
-  type GlyphTab = "all" | "missing" | "extras";
+  // check: 다시 볼 글자(11/2 품질 개선 2-3). 획 두께·크기가 기준에서 가장 많이 벗어난 글자. 눌러 여러 개 고르고 한꺼번에 다시 그린다.
+  type GlyphTab = "all" | "missing" | "extras" | "check";
   const [glyphTab, setGlyphTab] = useState<GlyphTab>("all");
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(FIRST_CELLS);
-  const source = glyphTab === "all" ? present : glyphTab === "missing" ? view.missing : [...EXTRA_CHARS];
+  const source = glyphTab === "all" ? present : glyphTab === "missing" ? view.missing : glyphTab === "check" ? view.recheck : [...EXTRA_CHARS];
   const q = query.trim().toLowerCase().replace(/^u\+?/, "");
   const cells = q ? source.filter((c) => query.includes(c) || code(c).toLowerCase().slice(2).startsWith(q)) : source;
   const [selected, setSelected] = useState<string | null>(null);
@@ -372,6 +374,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                   { key: "all" as const, label: `한글 ${present.length.toLocaleString()}` },
                   { key: "missing" as const, label: `빠진 글자 ${view.missing.length}` },
                   { key: "extras" as const, label: `숫자·부호 ${view.extras.length}` },
+                  ...(view.recheck.length ? [{ key: "check" as const, label: `다시 볼 글자 ${view.recheck.length}` }] : []),
                 ]}
                 value={glyphTab}
                 onChange={(key) => {
@@ -382,7 +385,22 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
               />
             }
           >
-            {canRedraw && (
+            {glyphTab === "check" && (
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-subtle px-5 py-4">
+                <span className="min-w-0 flex-[1_1_16rem] text-15 font-semibold">
+                  획 두께나 크기가 다른 글자와 조금 다른 글자예요. 마음에 안 드는 글자를 눌러 고르면 다시 그려요. 다시 그린 글자가 더 낫지 않으면 지금 글자를 그대로 둬요.
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || picked.size === 0}
+                  onClick={() => void run(() => api.redrawGlyphs(view.id, [...picked]))}
+                  className="ml-auto h-10 rounded-full bg-ink px-4 text-15 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted"
+                >
+                  {picked.size ? `고른 ${picked.size}자 다시 그리기` : "다시 그릴 글자를 골라 주세요"}
+                </button>
+              </div>
+            )}
+            {canRedraw && glyphTab !== "check" && (
               <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-subtle px-5 py-4">
                 <span className="min-w-0 flex-[1_1_16rem] text-15 font-semibold">
                   빠진 글자 {(view.missing.length + EXTRA_CHARS.length - view.extras.length).toLocaleString()}자를 이 폰트 스타일로 다시 그려요. 그린 글자는 그대로 둬요.
@@ -408,7 +426,9 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
             <div className="flex flex-col gap-5 md:flex-row md:items-start">
               <div className="flex min-w-0 flex-1 flex-col gap-3">
                 {cells.length === 0 ? (
-                  <p className="text-15 text-muted">{glyphTab === "missing" && !q ? "빠진 글자가 없어요." : "찾는 글자가 없어요."}</p>
+                  <p className="text-15 text-muted">
+                    {glyphTab === "missing" && !q ? "빠진 글자가 없어요." : glyphTab === "check" && !q ? "다시 볼 글자가 없어요." : "찾는 글자가 없어요."}
+                  </p>
                 ) : (
                   <div
                     ref={glyphGrid}
@@ -420,21 +440,36 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                   >
                     {shown.map((c, i) => {
                       const ok = inFont(c);
+                      const pick = glyphTab === "check";
+                      const on = pick ? picked.has(c) : sel === c;
                       return (
                         <button
                           key={c}
                           type="button"
                           data-char={c}
                           tabIndex={i === tabCell ? 0 : -1}
-                          aria-label={`${c} ${code(c)}${ok ? "" : " · 빠짐"}`}
-                          aria-pressed={sel === c}
-                          onClick={() => setSelected(c)}
-                          className={`aspect-square rounded-[0.625rem] text-[1.5rem] transition-colors hover:border-ink ${
-                            sel === c ? "border-2 border-ink" : ok ? "border border-line" : "border-[1.5px] border-dashed border-edge bg-subtle text-muted"
-                          }`}
+                          aria-label={`${c} ${code(c)}${ok ? "" : " · 빠짐"}${pick ? " · 다시 그리기" : ""}`}
+                          aria-pressed={on}
+                          onClick={() => {
+                            setSelected(c);
+                            if (pick)
+                              setPicked((prev) => {
+                                const next = new Set(prev);
+                                if (!next.delete(c)) next.add(c);
+                                return next;
+                              });
+                          }}
+                          className={`relative aspect-square rounded-[0.625rem] text-[1.5rem] transition-colors hover:border-ink ${
+                            on ? "border-2 border-ink" : ok ? "border border-line" : "border-[1.5px] border-dashed border-edge bg-subtle text-muted"
+                          } ${pick && on ? "bg-subtle" : ""}`}
                           style={{ fontFamily: ok ? family : GLYPH_FONT_STACK, fontSize: ok ? undefined : "1.125rem" }}
                         >
                           {c}
+                          {pick && on && (
+                            <svg aria-hidden viewBox="0 0 16 16" className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-ink p-0.5 text-bg">
+                              <path d="M4 8.5l2.5 2.5L12 5.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
                         </button>
                       );
                     })}

@@ -35,7 +35,7 @@ import type {
 import { getBuild, startBuild } from "./build";
 import { RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
-import { restDrawnChars } from "./rest";
+import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { analyzeStyle } from "./style";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
@@ -284,6 +284,7 @@ async function waitBuild(p: Stored) {
       const missing = [...KSX1001_HANGUL].filter((c) => !present.has(c));
       const extras = [...EXTRA_CHARS].filter((c) => present.has(c));
       const glyphModels = (await getGlyphJob(q.glyphJobId!).catch(() => null))?.models ?? [];
+      const restyled = await restStyleRedrawn(q.glyphJobId!);
       await update(p.id, (r) => {
         r.phase = "done";
         r.fontId = job.fontId;
@@ -291,6 +292,7 @@ async function waitBuild(p: Stored) {
         r.result = { build: job, missing, extras };
         for (const m of glyphModels) r.record.push(event("ai_model", `글자 그리기·검사: ${m}`));
         for (const m of job.models) r.record.push(event("ai_model", `폰트 검사: ${m}`));
+        if (restyled) r.record.push(event("check", `획 두께·크기가 다른 글자와 달라 다시 그린 글자 ${restyled}자`));
         r.record.push(event("check", summarize(job)));
       });
       return;
@@ -430,6 +432,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     recent,
     missing: p.result?.missing ?? [],
     extras: p.result?.extras ?? [],
+    recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
     record: p.record,
   };
 }
@@ -487,6 +490,24 @@ export async function rebuildProject(owner: string, id: string): Promise<void> {
       q.error = null;
     });
   }
+  drive(id);
+}
+
+/** 다시 볼 글자 중 고른 글자를 다시 그려 폰트를 다시 만든다(11/2 품질 개선 2-3). 다시 그린 그림이 검사를 통과할 때만 바꾼다(rest.ts). */
+export async function redrawGlyphs(owner: string, id: string, chars: string[]): Promise<void> {
+  const p = await readOwned(owner, id);
+  if (p.phase !== "done" || !p.glyphJobId) throw new RouteError(409, "다 만든 폰트만 글자를 다시 그릴 수 있어요");
+  if (drivers.has(id)) throw new RouteError(409, "아직 만드는 중이에요");
+  const allowed = new Set(await restDrawnChars(p.glyphJobId));
+  const picked = [...new Set(chars)].filter((c) => allowed.has(c)).slice(0, 30);
+  if (picked.length === 0) throw new RouteError(400, "다시 그릴 글자를 골라 주세요");
+  const buildJobId = await startBuild({ ...(await buildRequest(p)), redraw: picked });
+  await update(id, (q) => {
+    q.record.push(event("selection", `다시 볼 글자에서 고른 ${picked.length}자를 다시 그림: ${picked.join("")}`));
+    q.phase = "building";
+    q.buildJobId = buildJobId;
+    q.error = null;
+  });
   drive(id);
 }
 
