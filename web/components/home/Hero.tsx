@@ -18,7 +18,7 @@ import { authClient } from "@/lib/authClient";
 import { ACCEPTED_LOGO_TYPES, BRAND_TONES, EXTRA_CHARS, INDUSTRIES, LOGO_FONTS, LOGO_SOURCES, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { EMPTY_DRAFT, clearDraft, loadDraft, logoFromFile, saveDraft, type NewDraft } from "@/lib/newDraft";
-import { isImitationRequest } from "@/lib/rules";
+import { INDUSTRY_OTHER_MAX, industryText, isImitationRequest } from "@/lib/rules";
 import type { BrandTone, UploadInput, UsageContext } from "@/lib/types";
 
 type Option = "industry" | "tones" | "usage";
@@ -65,7 +65,7 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
   const feelRejected = isImitationRequest(upload.desiredFeel);
   const recommendedTones = INDUSTRIES.find((i) => i.value === upload.industry)?.tones ?? [];
   const summaries: Record<Option, string> = {
-    industry: upload.industry ? labelOf(INDUSTRIES, upload.industry) : "",
+    industry: upload.industry ? industryText(upload) : "",
     tones: upload.brandTones.map((t) => labelOf(BRAND_TONES, t)).join(" · "),
     usage: upload.usageContexts.map((x) => labelOf(USAGE_CONTEXTS, x)).join(" · "),
   };
@@ -378,6 +378,16 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
                       {i.label}
                     </Chip>
                   ))}
+                {open === "industry" && upload.industry === "other" && (
+                  <TextField
+                    aria-label="업종 직접 적기"
+                    value={upload.industryOther}
+                    maxLength={INDUSTRY_OTHER_MAX}
+                    onChange={(e) => setUpload({ industryOther: e.target.value })}
+                    placeholder="어떤 가게인가요? 예: 인테리어, 사진관 (비워도 돼요)"
+                    className="mt-1 w-full"
+                  />
+                )}
                 {open === "tones" && (
                   <>
                     {BRAND_TONES.map((t) => {

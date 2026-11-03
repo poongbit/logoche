@@ -15,9 +15,9 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { AXES, BRAND_TONES, INDUSTRIES, REFERENCE_CHARS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, REFERENCE_CHARS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL, decompose } from "@/lib/hangul";
-import { isImitationRequest } from "@/lib/rules";
+import { industryText, isImitationRequest } from "@/lib/rules";
 import type { AxisKey, GlyphItem, GlyphJob, StartGlyphJobRequest, StyleSampleRequest } from "@/lib/types";
 import { listEdits } from "./edits";
 import { engine, type EngineGlyphSheet, type EngineRef } from "./engine";
@@ -247,7 +247,7 @@ function axisValue(req: StartGlyphJobRequest, key: AxisKey): number {
 function makeContext(req: StartGlyphJobRequest, sample: string | null = null): Context {
   const u = req.upload;
   if (!u.logoImage) throw new RouteError(400, "로고 이미지가 없어요. 화면 1에서 로고를 다시 올려 주세요.");
-  const industry = INDUSTRIES.find((i) => i.value === u.industry)?.label ?? "";
+  const industry = industryText(u);
   const usage = u.usageContexts.map((c) => USAGE_CONTEXTS.find((x) => x.value === c)?.label).join("·");
   const tones = u.brandTones.map((t) => BRAND_TONES.find((b) => b.value === t)?.label).join("·");
   return {

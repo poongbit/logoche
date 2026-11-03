@@ -52,6 +52,7 @@ export interface UploadInput {
   sampleId: string | null;
   storeName: string;
   industry: Industry | null;
+  industryOther: string; // 업종이 '기타'일 때 직접 적은 업종(비워도 된다)
   brandTones: BrandTone[]; // 2~3개
   usageContexts: UsageContext[]; // 1개 이상
   desiredFeel: string; // 원하는 느낌 한 줄, 비워도 된다

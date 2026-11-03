@@ -13,9 +13,9 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, INDUSTRIES, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
-import { isImitationRequest } from "@/lib/rules";
+import { industryText, isImitationRequest } from "@/lib/rules";
 import type {
   BuildJob,
   CreateProjectRequest,
@@ -155,7 +155,7 @@ async function buildRequest(p: Stored): Promise<StartBuildJobRequest> {
 // ---------- 만들기 ----------
 
 /** 화면 1이 남기던 기록(로고 원본·권리 답변·창작 의도)에 그리기 수준을 더한다. */
-function firstRecord(u: UploadInput, quality: DrawQuality): RecordEvent[] {
+function firstRecord(u: UploadInput): RecordEvent[] {
   const out = [
     event("selection", `로고 원본: ${u.logoFileName} (${u.inputPath === "sample" ? "샘플" : "업로드"}) · 해시 ${u.logoHash?.slice(0, 8)}`),
     event("selection", `로고 출처 답변: ${labelOf(LOGO_SOURCES, u.logoSource)}`),
@@ -163,7 +163,7 @@ function firstRecord(u: UploadInput, quality: DrawQuality): RecordEvent[] {
   const fontName = u.logoFont === "free_font" || u.logoFont === "commercial_font" ? u.logoFontName.trim() : "";
   out.push(event("selection", `로고 글자 폰트 답변: ${labelOf(LOGO_FONTS, u.logoFont)}${fontName ? ` (${fontName})` : ""}`));
   const intent = [
-    u.industry && `업종 ${labelOf(INDUSTRIES, u.industry)}`,
+    u.industry && `업종 ${industryText(u)}`,
     u.brandTones.length && `브랜드 톤 ${u.brandTones.map((t) => labelOf(BRAND_TONES, t)).join(", ")}`,
     u.usageContexts.length && `주 사용처 ${u.usageContexts.map((x) => labelOf(USAGE_CONTEXTS, x)).join(", ")}`,
   ].filter(Boolean);
@@ -200,7 +200,7 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
     error: null,
     review: { readyAt: null, held: false, continued: false },
     result: null,
-    record: firstRecord(u, quality),
+    record: firstRecord(u),
   });
   drive(id);
   return id;

@@ -1,8 +1,8 @@
 // 화면 2 스타일 카드: 로고 측정(엔진) + 분위기 해석(Claude) + 분위기 사전 규칙으로 7축을 정한다.
 
 import { z } from "zod";
-import { AXES, AXIS_ORDER, BRAND_TONES, INDUSTRIES, USAGE_CONTEXTS, WEIGHT_CAP } from "@/lib/constants";
-import { isImitationRequest } from "@/lib/rules";
+import { AXES, AXIS_ORDER, BRAND_TONES, USAGE_CONTEXTS, WEIGHT_CAP } from "@/lib/constants";
+import { industryText, isImitationRequest } from "@/lib/rules";
 import type { AxisKey, BrandTone, StyleAxis, StyleCard, StyleConflict, UploadInput, UsageContext } from "@/lib/types";
 import { engine } from "./engine";
 import { MODELS, RouteError, modelLabel } from "./env";
@@ -133,7 +133,7 @@ const InterpretationSchema = z.object({
 });
 
 function interpretPrompt(upload: UploadInput): string {
-  const industry = INDUSTRIES.find((i) => i.value === upload.industry)?.label ?? "미정";
+  const industry = industryText(upload) || "미정";
   const usage = upload.usageContexts.map((u) => USAGE_CONTEXTS.find((x) => x.value === u)?.label).join("·");
   return [
     "이 로고 그림을 보고 한글 서체를 새로 만들기 위한 분위기를 읽어 주세요. 로고의 글자 모양을 옮기려는 것이 아니라 느낌만 씁니다.",

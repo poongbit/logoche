@@ -67,6 +67,7 @@ export const EMPTY_UPLOAD: UploadInput = {
   sampleId: null,
   storeName: "",
   industry: null,
+  industryOther: "",
   brandTones: [],
   usageContexts: [],
   desiredFeel: "",

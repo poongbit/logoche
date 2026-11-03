@@ -1,4 +1,14 @@
+import { INDUSTRIES } from "./constants";
 import type { UploadInput } from "./types";
+
+export const INDUSTRY_OTHER_MAX = 20;
+
+/** 업종 한 줄. '기타'면 직접 적은 말을 붙인다. 지시문·제작 기록에 쓴다. */
+export function industryText(u: Pick<UploadInput, "industry" | "industryOther">): string {
+  const label = INDUSTRIES.find((i) => i.value === u.industry)?.label ?? "";
+  const other = (u.industryOther ?? "").trim().slice(0, INDUSTRY_OTHER_MAX);
+  return u.industry === "other" && other ? `기타(${other})` : label;
+}
 
 // "○○체 느낌으로", "○○랑 비슷하게"처럼 특정 서체를 따라 하는 요청은 받지 않는다(기획서 2-5).
 // 고딕·명조처럼 서체 갈래를 말하는 것은 막지 않는다. 화면 1 원하는 느낌, 화면 2 표현 방식, 화면 3 말로 고치기에 쓴다.
