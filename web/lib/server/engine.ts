@@ -1,7 +1,7 @@
 // Python 엔진 서버(engine/) 호출. 엔진은 측정·기준 글자표·글자표 자르기와 자리 맞추기·TTF 빌드·구조 검사를 맡는다.
 // 10/30: MX-Font를 뺐다. 엔진은 이미지 API가 그린 글자로 바로 외곽선을 딴다. 이미지 API·Claude 호출은 웹 서버가 한다.
 
-import type { BuildStage, CheckResult, GlyphGuides, NearestKind, PreviewResponse } from "@/lib/types";
+import type { BuildStage, CheckResult, GlyphGuides, GlyphTweak, NearestKind, PreviewResponse, TweakTable } from "@/lib/types";
 import { ENGINE_URL, RouteError } from "./env";
 
 interface Measured {
@@ -62,6 +62,7 @@ export interface EngineBuildRequest {
   licenseText: string;
   aiNotice: string;
   edits: EngineEdit[];
+  tweaks: TweakTable; // 글자별 조정("*"는 전체). 폰트를 통째로 다시 만들 때도 늘 실어 보낸다(tweaks.ts)
 }
 
 export interface EngineGlyphEditRequest {
@@ -70,6 +71,7 @@ export interface EngineGlyphEditRequest {
   refs: EngineRef[];
   glyphs: EngineRef[]; // 이 글자가 나머지 글자면 그 그림
   edit: EngineEdit | null;
+  tweak: GlyphTweak | null; // 이 글자에 실제로 걸리는 조정(글자별, 없으면 전체)
 }
 
 export type FontFormat = "ttf" | "otf" | "woff" | "woff2";
@@ -124,7 +126,7 @@ export const engine = {
   normalizeGlyph: (image: string, char: string) => json<{ image: string | null; problem: string | null }>("/glyphs/normalize", { image, char }),
   startBuild: (body: EngineBuildRequest) => json<{ buildId: string }>("/builds", body),
   /** 글 몇 자만 빌드와 같은 방법(그린 글자 → 외곽선)으로 만든 글자별 SVG 패스 */
-  preview: (body: { text: string; axes: EngineAxes; refs: EngineRef[]; glyphs: EngineRef[]; edits: EngineEdit[] }) => json<PreviewResponse>("/preview", body),
+  preview: (body: { text: string; axes: EngineAxes; refs: EngineRef[]; glyphs: EngineRef[]; edits: EngineEdit[]; tweaks: TweakTable }) => json<PreviewResponse>("/preview", body),
   /** 편집 화면에 띄울 그림: 지금 글자 · AI가 그린 그대로(못 그린 글자는 빈 그림) · 글자 틀 자리 */
   editSource: (body: EngineGlyphEditRequest) =>
     json<{ char: string; size: number; image: string; original: string; guides: GlyphGuides }>("/glyphs/edit-source", body),

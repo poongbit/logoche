@@ -10,6 +10,7 @@ import { engine, type EngineAxes } from "./engine";
 import { MODELS, RouteError, modelLabel } from "./env";
 import { generateJson } from "./anthropic";
 import { readEdits } from "./edits";
+import { readTweakTable } from "./tweaks";
 import { glyphDrawWeight, glyphModels, readyRefs } from "./glyphs";
 import { imagePart } from "./parts";
 import { ensureRest, readRestGlyphs, restRemaining, type RestRun } from "./rest";
@@ -113,6 +114,7 @@ export async function startBuild(req: StartBuildJobRequest): Promise<string> {
         licenseText: licenseText(),
         aiNotice: RIGHTS.aiNotice,
         edits: await readEdits(glyphJobId),
+        tweaks: await readTweakTable(glyphJobId),
       });
       draw.engineStarted = true;
     } catch (err) {

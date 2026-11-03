@@ -188,6 +188,35 @@ export interface SaveGlyphEditResponse {
   patched: boolean;
 }
 
+/** 글자 하나(또는 전체)에 사용자가 더한 조정(11/3 다듬기). 엔진 contour.Tweak과 같다.
+ * pull은 굵기 축 증감(1단위 ≈ 틀에서 0.08px, 눈에 보이려면 ±100 안팎), slant는 기울기 증감(도), width·height·scale은 %, tx·ty는 폰트 단위(+는 오른쪽·위).
+ * AI가 정한 조절값은 건드리지 않고 그 위에 더한다. 그래서 "AI 값 대비 사용자가 바꾼 것"이 그대로 남는다. */
+export interface GlyphTweak {
+  pull: number;
+  slant: number;
+  width: number;
+  height: number;
+  scale: number;
+  tx: number;
+  ty: number;
+}
+
+/** 조정 표. "*"는 전체 글자, 나머지는 글자별 조정(전체 조정을 덮어쓴다). 조정이 없는 글자는 표에 없다. */
+export type TweakTable = Record<string, GlyphTweak>;
+
+/** 글자 조정 저장. tweak이 null이면 그 글자(또는 전체)의 조정을 지운다. 글자 하나는 지금 폰트에 바로 바꿔 끼운다. */
+export interface SaveGlyphTweakRequest {
+  char: string; // 한글 한 글자 또는 "*"(전체)
+  tweak: GlyphTweak | null;
+  note?: string; // 어떻게 조정했는지(슬라이더·변형·프리셋). 제작 기록에 붙는다
+}
+
+export interface SaveGlyphTweakResponse {
+  tweaks: TweakTable;
+  patched: boolean; // 지금 폰트에 바로 반영했는가(글자 하나만 가능)
+  rebuild: boolean; // 전체 조정이라 폰트를 다시 만들어야 반영되는가
+}
+
 // ---------- 화면 4. 조합·빌드 ----------
 
 export type CheckKey =
@@ -262,6 +291,7 @@ export type RecordCategory =
   | "ai_model" // AI 모델명
   | "chat_log" // 채팅 지시 기록(10/29 말로 고치기를 빼기 전 기록)
   | "selection" // 선택·수정 과정
+  | "human_edit" // 사용자가 직접 한 조정(11/3 다듬기: 슬라이더·변형·그리기)
   | "ai_scope" // AI 활용 범위
   | "check"; // 검사 결과
 
@@ -376,6 +406,7 @@ export interface ProjectView extends ProjectSummary {
   missing: string[]; // 서체에 없는 한글(다 만든 뒤)
   extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
   recheck: string[]; // 다시 볼 글자: 획 두께·크기가 기준에서 가장 많이 벗어난 나머지 글자(다 만든 뒤, 최대 30자)
+  tweaks: TweakTable; // 사용자가 더한 조정(11/3 다듬기). "*"는 전체 글자
   record: RecordEvent[];
 }
 

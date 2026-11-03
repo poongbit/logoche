@@ -355,6 +355,7 @@ export const RECORD_CATEGORIES: { key: RecordCategory; label: string }[] = [
   { key: "ai_model", label: "AI 모델명" },
   { key: "chat_log", label: "채팅 지시 기록" },
   { key: "selection", label: "선택·수정 과정" },
+  { key: "human_edit", label: "사용자 조정" },
   { key: "ai_scope", label: "AI 활용 범위" },
   { key: "check", label: "검사 결과" },
 ];

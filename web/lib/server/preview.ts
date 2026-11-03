@@ -5,6 +5,7 @@ import type { PreviewRequest, PreviewResponse } from "@/lib/types";
 import { engineAxes } from "./build";
 import { engine } from "./engine";
 import { readEdits } from "./edits";
+import { readTweakTable } from "./tweaks";
 import { glyphDrawWeight, readyRefs } from "./glyphs";
 import { RouteError } from "./env";
 import { readRestGlyphs } from "./rest";
@@ -16,8 +17,8 @@ export async function previewGlyphs(req: PreviewRequest): Promise<PreviewRespons
   const text = [...req.text].slice(0, MAX_CHARS).join("");
   const refs = await readyRefs(req.glyphJobId);
   const chars = new Set(text);
-  const [glyphs, edits] = await Promise.all([readRestGlyphs(req.glyphJobId, chars), readEdits(req.glyphJobId, chars)]);
-  return engine.preview({ text, axes: engineAxes(req.axes, await glyphDrawWeight(req.glyphJobId)), refs, glyphs, edits });
+  const [glyphs, edits, tweaks] = await Promise.all([readRestGlyphs(req.glyphJobId, chars), readEdits(req.glyphJobId, chars), readTweakTable(req.glyphJobId)]);
+  return engine.preview({ text, axes: engineAxes(req.axes, await glyphDrawWeight(req.glyphJobId)), refs, glyphs, edits, tweaks });
 }
 
 /** 모의 응답: 만든 글자가 없으므로 화면이 모두 기본 글꼴로 그린다. */

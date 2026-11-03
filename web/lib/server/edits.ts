@@ -14,6 +14,7 @@ import { engine, type EngineEdit } from "./engine";
 import { RouteError } from "./env";
 import { glyphDrawWeight, readyRefs } from "./glyphs";
 import { readRestGlyphs } from "./rest";
+import { effectiveTweak, readTweakTable } from "./tweaks";
 
 const DATA_DIR = path.join(process.cwd(), ".data", "glyphs");
 const UUID = /^[0-9a-f-]{36}$/;
@@ -68,13 +69,14 @@ export async function readEdits(jobId: string, chars?: Set<string>): Promise<Eng
   return edits.filter((e): e is EngineEdit => e !== null);
 }
 
-async function engineRequest(jobId: string, char: string, axes: StyleAxis[], edit: EngineEdit | null) {
+export async function engineRequest(jobId: string, char: string, axes: StyleAxis[], edit: EngineEdit | null) {
   return {
     char,
     axes: engineAxes(axes, await glyphDrawWeight(jobId)),
     refs: await readyRefs(jobId),
     glyphs: await readRestGlyphs(jobId, new Set([char])),
     edit,
+    tweak: effectiveTweak(await readTweakTable(jobId), char), // 11/3: 고친 그림 위에도 글자별 조정을 건다
   };
 }
 

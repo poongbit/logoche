@@ -26,6 +26,8 @@ import type {
   RecordCategory,
   RecordEvent,
   ReviewAction,
+  SaveGlyphTweakRequest,
+  SaveGlyphTweakResponse,
   StartBuildJobRequest,
   StartGlyphJobRequest,
   StyleCard,
@@ -33,11 +35,14 @@ import type {
   UploadInput,
 } from "@/lib/types";
 import { getBuild, startBuild } from "./build";
+import { engineRequest, readEdits } from "./edits";
+import { engine } from "./engine";
 import { RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
 import { doneMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { analyzeStyle } from "./style";
+import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
 const REVIEW_SECONDS = 20; // 참고 글자를 보여 주고 저절로 계속하기까지
@@ -457,6 +462,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     missing: p.result?.missing ?? [],
     extras: p.result?.extras ?? [],
     recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
+    tweaks: p.glyphJobId ? await readTweakTable(p.glyphJobId) : {},
     record: p.record,
   };
 }
@@ -533,6 +539,42 @@ export async function redrawGlyphs(owner: string, id: string, chars: string[]): 
     q.error = null;
   });
   drive(id);
+}
+
+/** 다듬기(11/3): 글자 하나 또는 전체("*")에 사용자가 조정을 더한다. tweak이 null이면 그 조정을 지운다.
+ * 글자 하나는 지금 폰트 파일에서 그 글자만 바로 바꿔 끼운다(동기, 몇 초 안). 전체는 표만 바꾸고 rebuild: true를 돌려주므로,
+ * 호출한 쪽이 폰트를 다시 만들어야 한다(rebuildProject). 모든 저장은 제작 기록에 human_edit 한 줄로 남는다. */
+export async function saveProjectTweak(owner: string, id: string, req: SaveGlyphTweakRequest): Promise<SaveGlyphTweakResponse> {
+  const p = await readOwned(owner, id);
+  if (p.phase !== "done" || !p.glyphJobId || !p.style) throw new RouteError(409, "다 만든 폰트만 다듬을 수 있어요");
+  if (drivers.has(id)) throw new RouteError(409, "아직 만드는 중이에요");
+  const jobId = p.glyphJobId;
+  const key = checkTweakKey(req.char);
+  const baseWeight = p.style.axes.find((a) => a.key === "weight")?.value ?? 400;
+  const tweak = req.tweak === null ? null : clampTweak(req.tweak, baseWeight);
+  const note = typeof req.note === "string" ? req.note.trim().slice(0, 40) : "";
+
+  // 표를 먼저 바꿔야 engineRequest가 새 조정을 읽는다. 엔진이 받지 않으면(빈 글자 등) 표를 되돌린다.
+  const { table, previous } = await writeTweak(jobId, key, tweak, note);
+  let patched = false;
+  if (key !== ALL_GLYPHS && p.fontId) {
+    try {
+      const [edit] = await readEdits(jobId, new Set([key]));
+      await engine.patchGlyph(p.fontId, await engineRequest(jobId, key, p.style.axes, edit ?? null));
+      patched = true;
+    } catch (err) {
+      await writeTweak(jobId, key, previous, "저장 실패로 되돌림");
+      throw err;
+    }
+  }
+  if (JSON.stringify(previous) !== JSON.stringify(table[key] ?? null)) await update(id, (q) => void q.record.push(event("human_edit", describeTweak(key, previous, table[key] ?? null, note))));
+  return { tweaks: table, patched, rebuild: key === ALL_GLYPHS };
+}
+
+/** 글자 하나(또는 전체)의 조정 기록(최대 100개). 되돌리기에 쓴다. */
+export async function projectTweakHistory(owner: string, id: string, char: string): Promise<TweakHistoryEntry[]> {
+  const p = await readOwned(owner, id);
+  return p.glyphJobId ? readTweakHistory(p.glyphJobId, char) : [];
 }
 
 export async function updateProject(owner: string, id: string, req: UpdateProjectRequest): Promise<void> {
