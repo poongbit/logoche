@@ -24,7 +24,8 @@ export interface EngineGlyphSheet {
 }
 
 export interface EngineGlyphSplit {
-  cells: { char: string; image: string | null; problem: string | null }[];
+  // style·styleProblem: 나머지 글자 한글만(11/2 스타일 검사). style은 획 두께·크기(1이 기준), styleProblem은 혼자 튀는 이유
+  cells: { char: string; image: string | null; problem: string | null; style?: { thickness: number; size: number } | null; styleProblem?: string | null }[];
   contactSheet: string;
 }
 

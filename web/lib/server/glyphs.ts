@@ -345,7 +345,7 @@ const structureHints = (chars: string[]) =>
 // 같은 글자로 다시 그려도 떨어지면, 같은 어려운 자모가 든 쉬운 글자로 바꿔 그린다(10/30 사용자 요청).
 // 바꿔 그린 참고 글자는 그 글자로 폰트에 들어가고, 원래 글자는 화면 4에서 나머지 글자와 함께 그린다(rest.ts).
 // 아래는 받침 빼기·초성 ㅇ으로 바꾸기만으로는 어려운 자모(ㄲ·ㅃ·ㅆ·ㅝ·ㅢ·ㅊ·ㅟ)가 빠지는 참고 글자의 대안이다.
-const EASIER: Record<string, string> = { 꽃: "꼬까", 빵: "빠뻐", 원: "워뭐", 있: "씨싸", 의: "희늬", 쳇: "체차", 퀴: "귀위", 쥐: "위뒤" };
+const EASIER: Record<string, string> = { 꽃: "꼬까", 빵: "빠뻐", 원: "워뭐", 있: "씨싸", 의: "희늬", 쳇: "체차", 퀴: "귀위", 쥐: "위뒤", 없: "앉값", 흙: "읽닭" };
 const IEUNG = 11; // 초성 ㅇ의 순서
 const syllable = (cho: number, jung: number, jong = 0) => String.fromCharCode(0xac00 + (cho * 21 + jung) * 28 + jong);
 

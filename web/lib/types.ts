@@ -295,6 +295,7 @@ export interface StartBuildJobRequest extends StartGlyphJobRequest {
   logoHash: string | null; // 발급 대장에 함께 적는다(기록용)
   glyphJobId: string | null; // 참고 글자 그림을 찾는다
   axes: StyleAxis[];
+  redraw?: string[]; // 11/2: 이미 그린 나머지 글자 중 다시 그릴 글자(스튜디오 '다시 볼 글자'에서 고름)
 }
 
 export interface StartJobResponse {
@@ -366,6 +367,7 @@ export interface ProjectView extends ProjectSummary {
   recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자(그리는 중)
   missing: string[]; // 서체에 없는 한글(다 만든 뒤)
   extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
+  recheck: string[]; // 다시 볼 글자: 획 두께·크기가 기준에서 가장 많이 벗어난 나머지 글자(다 만든 뒤, 최대 30자)
   record: RecordEvent[];
 }
 
