@@ -20,7 +20,13 @@ export type Industry =
   | "pet"
   | "fitness"
   | "education"
-  | "creator";
+  | "creator"
+  | "clinic"
+  | "stay_travel"
+  | "book_stationery"
+  | "local_service"
+  | "office_pro"
+  | "other";
 export type BrandTone =
   | "cute"
   | "warm"
@@ -36,7 +42,7 @@ export type BrandTone =
   | "calm"
   | "fresh"
   | "elegant";
-export type UsageContext = "signage_menu" | "sns_thumbnail" | "packaging_sticker";
+export type UsageContext = "signage_menu" | "sns_thumbnail" | "packaging_sticker" | "print_card" | "web_app";
 
 export interface UploadInput {
   logoImage: string | null; // data URL

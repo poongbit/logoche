@@ -58,6 +58,13 @@ export const INDUSTRIES: { value: Industry; label: string; tones: BrandTone[] }[
   { value: "fitness", label: "운동·요가", tones: ["bold", "fresh"] },
   { value: "education", label: "학원·교육", tones: ["trustworthy", "calm"] },
   { value: "creator", label: "크리에이터", tones: ["playful", "hip"] },
+  // 11/3 추가(추천 톤은 임시 값). '기타'는 추천 톤이 없다.
+  { value: "clinic", label: "병원·약국", tones: ["trustworthy", "calm"] },
+  { value: "stay_travel", label: "숙박·여행", tones: ["warm", "natural"] },
+  { value: "book_stationery", label: "서점·문구·갤러리", tones: ["calm", "retro"] },
+  { value: "local_service", label: "생활 서비스", tones: ["trustworthy", "fresh"] },
+  { value: "office_pro", label: "사무·전문직", tones: ["trustworthy", "modern"] },
+  { value: "other", label: "기타", tones: [] },
 ];
 
 export const BRAND_TONES: { value: BrandTone; label: string }[] = [
@@ -81,6 +88,8 @@ export const USAGE_CONTEXTS: { value: UsageContext; label: string }[] = [
   { value: "signage_menu", label: "간판·메뉴판" },
   { value: "sns_thumbnail", label: "SNS·썸네일" },
   { value: "packaging_sticker", label: "포장·스티커" },
+  { value: "print_card", label: "명함·인쇄물" },
+  { value: "web_app", label: "웹사이트·앱" },
 ];
 
 export const SAMPLE_LOGOS: {
@@ -227,10 +236,46 @@ export const PREVIEW_SENTENCES: Record<Industry, string> = {
   fitness: "아침 요가와 필라테스 개인 수업",
   education: "중등 수학 주말 집중반 모집",
   creator: "주말 브이로그 새 영상 공개",
+  clinic: "평일 야간 진료와 토요일 오전 접수",
+  stay_travel: "바다가 보이는 독채 숙소 예약 오픈",
+  book_stationery: "이달의 신간과 손글씨 노트 입고",
+  local_service: "당일 수거 세탁과 방문 수리 접수",
+  office_pro: "세무 상담과 사업자 등록 대행",
+  other: "우리 가게 새 소식과 오늘의 이벤트",
 };
 
 // 시연용 가상 메뉴와 가격. 가격 숫자는 기본 글꼴로 둔다(본선 서체에는 숫자가 없다).
 export const MENU_BY_INDUSTRY: Record<Industry, [string, string][]> = {
+  clinic: [
+    ["일반 진료", "상담 후 안내"],
+    ["건강 검진", "상담 후 안내"],
+    ["예방 접종", "상담 후 안내"],
+  ],
+  stay_travel: [
+    ["독채 1박", "150,000"],
+    ["조식 포함", "20,000"],
+    ["추가 1인", "30,000"],
+  ],
+  book_stationery: [
+    ["손글씨 노트", "6,500"],
+    ["엽서 세트", "4,000"],
+    ["이달의 신간", "15,000"],
+  ],
+  local_service: [
+    ["당일 수거 세탁", "8,000"],
+    ["방문 수리", "30,000"],
+    ["이불 빨래", "15,000"],
+  ],
+  office_pro: [
+    ["기본 상담", "50,000"],
+    ["사업자 등록 대행", "100,000"],
+    ["정기 기장", "월 150,000"],
+  ],
+  other: [
+    ["대표 메뉴", "10,000"],
+    ["인기 상품", "8,000"],
+    ["오늘의 추천", "5,000"],
+  ],
   cafe_dessert: [
     ["딸기 생크림 케이크", "6,500"],
     ["바닐라 마들렌", "3,000"],
