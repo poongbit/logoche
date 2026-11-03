@@ -5,26 +5,20 @@
 import { ACCEPTED_LOGO_TYPES, MAX_LOGO_BYTES } from "./constants";
 import { sha256Hex, toLogoDataUrl } from "./files";
 import { EMPTY_UPLOAD } from "./store";
-import type { DrawQuality, UploadInput } from "./types";
+import type { UploadInput } from "./types";
 
 const STORAGE_KEY = "logoche-new-v1";
 
-export const QUALITIES: { value: DrawQuality; label: string; note: string }[] = [
-  { value: "fine", label: "정밀", note: "획 끝 장식까지 살려요. 지금까지 쓰던 품질이에요" },
-  { value: "standard", label: "표준", note: "더 빠르고 비용이 적어요. 획 끝이 조금 거칠 수 있어요" },
-];
-
 export interface NewDraft {
   upload: UploadInput;
-  quality: DrawQuality;
 }
 
-export const EMPTY_DRAFT: NewDraft = { upload: EMPTY_UPLOAD, quality: "fine" };
+export const EMPTY_DRAFT: NewDraft = { upload: EMPTY_UPLOAD };
 
 export function loadDraft(): NewDraft {
   try {
     const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? "null") as NewDraft | null;
-    if (saved) return { upload: { ...EMPTY_UPLOAD, ...saved.upload }, quality: saved.quality === "standard" ? "standard" : "fine" };
+    if (saved) return { upload: { ...EMPTY_UPLOAD, ...saved.upload } };
   } catch {}
   return EMPTY_DRAFT;
 }

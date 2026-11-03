@@ -169,7 +169,6 @@ function firstRecord(u: UploadInput, quality: DrawQuality): RecordEvent[] {
   ].filter(Boolean);
   out.push(event("creative_intent", intent.length ? intent.join(" · ") : "업종·톤·사용처는 고르지 않음(톤은 AI가 로고에서 읽음)"));
   if (u.desiredFeel.trim()) out.push(event("creative_intent", `원하는 느낌: ${u.desiredFeel.trim()}`));
-  out.push(event("selection", `그리기 수준: ${quality === "fine" ? "정밀" : "표준"}`));
   return out;
 }
 
@@ -179,7 +178,7 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
   if (!u.storeName.trim()) throw new RouteError(400, "가게 이름을 적어 주세요");
   if (!u.logoSource || !u.logoFont) throw new RouteError(400, "권리 확인 두 가지를 골라 주세요");
   if (isImitationRequest(u.desiredFeel)) throw new RouteError(400, "특정 서체는 따라 하지 않아요. 원하는 느낌을 말로 적어 주세요.");
-  const quality: DrawQuality = req.quality === "standard" ? "standard" : "fine";
+  const quality: DrawQuality = "fine"; // 11/3: 그리기 수준 선택을 없애고 정밀만 쓴다
   const id = crypto.randomUUID();
   const now = Date.now();
   await fs.mkdir(DIR, { recursive: true });

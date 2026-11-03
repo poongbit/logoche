@@ -17,7 +17,7 @@ import { api, errorMessage } from "@/lib/api";
 import { authClient } from "@/lib/authClient";
 import { ACCEPTED_LOGO_TYPES, BRAND_TONES, EXTRA_CHARS, INDUSTRIES, LOGO_FONTS, LOGO_SOURCES, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
-import { EMPTY_DRAFT, QUALITIES, clearDraft, loadDraft, logoFromFile, saveDraft, type NewDraft } from "@/lib/newDraft";
+import { EMPTY_DRAFT, clearDraft, loadDraft, logoFromFile, saveDraft, type NewDraft } from "@/lib/newDraft";
 import { isImitationRequest } from "@/lib/rules";
 import type { BrandTone, UploadInput, UsageContext } from "@/lib/types";
 
@@ -144,7 +144,7 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
     setSubmitting(true);
     setError(null);
     try {
-      const { id } = await api.createProject({ upload, quality: draft.quality });
+      const { id } = await api.createProject({ upload });
       clearDraft();
       router.push(`/fonts/${id}`);
     } catch (err) {
@@ -326,30 +326,13 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
                 <span className="pl-1 font-mono text-13 text-muted">
                   한글 {KSX1001_HANGUL.size.toLocaleString()}자 + 숫자·부호 {EXTRA_CHARS.length}자
                 </span>
-                <div role="radiogroup" aria-label="그리기 수준" onKeyDown={onRadioKeys} className="flex gap-1 rounded-full bg-subtle p-1">
-                  {QUALITIES.map((q) => (
-                    <button
-                      key={q.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={draft.quality === q.value}
-                      tabIndex={rovingTab(draft.quality === q.value, false, true)}
-                      onClick={() => setDraft((d) => ({ ...d, quality: q.value }))}
-                      className={`h-9 rounded-full px-4 text-15 font-bold transition-colors ${draft.quality === q.value ? "bg-ink text-bg" : "text-muted hover:text-ink"}`}
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
             {feelRejected ? (
               <Notice tone="error">
                 특정 폰트(○○체, ○○폰트 등)를 따라 하는 요청은 받지 않아요. &quot;둥글고 통통한&quot;처럼 원하는 모양을 말로 적어 주세요.
               </Notice>
-            ) : (
-              <p className="text-13 text-muted">{QUALITIES.find((q) => q.value === draft.quality)?.note}</p>
-            )}
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-2.5">

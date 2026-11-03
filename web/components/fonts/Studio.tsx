@@ -243,7 +243,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   const build = view.build;
   const glyphCount = view.glyphCount ?? present.length;
   const canRedraw = view.missing.length > 0 || view.extras.length < EXTRA_CHARS.length;
-  const meta = ["GPT Image", view.quality === "fine" ? "정밀" : "표준", `한글 ${glyphCount.toLocaleString()}자`, `숫자·부호 ${view.extras.length}자`, formatDate(view.createdAt)];
+  const meta = ["GPT Image", `한글 ${glyphCount.toLocaleString()}자`, `숫자·부호 ${view.extras.length}자`, formatDate(view.createdAt)];
 
   return (
     <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-5 px-5 pt-6 pb-16 lg:px-10">
@@ -552,8 +552,6 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
               <dd className="text-right font-semibold">
                 {view.extras.length} / {EXTRA_CHARS.length}자
               </dd>
-              <dt className="text-muted">그리기 수준</dt>
-              <dd className="text-right font-semibold">{view.quality === "fine" ? "정밀" : "표준"}</dd>
             </dl>
             {build && (
               <ul aria-label="검사" className="flex flex-col border-t border-line text-15">

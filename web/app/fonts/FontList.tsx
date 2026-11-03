@@ -200,7 +200,7 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
   const meta =
     font.phase === "done"
       ? [`GPT Image`, `한글 ${font.glyphCount?.toLocaleString()}자`, font.extraCount ? `숫자·부호 ${font.extraCount}자` : "", formatDate(font.createdAt)]
-      : [font.quality === "fine" ? "정밀" : "표준", formatDate(font.createdAt)];
+      : [formatDate(font.createdAt)];
 
   return (
     <article className="flex flex-col rounded-[1.25rem] border border-line bg-bg">

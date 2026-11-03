@@ -331,7 +331,7 @@ export type ProjectPhase = "analyzing" | "drawing" | "reviewing" | "building" | 
 
 export interface CreateProjectRequest {
   upload: UploadInput;
-  quality: DrawQuality;
+  quality?: DrawQuality; // 11/3: 화면에서는 더 이상 고르지 않는다(항상 정밀)
 }
 
 export interface ProjectSummary {
