@@ -505,9 +505,9 @@ export async function checkSheet(job: JobState, contactSheet: string, chars: str
   const symbols = isSymbolSheet(chars);
   const prompt = [
     symbols
-      ? "한글 서체에 딸린 숫자·문장부호 검사입니다. 칸 아래에 번호가 있고, 칸마다 다음 기호가 있어야 합니다."
+      ? "한글 서체에 딸린 숫자·문장부호 검사입니다. 칸 아래의 #번호는 칸의 위치를 나타낼 뿐 글자가 아닙니다. 칸 안의 그림만 보고, 칸마다 다음 기호가 있어야 합니다."
       : "한글 서체의 참고 글자 검사입니다. 칸 아래에 번호가 있고, 칸마다 다음 글자가 있어야 합니다.",
-    chars.map((c, i) => `${i + 1}: ${c}`).join(", "),
+    chars.map((c, i) => `${symbols ? "#" : ""}${i + 1}: ${c}`).join(", "),
     CHECK_RULES,
     symbols
       ? "마침표·쉼표·따옴표·가운뎃점은 칸 안에서 작게 보이는 것이 맞습니다. 마침표(.)와 가운뎃점(·), 작은따옴표(')와 쉼표(,)는 모양이 같아도 됩니다."

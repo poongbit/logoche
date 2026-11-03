@@ -27,7 +27,7 @@ from .measure import measure_logo
 from .paths import ASSETS_DIR
 from .preview import render_preview
 from .reference import REFERENCE_NAME, reference_available
-from .sheets import contact_sheet, glyph_grid, glyph_sheet, glyph_single, normalize_single, split_glyphs, word_grid, word_sheet
+from .sheets import contact_sheet, is_symbol_sheet, glyph_grid, glyph_sheet, glyph_single, normalize_single, split_glyphs, word_grid, word_sheet
 
 
 @asynccontextmanager
@@ -117,7 +117,7 @@ def glyph_split(req: GlyphSplitRequest) -> dict:
             {"char": c.char, "image": None if c.image is None else raster.png_data_url(c.image), "problem": c.problem}
             for c in cells
         ],
-        "contactSheet": raster.png_data_url(contact_sheet(cells, glyph_grid(len(chars)))),
+        "contactSheet": raster.png_data_url(contact_sheet(cells, glyph_grid(len(chars)), is_symbol_sheet(chars))),
     }
 
 
@@ -151,7 +151,7 @@ def glyph_place(req: GlyphPlaceRequest) -> dict:
             }
             for c in cells
         ],
-        "contactSheet": raster.png_data_url(contact_sheet(cells, glyph_grid(len(chars)))),
+        "contactSheet": raster.png_data_url(contact_sheet(cells, glyph_grid(len(chars)), is_symbol_sheet(chars))),
     }
 
 

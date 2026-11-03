@@ -146,8 +146,15 @@ def normalize_single(image: Image.Image, char: str) -> Cell:
     return extract_glyph(raster.to_gray(image), char, margin=0.01)
 
 
-def contact_sheet(cells: list[Cell], grid: Grid) -> Image.Image:
-    """검사용 모음 그림. 칸마다 번호(1부터)를 붙인다. 빈 칸은 X로 표시한다."""
+def is_symbol_sheet(chars: list[str]) -> bool:
+    """숫자·문장부호만 든 장(한글이 하나도 없다)"""
+    return not any("\uac00" <= c <= "\ud7a3" for c in chars)
+
+
+def contact_sheet(cells: list[Cell], grid: Grid, hash_labels: bool = False) -> Image.Image:
+    """검사용 모음 그림. 칸마다 번호(1부터)를 붙인다. 빈 칸은 X로 표시한다.
+    hash_labels: 번호를 '#1'로 쓴다. 숫자 장은 칸 번호 1~9가 칸 안의 숫자 0~8과 같은 모양이라 헷갈릴 수 있어 막아 둔다.
+    (11/3: 기준 서체로 만든 정상 숫자 장은 번호 방식과 상관없이 검사를 통과했다. 실측에서 0~8이 떨어진 원인은 이 번호가 아닐 수 있다.)"""
     size, label_h = 220, 34
     sheet = Image.new("L", (grid.cols * size, grid.rows * (size + label_h)), 255)
     draw = ImageDraw.Draw(sheet)
@@ -156,7 +163,7 @@ def contact_sheet(cells: list[Cell], grid: Grid) -> Image.Image:
         c, r = i % grid.cols, i // grid.cols
         x, y = c * size, r * (size + label_h)
         draw.rectangle([x, y, x + size - 1, y + size + label_h - 1], outline=200)
-        draw.text((x + 8, y + size + 4), str(i + 1), fill=0, font=font)
+        draw.text((x + 8, y + size + 4), f"#{i + 1}" if hash_labels else str(i + 1), fill=0, font=font)
         if cell.image is None:
             draw.line([(x + 40, y + 40), (x + size - 40, y + size - 40)], fill=160, width=3)
             draw.line([(x + size - 40, y + 40), (x + 40, y + size - 40)], fill=160, width=3)
