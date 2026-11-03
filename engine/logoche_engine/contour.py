@@ -31,6 +31,40 @@ class Axes:
     drawn_weight: float | None = None  # 글자를 그릴 때의 굵기(없으면 weight). 지금 굵기와의 차이만큼 획을 굵히거나 가늘인다
 
 
+@dataclass(frozen=True)
+class Tweak:
+    """사용자가 글자 하나에 더한 조정(11/3 다듬기). 모두 AI가 정한 전체 값에 더하거나 곱한다. 기본값이면 아무것도 바꾸지 않는다.
+    pull: 굵기 축 증감, slant: 기울기 증감(도), width·height·scale: 퍼센트, tx·ty: 폰트 단위 이동(+는 오른쪽·위).
+    너비를 바꿔도 글자 폭(advance)은 그대로다. 한글은 모두 같은 폭이어야 해서다."""
+
+    pull: float = 0
+    slant: float = 0
+    width: float = 100
+    height: float = 100
+    scale: float = 100
+    tx: float = 0
+    ty: float = 0
+
+    @property
+    def geometric(self) -> bool:
+        return (self.slant, self.width, self.height, self.scale, self.tx, self.ty) != (0, 100, 100, 100, 0, 0)
+
+
+ALL_GLYPHS = "*"  # 조정 표에서 글자 전체에 거는 조정의 열쇠. 글자별 조정이 있으면 그 글자는 이 값을 덮어쓴다(더하지 않는다).
+TWEAK_PIVOT_Y = 380  # style_transform이 기울이는 축과 같은 글자 몸통 가운데 높이
+
+
+def tweak_transform(advance: int, tweak: Tweak) -> Transform:
+    """폰트 단위 외곽선에 거는 글자별 변환(크기·가로·세로 → 기울기 증감 → 이동). 축은 (advance/2, 380)이다."""
+    cx, cy = advance / 2, TWEAK_PIVOT_Y
+    sx, sy = tweak.width / 100 * tweak.scale / 100, tweak.height / 100 * tweak.scale / 100
+    shear = math.tan(math.radians(tweak.slant))
+    scale = Transform(sx, 0, 0, sy, cx * (1 - sx), cy * (1 - sy))
+    slant = Transform(1, 0, shear, 1, -cy * shear, 0)
+    move = Transform(1, 0, 0, 1, tweak.tx, tweak.ty)
+    return move.transform(slant).transform(scale)
+
+
 _PATH_RE = re.compile(r'<path d="([^"]+)"[^>]*?transform="translate\(([-\d.]+),([-\d.]+)\)"')
 
 # length_threshold: 11/2 4 → 6. 그린 글자 2,298자 시험에서 점 수 11% 줄고 그림과 겹침은 그대로(0.983). 해상도를 올려 따 보면 오히려 가장자리에 물결이 생겼다.

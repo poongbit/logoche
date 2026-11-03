@@ -28,7 +28,7 @@ import hashlib
 import threading
 from collections import OrderedDict
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cache
 
 import cv2
@@ -38,7 +38,7 @@ from fontTools.misc.transform import Transform
 from PIL import Image, ImageDraw, ImageFont
 
 from . import raster
-from .contour import SHARP_BELOW, Axes, style_transform, vtrace
+from .contour import SHARP_BELOW, Axes, Tweak, style_transform, tweak_transform, vtrace
 from .hangul import KSX1001_HANGUL
 from .reference import REFERENCE_FONTS, REFERENCE_WEIGHTS, glyph_bounds, load_font
 
@@ -362,9 +362,18 @@ def guides(advance: int, ascender: int, descender: int) -> dict[str, float]:
 # ---------- 외곽선 ----------
 
 
-def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX) -> tuple[pathops.Path, int]:
-    """틀 그림(px 배율) 한 글자를 폰트 단위 외곽선으로. (외곽선, 글자 폭)을 돌려준다."""
+def tweaked_axes(axes: Axes, tweak: Tweak | None) -> Axes:
+    """글자별 굵기 조정을 축에 반영한다. 그린 굵기를 모르면(drawn_weight 없음) 지금 굵기를 기준으로 삼아 조정이 헛돌지 않게 한다."""
+    if tweak is None or not tweak.pull:
+        return axes
+    return replace(axes, weight=axes.weight + tweak.pull, drawn_weight=axes.weight if axes.drawn_weight is None else axes.drawn_weight)
+
+
+def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX, tweak: Tweak | None = None) -> tuple[pathops.Path, int]:
+    """틀 그림(px 배율) 한 글자를 폰트 단위 외곽선으로. (외곽선, 글자 폭)을 돌려준다. tweak: 이 글자만의 조정(Tweak)."""
     style, width = style_transform(advance, axes)
+    if tweak is not None and tweak.geometric:
+        style = style.transform(tweak_transform(advance, tweak))  # 그림 → 폰트 단위 → 글자별 조정 → 전체 너비·기울기·자간
     path = pathops.Path(fillType=pathops.FillType.EVEN_ODD)
     b = raster.bbox(mask)
     if b is None:
@@ -378,9 +387,14 @@ def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX) -> tuple[p
     return path, width
 
 
-def outline(mask: np.ndarray | None, axes: Axes, advance: int, offset_px: float, edit: Edit | None = None) -> tuple[pathops.Path, int]:
-    """그린 글자(틀 그림) 하나를 외곽선으로. 고친 글자가 있으면 그 그림을 쓴다."""
+def outline(
+    mask: np.ndarray | None, axes: Axes, advance: int, offset_px: float, edit: Edit | None = None, tweak: Tweak | None = None
+) -> tuple[pathops.Path, int]:
+    """그린 글자(틀 그림) 하나를 외곽선으로. 고친 글자가 있으면 그 그림을 쓴다. tweak: 이 글자만의 조정."""
+    if tweak is not None and tweak.pull:
+        axes = tweaked_axes(axes, tweak)
+        offset_px = weight_offset(axes)
     if edit is not None:
-        return trace(edit_mask(edit, axes), axes, advance, EDIT_PX)
+        return trace(edit_mask(edit, axes), axes, advance, EDIT_PX, tweak)
     assert mask is not None
-    return trace(glyph_mask(mask, axes, offset_px), axes, advance)
+    return trace(glyph_mask(mask, axes, offset_px), axes, advance, PX, tweak)

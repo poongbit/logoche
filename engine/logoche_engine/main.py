@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from . import drawn, raster
 from .build import FORMATS, FontMeta, GlyphRejected, bundle, export_font, export_later, patch_glyph
 from .checks import warm_comparison
-from .contour import Axes
+from .contour import ALL_GLYPHS, Axes, Tweak
 from .hangul import DRAWN_CHARS, KSX1001_HANGUL
 from .jobs import BuildManager, new_build_id, ocr_sheet
 from .layout import get_layout
@@ -188,6 +188,27 @@ class BuildAxes(BaseModel):
     drawnWeight: float | None = None  # 참고 글자를 그릴 때의 굵기. 지금 굵기와의 차이만큼 획을 굵히거나 가늘인다
 
 
+class TweakInput(BaseModel):
+    """글자 하나의 조정(contour.Tweak). 범위는 화면 슬라이더보다 넉넉하게 받는다."""
+
+    pull: float = Field(0, ge=-300, le=300)
+    slant: float = Field(0, ge=-30, le=45)
+    width: float = Field(100, ge=40, le=170)
+    height: float = Field(100, ge=40, le=170)
+    scale: float = Field(100, ge=40, le=170)
+    tx: float = Field(0, ge=-300, le=300)
+    ty: float = Field(0, ge=-300, le=300)
+
+
+def _tweaks(tweaks: dict[str, TweakInput]) -> dict[str, Tweak]:
+    out = {}
+    for ch, t in tweaks.items():
+        if ch != ALL_GLYPHS and (len(ch) != 1 or ch not in KSX1001_HANGUL):
+            raise HTTPException(400, f"조정은 한글 완성형 글자나 전체('*')에만 걸 수 있어요: {ch}")
+        out[ch] = Tweak(**t.model_dump())
+    return out
+
+
 def _axes(a: BuildAxes) -> Axes:
     return Axes(a.weight, a.roundness, a.width, a.slant, a.tracking, a.drawnWeight)
 
@@ -238,6 +259,7 @@ class BuildRequest(BaseModel):
     licenseText: str = ""
     aiNotice: str = ""
     edits: list[EditInput] = Field(default_factory=list)  # 사용자가 고친 글자
+    tweaks: dict[str, TweakInput] = Field(default_factory=dict)  # 글자별 조정(굵기·기울기·크기·위치)
 
 
 @app.post("/builds")
@@ -247,7 +269,7 @@ def start_build(req: BuildRequest) -> dict:
         raise HTTPException(400, "그린 글자가 없어요")
     build_id = req.buildId or new_build_id()
     meta = FontMeta(build_id, req.storeName, req.models, req.licenseText, req.aiNotice)
-    state = builds.start(glyphs, _axes(req.axes), meta, req.logoHash, edits)
+    state = builds.start(glyphs, _axes(req.axes), meta, req.logoHash, edits, _tweaks(req.tweaks))
     return {"buildId": state.build_id}
 
 
@@ -257,12 +279,13 @@ class PreviewRequest(BaseModel):
     refs: list[RefInput] = Field(default_factory=list)
     glyphs: list[RefInput] = Field(default_factory=list)  # 글에 든 나머지 글자만 보내면 된다
     edits: list[EditInput] = Field(default_factory=list)
+    tweaks: dict[str, TweakInput] = Field(default_factory=dict)
 
 
 @app.post("/preview")
 def preview(req: PreviewRequest) -> dict:
     """글 몇 자(최대 80자)만 빌드와 같은 방법(그린 글자 → 외곽선)으로 만들어 글자별 SVG 패스로 돌려준다."""
-    return render_preview(_glyphs(req.refs, req.glyphs), _axes(req.axes), req.text, _edits(req.edits))
+    return render_preview(_glyphs(req.refs, req.glyphs), _axes(req.axes), req.text, _edits(req.edits), _tweaks(req.tweaks))
 
 
 # ---------- 화면 4: 글자 고치기(10/29) ----------
@@ -274,6 +297,7 @@ class GlyphEditRequest(BaseModel):
     refs: list[RefInput] = Field(default_factory=list)
     glyphs: list[RefInput] = Field(default_factory=list)  # 이 글자가 나머지 글자면 그 그림
     edit: EditInput | None = None  # 고친 그림. 없으면 그린 그대로
+    tweak: TweakInput | None = None  # 이 글자만의 조정
 
 
 def _ink_png(mask) -> str:
@@ -315,14 +339,15 @@ def glyph_edit_source(req: GlyphEditRequest) -> dict:
 def patch_build_glyph(build_id: str, req: GlyphEditRequest) -> dict:
     """만든 폰트에서 글자 하나만 다시 딴다. edit가 있으면 고친 그림으로, 없으면 그린 그대로(고친 것 되돌리기)."""
     ch = _edit_char(req.char)
-    axes = _axes(req.axes)
+    tweak = Tweak(**req.tweak.model_dump()) if req.tweak else None
+    axes = drawn.tweaked_axes(_axes(req.axes), tweak)  # 글자별 굵기 조정을 축에 반영
     if req.edit:
-        outline, advance = drawn.trace(drawn.edit_mask(_edits([req.edit])[ch], axes), axes, get_layout().advance, drawn.EDIT_PX)
+        outline, advance = drawn.trace(drawn.edit_mask(_edits([req.edit])[ch], axes), axes, get_layout().advance, drawn.EDIT_PX, tweak)
     else:
         mask = _drawn_mask(req, ch, axes)
         if mask is None:
             raise HTTPException(400, f"'{ch}'은(는) 아직 그리지 못한 글자라 되돌릴 그림이 없어요")
-        outline, advance = drawn.trace(mask, axes, get_layout().advance)
+        outline, advance = drawn.trace(mask, axes, get_layout().advance, drawn.PX, tweak)
     path = _font_file(build_id)
     try:
         patch_glyph(path, ch, outline, advance)

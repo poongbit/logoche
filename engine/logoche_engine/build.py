@@ -26,7 +26,7 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont, newTable
 
 from . import drawn
-from .contour import Axes
+from .contour import ALL_GLYPHS, Axes, Tweak
 from .hangul import EXTRA_CHARS, KSX1001_HANGUL
 from .layout import get_layout
 
@@ -67,12 +67,14 @@ def build_font(
     out_path: Path,
     progress: Callable[[str, int], None] = lambda stage, n: None,
     edits: dict[str, drawn.Edit] | None = None,
+    tweaks: dict[str, Tweak] | None = None,
 ) -> Path:
     """glyphs: 그린 글자(음절 → 자리 맞춘 틀 그림, drawn.py). progress(단계, 끝낸 개수): trace(외곽선) → save(TTF).
     edits: 사용자가 고친 글자(음절 → 그림). 그 글자는 그린 그림 대신 고친 그림으로 외곽선을 딴다."""
     layout = get_layout()
     offset_px = drawn.weight_offset(axes)
     edits = edits or {}
+    tweaks = tweaks or {}
     glyphs = drawn.refine(glyphs)  # 11/2: 글자마다 획 두께 고르게, 굵은 스타일 속공간 넓히기
     hangul = [c for c in KSX1001_HANGUL if c in glyphs or c in edits]
     # 숫자·문장부호(11/2)는 기준 서체 같은 글자의 폭을 쓴다. 한글은 모두 같은 폭이다.
@@ -85,7 +87,7 @@ def build_font(
     metrics = {}
     for i, ch in enumerate(chars):
         width = layout.advance if i < len(hangul) else drawn.ref_advance(ch)
-        path, advance = drawn.outline(glyphs.get(ch), axes, width, offset_px, edits.get(ch))
+        path, advance = drawn.outline(glyphs.get(ch), axes, width, offset_px, edits.get(ch), tweaks.get(ch, tweaks.get(ALL_GLYPHS)))
         name = f"uni{ord(ch):04X}"
         glyph_order.append(name)
         cmap[ord(ch)] = name

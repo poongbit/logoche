@@ -20,7 +20,7 @@ import numpy as np
 from . import drawn
 from .build import FontMeta, build_font, export_later
 from .checks import CheckResult, Similarity, check_glyph_set, run_checks
-from .contour import Axes
+from .contour import Axes, Tweak
 from .hangul import KSX1001_HANGUL
 from .paths import BUILDS_DIR, ISSUED_DIR
 
@@ -172,22 +172,24 @@ class BuildManager:
             return self._builds.get(build_id)
 
     def start(
-        self, glyphs: dict[str, np.ndarray], axes: Axes, meta: FontMeta, logo_hash: str | None, edits: dict[str, drawn.Edit] | None = None
+        self, glyphs: dict[str, np.ndarray], axes: Axes, meta: FontMeta, logo_hash: str | None, edits: dict[str, drawn.Edit] | None = None,
+        tweaks: dict[str, Tweak] | None = None,
     ) -> BuildState:
-        """glyphs: 그린 글자(음절 → 자리 맞춘 틀 그림, drawn.py). edits: 사용자가 고친 글자."""
+        """glyphs: 그린 글자(음절 → 자리 맞춘 틀 그림, drawn.py). edits: 사용자가 고친 글자. tweaks: 글자별 조정."""
         edits = edits or {}
+        tweaks = tweaks or {}
         state = BuildState(meta.font_id, logo_hash, meta.store_name, total=len(set(glyphs) | set(edits)))
         for key, total in (("trace", state.total), ("save", 1), ("check", len(CHECK_KEYS))):
             state.progress[key].total = total
         with self._lock:
             self._builds[state.build_id] = state
-        self._pool.submit(self._run, state, glyphs, axes, meta, edits)
+        self._pool.submit(self._run, state, glyphs, axes, meta, edits, tweaks)
         return state
 
-    def _run(self, state: BuildState, glyphs: dict[str, np.ndarray], axes: Axes, meta: FontMeta, edits: dict[str, drawn.Edit]) -> None:
+    def _run(self, state: BuildState, glyphs: dict[str, np.ndarray], axes: Axes, meta: FontMeta, edits: dict[str, drawn.Edit], tweaks: dict[str, Tweak]) -> None:
         try:
             state.advance("trace", 0)
-            build_font(glyphs, axes, meta, state.font_path, state.advance, edits)
+            build_font(glyphs, axes, meta, state.font_path, state.advance, edits, tweaks)
             state.phase = "checking"
             state.advance("check", 0)
 
