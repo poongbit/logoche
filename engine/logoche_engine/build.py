@@ -73,6 +73,7 @@ def build_font(
     layout = get_layout()
     offset_px = drawn.weight_offset(axes)
     edits = edits or {}
+    glyphs = drawn.refine(glyphs)  # 11/2: 글자마다 획 두께 고르게, 굵은 스타일 속공간 넓히기
     hangul = [c for c in KSX1001_HANGUL if c in glyphs or c in edits]
     # 숫자·문장부호(11/2)는 기준 서체 같은 글자의 폭을 쓴다. 한글은 모두 같은 폭이다.
     extras = [c for c in EXTRA_CHARS if c in glyphs]

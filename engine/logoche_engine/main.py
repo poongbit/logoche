@@ -133,13 +133,22 @@ class GlyphPlaceRequest(GlyphSplitRequest):
 @app.post("/sheets/glyphs/place")
 def glyph_place(req: GlyphPlaceRequest) -> dict:
     """화면 4 나머지 글자 한 장을 칸별로 자르고, 바로 폰트 틀에 자리를 맞춘다(drawn.place_sheet). 검사용 모음 그림도 만든다.
-    image는 자리 맞춘 틀 그림(흑백 PNG)이고, 칸 문제로 자르지 못한 글자는 null이다."""
+    image는 자리 맞춘 틀 그림(흑백 PNG)이고, 칸 문제로 자르지 못한 글자는 null이다.
+    11/2: 한글은 style(획 두께·크기, 1이 기준)과, 혼자 튀면 styleProblem을 함께 준다(웹이 다시 그린다, drawn.style_scores)."""
     chars = _chars(req.chars)
     cells = split_glyphs(raster.decode_image(req.image), chars)
-    placed = drawn.place_sheet({c.char: c.image for c in cells if c.image is not None and not c.problem}, _refs(req.refs, required=False))
+    refs = _refs(req.refs, required=False)
+    placed = drawn.place_sheet({c.char: c.image for c in cells if c.image is not None and not c.problem}, refs)
+    scores = drawn.style_scores(placed, refs)
     return {
         "cells": [
-            {"char": c.char, "image": drawn.encode(placed[c.char]) if c.char in placed else None, "problem": c.problem or (None if c.char in placed else "빈 칸")}
+            {
+                "char": c.char,
+                "image": drawn.encode(placed[c.char]) if c.char in placed else None,
+                "problem": c.problem or (None if c.char in placed else "빈 칸"),
+                "style": {"thickness": round(scores[c.char][0], 3), "size": round(scores[c.char][1], 3)} if c.char in scores else None,
+                "styleProblem": drawn.style_problem(scores[c.char]) if c.char in scores else None,
+            }
             for c in cells
         ],
         "contactSheet": raster.png_data_url(contact_sheet(cells, glyph_grid(len(chars)))),

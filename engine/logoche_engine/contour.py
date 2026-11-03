@@ -33,7 +33,8 @@ class Axes:
 
 _PATH_RE = re.compile(r'<path d="([^"]+)"[^>]*?transform="translate\(([-\d.]+),([-\d.]+)\)"')
 
-VTRACER = dict(filter_speckle=4, corner_threshold=60, length_threshold=4.0, splice_threshold=45, path_precision=2)
+# length_threshold: 11/2 4 → 6. 그린 글자 2,298자 시험에서 점 수 11% 줄고 그림과 겹침은 그대로(0.983). 해상도를 올려 따 보면 오히려 가장자리에 물결이 생겼다.
+VTRACER = dict(filter_speckle=4, corner_threshold=60, length_threshold=6.0, splice_threshold=45, path_precision=2)
 
 
 def vtrace(mask: np.ndarray, pen, to_units: Transform, **params) -> None:

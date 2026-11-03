@@ -13,6 +13,13 @@
 
 그림 틀은 폰트 단위 정사각형(FRAME_*)이다. 자리 맞춘 그림은 1em = 500px(PX) 흑백 마스크이고, 편집 화면(EDIT_SIDE)도 같은 틀을 쓴다.
 외곽선은 굵기 축만큼 윤곽을 옮긴 뒤 vtracer로 따고, 너비·기울기·자간은 외곽선에 건다.
+
+빌드 전 다듬기(refine, 11/2 품질 개선. 시험: 거의 다 그린 '굵고 둥근 고딕' 2,298자)
+- 획 두께: 기준 서체 같은 글자와 견준 획 두께 비율이 폰트 가운데 값에서 THICK_BAND 넘게 벗어난 글자만 그 끝까지 맞춘다.
+  획이 많은 글자(휵·좔·훑·핥)를 이미지 모델이 가늘게 그려 문장에서 옅게 보였다. 기준 서체와 견주는 것은, 복잡한 글자는 원래 가늘게 재지기 때문이다.
+- 굵은 스타일(기준 서체 Regular보다 획이 BOLD_RATIO배 넘게 굵음)은 속공간 둘레만 COUNTER_OPEN만큼 깎는다. 바깥 모양은 그대로, ㅁ·ㅂ·ㅇ 안쪽이 넓어져
+  작은 크기에서 덜 뭉친다(12px 뭉침 2자 → 1자).
+- 크기는 맞추지 않는다. 자리 맞추기만으로 99%가 기준 서체 잉크 상자의 ±6% 안이었다.
 """
 
 from __future__ import annotations
@@ -32,6 +39,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from . import raster
 from .contour import SHARP_BELOW, Axes, style_transform, vtrace
+from .hangul import KSX1001_HANGUL
 from .reference import REFERENCE_FONTS, REFERENCE_WEIGHTS, glyph_bounds, load_font
 
 FRAME_LEFT, FRAME_TOP, FRAME_SPAN = -150, 1030, 1300  # 폰트 단위. x -150~1150, y -270~1030(글자 몸통 가운데 380이 가운데)
@@ -43,6 +51,10 @@ OUTLIER = 1.5
 SPECK_AREA = 30  # 자리 맞춘 그림에서 이보다 작은 덩어리(px)는 지운다
 THICKNESS_SAMPLE = 40  # 장의 획 두께는 이만큼만 재서 가운데 값을 쓴다
 MARGIN = 24  # 윤곽을 옮기거나 외곽선을 딸 때 글자 둘레에 남기는 여백(px)
+THICK_BAND = 0.10  # 빌드 전 다듬기: 획 두께가 폰트 가운데 값에서 이만큼 넘게 벗어나면 이 끝까지 맞춘다
+BOLD_RATIO = 1.6  # 획 두께가 기준 서체 Regular의 이 배를 넘으면 굵은 스타일로 보고 속공간을 넓힌다(시험한 스타일 1.47~2.22)
+COUNTER_OPEN = 0.12  # 굵은 스타일에서 속공간 둘레를 획 두께의 이만큼 깎는다
+REFINE_MIN = 10  # 한글이 이보다 적으면(참고 글자만 있을 때 등) 가운데 값을 믿기 어려워 다듬지 않는다
 
 
 # ---------- 기준 서체 ----------
@@ -178,6 +190,47 @@ def place_sheet(cells: dict[str, np.ndarray], refs: dict[str, np.ndarray]) -> di
     return place_group(cells, target)
 
 
+# ---------- 스타일 검사(11/2 품질 개선 2-1) ----------
+# 읽히기는 하지만 혼자 튀는 글자를 찾아, 웹이 떨어진 글자처럼 다시 그린다(다시 그리는 비용은 사용자에게 받지 않는다).
+# 빌드 전 다듬기(refine)가 ±THICK_BAND까지는 맞추므로, 그보다 크게 벗어나 맞추면 모양이 상하는 글자만 고른다.
+STYLE_THICK = 1.2  # 획 두께가 기준의 이 배 넘게 굵거나 1/이 배 넘게 가늘면 다시 그린다(2,298자 시험에서 ±15% 밖이 1.3%)
+STYLE_SIZE = 1.12  # 크기가 기준 서체 잉크 상자의 이 배 넘게 크거나 작으면 다시 그린다(시험에서 99%가 ±6% 안)
+
+
+def _thickness_ratio(mask: np.ndarray, ch: str) -> float:
+    return raster.solid_thickness(mask) / _ref_thickness(ch)
+
+
+def _size_ratio(mask: np.ndarray, ch: str) -> float | None:
+    b = raster.bbox(mask)
+    if b is None:
+        return None
+    bx0, by0, bx1, by1 = _box(ch)
+    return float(np.sqrt((b[2] - b[0]) * (b[3] - b[1]) / ((bx1 - bx0) * (by1 - by0) * PX * PX)))
+
+
+def style_scores(placed: dict[str, np.ndarray], refs: dict[str, np.ndarray]) -> dict[str, tuple[float, float]]:
+    """한글 글자마다 (획 두께, 크기). 1이 기준이다. 획 두께는 기준 서체 같은 글자와 견준 비율을 참고 글자들의 가운데 값으로 나눈다
+    (복잡한 글자는 원래 가늘게 재진다). 참고 글자가 없으면 이 장의 가운데 값을 기준으로 쓴다."""
+    hangul = {c: m for c, m in placed.items() if c in KSX1001_HANGUL and m.any()}
+    if not hangul:
+        return {}
+    base = [_thickness_ratio(m, c) for c, m in place_refs(refs).items() if c in KSX1001_HANGUL and m.any()] if refs else []
+    mid = float(np.median(base or [_thickness_ratio(m, c) for c, m in hangul.items()]))
+    return {c: (_thickness_ratio(m, c) / mid, _size_ratio(m, c) or 1.0) for c, m in hangul.items()}
+
+
+def style_problem(score: tuple[float, float]) -> str | None:
+    t, s = score
+    if t > STYLE_THICK:
+        return f"획이 다른 글자보다 {round((t - 1) * 100)}% 굵어요"
+    if t < 1 / STYLE_THICK:
+        return f"획이 다른 글자보다 {round((1 - t) * 100)}% 가늘어요"
+    if max(s, 1 / s) > STYLE_SIZE:
+        return f"글자가 다른 글자보다 {'커요' if s > 1 else '작아요'}"
+    return None
+
+
 def encode(mask: np.ndarray) -> str:
     """자리 맞춘 그림 → 흑백 PNG data URL(흰 바탕 검은 글씨)."""
     return raster.png_data_url(Image.fromarray(~mask))
@@ -219,6 +272,55 @@ def weight_offset(axes: Axes) -> float:
 
 def glyph_mask(mask: np.ndarray, axes: Axes, offset_px: float) -> np.ndarray:
     return _offset(mask, offset_px, axes.roundness < SHARP_BELOW)
+
+
+# ---------- 빌드 전 다듬기 ----------
+
+
+@cache
+def _ref_thickness(ch: str) -> float:
+    """기준 서체 Regular 같은 글자의 획 두께(틀 px). 글자마다 한 번만 잰다."""
+    font = ImageFont.truetype(str(REFERENCE_FONTS["regular"]), round(1000 * PX))
+    image = Image.new("L", (SIDE, SIDE), 0)
+    ImageDraw.Draw(image).text((SIDE * 0.1, SIDE * 0.05), ch, font=font, fill=255)
+    return raster.solid_thickness(np.asarray(image) > 127)
+
+
+def _open_counters(mask: np.ndarray, amount_px: float) -> np.ndarray:
+    """속공간(구멍) 둘레의 잉크만 amount_px만큼 깎는다. 획이 끊기거나 속공간 수가 바뀌면 그대로 둔다."""
+    if amount_px < 0.5:
+        return mask
+    m = raster.pad(mask, 1).astype(np.uint8)
+    _, labels = cv2.connectedComponents(1 - m, connectivity=4)
+    holes = (labels > 0) & (labels != labels[0, 0])  # 한 칸 둘렀으므로 모서리는 바깥이다
+    if not holes.any():
+        return mask
+    near = cv2.distanceTransform((~holes).astype(np.uint8), cv2.DIST_L2, 5) <= amount_px
+    out = (m.astype(bool) & ~near)[1:-1, 1:-1]
+    ink = float(mask.sum())
+    limits = (raster.PIECE_MIN_SHARE * ink, raster.HOLE_MIN_SHARE * ink)
+    return out if raster.topology(out, *limits) == raster.topology(mask, *limits) else mask
+
+
+def refine(glyphs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """빌드 전에 한글 글자마다 획 두께를 고르게 하고, 굵은 스타일은 속공간을 넓힌다(모듈 설명 참고). 숫자·문장부호는 그대로 둔다."""
+    hangul = {c: m for c, m in glyphs.items() if c in KSX1001_HANGUL and m.any()}
+    if len(hangul) < REFINE_MIN:
+        return glyphs
+    own = {c: raster.solid_thickness(m) for c, m in hangul.items()}
+    ratio = {c: own[c] / _ref_thickness(c) for c in hangul}
+    mid = float(np.median(list(ratio.values())))
+    bold = mid >= BOLD_RATIO
+    out = dict(glyphs)
+    for c, m in hangul.items():
+        r = ratio[c] / mid
+        if abs(r - 1) > THICK_BAND:
+            want = 1 + THICK_BAND if r > 1 else 1 - THICK_BAND
+            m = _offset(m, (want / r - 1) * own[c] / 2)
+        if bold:
+            m = _open_counters(m, COUNTER_OPEN * own[c])
+        out[c] = m
+    return out
 
 
 # ---------- 사용자가 고친 글자(화면 4 글자 고치기) ----------
