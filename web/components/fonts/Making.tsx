@@ -12,7 +12,8 @@ import { api, errorMessage } from "@/lib/api";
 import { BUILD_STAGES } from "@/lib/constants";
 import type { ProjectView } from "@/lib/types";
 
-const STEPS = ["로고 읽기", "느낌 고르기", "30자 확인", "나머지 글자", "폰트 파일·검사"];
+// 11/4: 입력 질문 단계(가게·느낌·권리)까지 한 줄로 이어 보이게 다섯 단계로 합쳤다. 로고 읽기·견본 고르기는 견본, 30자·나머지·파일은 만들기다.
+export const STEPS = ["가게", "느낌", "권리", "견본", "만들기"];
 
 export function stepOf(view: ProjectView): number {
   if (view.phase === "analyzing") return 0;
@@ -126,7 +127,7 @@ export function Making({ view, onChanged }: { view: ProjectView; onChanged: () =
 
   return (
     <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-7 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
-      <Steps current={step} />
+      <Steps current={step <= 1 ? 3 : 4} />
       <div className="flex flex-col gap-2">
         <span className="text-15 font-bold text-muted">{view.name}</span>
         <h1 className="text-26 font-extrabold lg:text-32" aria-live="polite">

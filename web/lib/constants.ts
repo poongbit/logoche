@@ -9,6 +9,7 @@ import type {
   LogoSource,
   NearestKind,
   RecordCategory,
+  StyleAttributes,
   UploadInput,
   UsageContext,
 } from "./types";
@@ -149,6 +150,34 @@ export const AXES: Record<
   wobble: { label: "흔들림", description: "손으로 만든 느낌", min: 0, max: 1, step: 0.01, unit: "", stage: "draw" },
   tracking: { label: "자간", description: "글자 사이 간격", min: -10, max: 20, step: 0.5, unit: "%", stage: "refine" },
 };
+
+// 11/4 속성 고르기. 고른 값은 둥글기·굵기·대비·흔들림 축으로 들어간다. 굵기는 서체 방향마다 정하되 이 범위 안에 둔다.
+export const ATTRIBUTE_PAIRS: {
+  key: keyof StyleAttributes;
+  label: string;
+  options: [{ value: string; label: string }, { value: string; label: string }];
+}[] = [
+  { key: "edge", label: "획 끝", options: [{ value: "round", label: "둥글게" }, { value: "sharp", label: "각지게" }] },
+  { key: "weight", label: "굵기", options: [{ value: "thin", label: "가늘게" }, { value: "bold", label: "굵게" }] },
+  { key: "contrast", label: "굵기 차이", options: [{ value: "even", label: "고딕처럼 균일" }, { value: "high", label: "명조처럼 차이" }] },
+  { key: "hand", label: "손맛", options: [{ value: "neat", label: "반듯하게" }, { value: "brush", label: "손으로 쓴 듯" }] },
+];
+export const ATTRIBUTE_AXES = {
+  edge: { round: 0.85, sharp: 0.15 },
+  contrast: { even: 0.95, high: 0.6 },
+  hand: { neat: 0.05, brush: 0.6 },
+} as const;
+export const ATTRIBUTE_WEIGHT: Record<StyleAttributes["weight"], [number, number]> = { thin: [150, 419], bold: [540, 850] };
+export const attributeLabel = (key: keyof StyleAttributes, value: string) =>
+  ATTRIBUTE_PAIRS.find((p) => p.key === key)?.options.find((o) => o.value === value)?.label ?? value;
+
+/** 업종 목록 묶음(11/4). 스크롤하며 고른다. */
+export const INDUSTRY_GROUPS: { label: string; values: Industry[] }[] = [
+  { label: "음식·음료", values: ["cafe_dessert", "bakery", "snack_korean", "western_brunch", "asian", "bar_pub"] },
+  { label: "가게·서비스", values: ["craft", "beauty", "flower_plant", "fashion_goods", "pet", "fitness", "local_service"] },
+  { label: "배움·전문·여행", values: ["education", "creator", "clinic", "book_stationery", "office_pro", "stay_travel"] },
+  { label: "그 밖에", values: ["other"] },
+];
 
 // 획이 많은 글자(뷁·뚫)의 속공간이 막히지 않게 두는 굵기 상한. 엔진 실측 전 임시 값.
 export const WEIGHT_CAP = 850;

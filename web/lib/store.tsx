@@ -74,6 +74,7 @@ export const EMPTY_UPLOAD: UploadInput = {
   logoSource: null,
   logoFont: null,
   logoFontName: "",
+  attributes: null,
 };
 
 const INITIAL_STATE: AppState = {

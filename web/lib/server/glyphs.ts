@@ -246,6 +246,13 @@ function axisValue(req: StartGlyphJobRequest, key: AxisKey): number {
   return req.style.axes.find((a) => a.key === key)?.value ?? (AXES[key].min + AXES[key].max) / 2;
 }
 
+/** 쓰임·분위기 한 줄. 이전 작업은 예전 문장 그대로이고, 톤·사용처를 묻지 않는 새 작업은 빈 부분을 뺀다. */
+function purposeText(industry: string, usage: string, tones: string, feel: string): string {
+  const first = `쓰임: ${[industry, usage].filter(Boolean).join(" ")}.`;
+  const second = [tones && `분위기: ${tones}`, feel].filter(Boolean).join(", ");
+  return second ? `${first} ${second}.` : first;
+}
+
 function makeContext(req: StartGlyphJobRequest, sample: string | null = null): Context {
   const u = req.upload;
   if (!u.logoImage) throw new RouteError(400, "로고 이미지가 없어요. 화면 1에서 로고를 다시 올려 주세요.");
@@ -255,7 +262,7 @@ function makeContext(req: StartGlyphJobRequest, sample: string | null = null): C
   return {
     logo: imagePart(u.logoImage),
     sample: sample ? imagePart(sample) : null,
-    purpose: `쓰임: ${industry} ${usage}. 분위기: ${tones}${u.desiredFeel && !isImitationRequest(u.desiredFeel) ? `, ${u.desiredFeel}` : ""}.`,
+    purpose: purposeText(industry, usage, tones, u.desiredFeel && !isImitationRequest(u.desiredFeel) ? u.desiredFeel : ""),
     weight: axisValue(req, "weight"),
     expression: req.style.expression?.trim() && !isImitationRequest(req.style.expression) ? req.style.expression.trim() : DEFAULT_EXPRESSION,
     family: req.style.family ?? null,
@@ -306,7 +313,8 @@ const DIRECTION_WORDS: Record<"roundness" | "contrast" | "wobble", (v: number) =
 function directionLines(req: StartGlyphJobRequest): string[] {
   return (Object.keys(DIRECTION_WORDS) as (keyof typeof DIRECTION_WORDS)[]).flatMap((key) => {
     const axis = req.style.axes.find((a) => a.key === key);
-    if (!axis || Math.abs(axis.value - axis.suggested) < AXES[key].step / 2) return [];
+    // 11/4: 사용자가 속성으로 정한 축(chosen)은 제안값과 같아도 늘 넣는다
+    if (!axis || (!axis.chosen && Math.abs(axis.value - axis.suggested) < AXES[key].step / 2)) return [];
     return [`${AXES[key].label}: ${DIRECTION_WORDS[key](axis.value)}`];
   });
 }

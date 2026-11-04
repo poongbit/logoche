@@ -13,9 +13,9 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, FAMILY_LABEL, weightLabel, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, attributeLabel, CHECKS, EXTRA_CHARS, FAMILY_LABEL, weightLabel, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
-import { DESIRED_FEEL_MAX, industryText, isImitationRequest } from "@/lib/rules";
+import { DESIRED_FEEL_MAX, industryText, isImitationRequest, missingUploadFields } from "@/lib/rules";
 import type {
   BuildJob,
   CreateProjectRequest,
@@ -174,8 +174,14 @@ function firstRecord(u: UploadInput): RecordEvent[] {
     event("selection", `로고 원본: ${u.logoFileName} (${u.inputPath === "sample" ? "샘플" : "업로드"}) · 해시 ${u.logoHash?.slice(0, 8)}`),
     event("selection", `로고 출처 답변: ${labelOf(LOGO_SOURCES, u.logoSource)}`),
   ];
-  const fontName = u.logoFont === "free_font" || u.logoFont === "commercial_font" ? u.logoFontName.trim() : "";
-  out.push(event("selection", `로고 글자 폰트 답변: ${labelOf(LOGO_FONTS, u.logoFont)}${fontName ? ` (${fontName})` : ""}`));
+  if (u.logoFont) {
+    const fontName = u.logoFont === "free_font" || u.logoFont === "commercial_font" ? u.logoFontName.trim() : "";
+    out.push(event("selection", `로고 글자 폰트 답변: ${labelOf(LOGO_FONTS, u.logoFont)}${fontName ? ` (${fontName})` : ""}`));
+  }
+  if (u.attributes) {
+    const a = u.attributes;
+    out.push(event("selection", `글씨 속성 선택: 획 끝 ${attributeLabel("edge", a.edge)} · 굵기 ${attributeLabel("weight", a.weight)} · 굵기 차이 ${attributeLabel("contrast", a.contrast)} · 손맛 ${attributeLabel("hand", a.hand)}`));
+  }
   const intent = [
     u.industry && `업종 ${industryText(u)}`,
     u.brandTones.length && `브랜드 톤 ${u.brandTones.map((t) => labelOf(BRAND_TONES, t)).join(", ")}`,
@@ -190,7 +196,8 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
   const u = req.upload;
   if (!u.logoImage) throw new RouteError(400, "로고를 올려 주세요");
   if (!u.storeName.trim()) throw new RouteError(400, "가게 이름을 적어 주세요");
-  if (!u.logoSource || !u.logoFont) throw new RouteError(400, "권리 확인 두 가지를 골라 주세요");
+  const missing = missingUploadFields(u);
+  if (missing.length) throw new RouteError(400, `빠진 것이 있어요: ${missing.join(", ")}`);
   if (isImitationRequest(u.desiredFeel)) throw new RouteError(400, "특정 서체는 따라 하지 않아요. 사업 내용과 원하는 모양을 말로 적어 주세요.");
   if (u.desiredFeel.length > DESIRED_FEEL_MAX) throw new RouteError(400, `사업 내용은 ${DESIRED_FEEL_MAX}자까지 적을 수 있어요.`);
   const quality: DrawQuality = "fine"; // 11/3: 그리기 수준 선택을 없애고 정밀만 쓴다

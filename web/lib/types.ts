@@ -44,6 +44,14 @@ export type BrandTone =
   | "elegant";
 export type UsageContext = "signage_menu" | "sns_thumbnail" | "packaging_sticker" | "print_card" | "web_app";
 
+/** 11/4 속성 고르기: 같은 글자를 두 방식으로 보여 주고 하나씩 고른다. 네 쌍 모두 골라야 한다(건너뛰기 없음). */
+export interface StyleAttributes {
+  edge: "round" | "sharp"; // 획 끝 → 둥글기
+  weight: "thin" | "bold"; // 굵기
+  contrast: "even" | "high"; // 굵기 차이(고딕처럼 균일 / 명조처럼 차이) → 대비
+  hand: "neat" | "brush"; // 손맛 → 흔들림
+}
+
 export interface UploadInput {
   logoImage: string | null; // data URL
   logoFileName: string | null;
@@ -60,6 +68,8 @@ export interface UploadInput {
   logoSource: LogoSource | null;
   logoFont: LogoFont | null;
   logoFontName: string; // 로고에 쓴 폰트 이름(알면), 비워도 된다
+  /** 11/4부터 로고 글자·브랜드 톤·주 사용처는 묻지 않는다(이전 작업에만 남아 있다). 대신 속성 네 쌍을 고른다. 이전 작업에는 없다. */
+  attributes?: StyleAttributes | null;
 }
 
 // ---------- 화면 2. 스타일 카드 ----------
@@ -76,6 +86,7 @@ export interface StyleAxis {
   range: [number, number]; // 고른 톤에서 온 범위
   basis: AxisBasis;
   reason: string;
+  chosen?: boolean; // 사용자가 속성으로 직접 정한 축(11/4). 그리기 지시문에 늘 넣는다.
 }
 
 export type StyleOptionKind = "logo" | "tone" | "middle";

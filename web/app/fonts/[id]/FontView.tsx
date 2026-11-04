@@ -80,7 +80,7 @@ export function FontView() {
 
   return (
     <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
-      <Steps current={view.build ? 4 : 2} />
+      <Steps current={view.build ? 5 : 4} />
       <div className="flex flex-col gap-2">
         <span className="text-15 font-bold text-muted">{view.name}</span>
         <h1 className="text-26 font-extrabold lg:text-32">만들다가 멈췄어요</h1>

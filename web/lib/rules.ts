@@ -57,15 +57,21 @@ export function isImitationRequest(text: string): boolean {
   return false;
 }
 
+export const BUSINESS_MIN = 10; // 사업 내용 최소 글자 수(11/4: 건너뛸 수 없다)
+
+export function attributesComplete(a: UploadInput["attributes"]): boolean {
+  return !!a && !!a.edge && !!a.weight && !!a.contrast && !!a.hand;
+}
+
+/** 빠진 입력(11/4: 로고 글자·브랜드 톤·주 사용처는 묻지 않고, 업종·사업 내용·속성 네 쌍·로고 권리가 필수) */
 export function missingUploadFields(u: UploadInput): string[] {
   const missing: string[] = [];
   if (!u.logoImage) missing.push("로고");
   if (!u.storeName.trim()) missing.push("가게 이름");
   if (!u.industry) missing.push("업종");
-  if (u.brandTones.length < 2) missing.push("브랜드 톤 2~3개");
-  if (u.usageContexts.length < 1) missing.push("주 사용처");
+  if (u.desiredFeel.trim().length < BUSINESS_MIN) missing.push(`사업 내용 ${BUSINESS_MIN}자 이상`);
+  if (!attributesComplete(u.attributes)) missing.push("글씨 속성 네 가지");
   if (!u.logoSource) missing.push("로고 출처");
-  if (!u.logoFont) missing.push("로고 글자 폰트");
   return missing;
 }
 

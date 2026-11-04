@@ -1,7 +1,7 @@
 // 화면 2 스타일 카드: 로고 측정(엔진) + 분위기 해석(Claude) + 분위기 사전 규칙으로 7축을 정한다.
 
 import { z } from "zod";
-import { AXES, AXIS_ORDER, BRAND_TONES, STYLE_FAMILIES, USAGE_CONTEXTS, WEIGHT_CAP, weightLabel } from "@/lib/constants";
+import { ATTRIBUTE_AXES, ATTRIBUTE_WEIGHT, AXES, AXIS_ORDER, BRAND_TONES, STYLE_FAMILIES, USAGE_CONTEXTS, WEIGHT_CAP, attributeLabel, weightLabel } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { industryText, isImitationRequest } from "@/lib/rules";
 import type { AxisKey, BrandTone, StyleAxis, StyleCard, StyleConflict, StyleDirection, StyleFamily, UploadInput, UsageContext, ValueMapping } from "@/lib/types";
@@ -104,6 +104,21 @@ export function buildStyleCard(
     return { key, value, suggested: value, range: [lo, hi], basis, reason };
   });
 
+  // 11/4: 사용자가 속성으로 고른 둥글기·대비·흔들림은 로고 측정·톤 범위보다 앞선다(굵기는 서체 방향 굵기가 범위 안에서 정한다).
+  const attr = upload.attributes;
+  if (attr) {
+    const picked: { key: AxisKey; value: number; reason: string }[] = [
+      { key: "roundness", value: ATTRIBUTE_AXES.edge[attr.edge], reason: `직접 고른 속성: 획 끝 ${attributeLabel("edge", attr.edge)}` },
+      { key: "contrast", value: ATTRIBUTE_AXES.contrast[attr.contrast], reason: `직접 고른 속성: 굵기 차이 ${attributeLabel("contrast", attr.contrast)}` },
+      { key: "wobble", value: ATTRIBUTE_AXES.hand[attr.hand], reason: `직접 고른 속성: 손맛 ${attributeLabel("hand", attr.hand)}` },
+    ];
+    for (const p of picked) {
+      const axis = axes.find((a) => a.key === p.key);
+      if (axis) Object.assign(axis, { value: p.value, suggested: p.value, basis: "selection" as const, reason: p.reason, chosen: true });
+    }
+    if (conflict && picked.some((p) => p.key === conflict!.axis)) conflict = null; // 속성으로 정한 축은 톤 충돌로 다시 묻지 않는다
+  }
+
   // 11/4: 기본으로 쓰는 첫 방향의 굵기를 조절값에 넣는다(방향을 고르면 applyDirection이 그 방향 굵기로 바꾼다)
   const first = interpretation.directions[0]?.weight;
   const weightAxis = axes.find((a) => a.key === "weight");
@@ -181,7 +196,32 @@ export function cleanSlogans(list: string[] | undefined): string[] {
 }
 
 /** 굵기 안내 한 줄: 고른 톤이 권하는 굵기 범위를 기준으로 삼되 계열에 맞게 조정하게 한다 */
+/** 사용자가 직접 고른 속성 네 쌍(11/4). 시험(21회)에서 세 방향 모두 이 선택을 지켰다. */
+function attributeBlock(upload: UploadInput): string {
+  const a = upload.attributes;
+  if (!a) return "";
+  const words = {
+    edge: { round: "획 끝을 둥글게", sharp: "획 끝을 각지게" },
+    weight: { thin: "가늘게(굵기 150~419)", bold: "굵게(굵기 540 이상)" },
+    contrast: { even: "가로·세로획 굵기가 고딕처럼 균일", high: "가로·세로획 굵기 차이가 명조처럼 큼" },
+    hand: { neat: "반듯하게", brush: "손으로 쓴 듯" },
+  };
+  return [
+    "",
+    "사용자가 직접 고른 속성(반드시 따릅니다. 세 방향 모두 이 선택을 지키고, 방향끼리는 그 안에서 계열·표현을 달리하세요):",
+    `- 획 끝: ${words.edge[a.edge]}`,
+    `- 굵기: ${words.weight[a.weight]}`,
+    `- 굵기 차이: ${words.contrast[a.contrast]}`,
+    `- 손맛: ${words.hand[a.hand]}`,
+    "",
+  ].join("\n");
+}
+
 function weightHint(upload: UploadInput): string {
+  if (upload.attributes) {
+    const [lo, hi] = ATTRIBUTE_WEIGHT[upload.attributes.weight];
+    return `사용자가 굵기를 ${upload.attributes.weight === "thin" ? "가늘게" : "굵게"} 골랐으니 weight는 ${lo}~${hi} 안에서 정하세요. 방향마다 계열에 맞게 그 안에서 조금씩 달리하세요.`;
+  }
   const tones = upload.brandTones;
   const floor = Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0));
   const floorText = floor ? ` 주 사용처 때문에 ${floor} 아래로는 내리지 마세요.` : "";
@@ -200,8 +240,9 @@ function interpretPrompt(upload: UploadInput): string {
     `가게 이름: ${upload.storeName}`,
     `업종: ${industry}`,
     `사용자가 고른 브랜드 톤: ${toneNames(upload.brandTones) || "미정(로고에서 읽어 주세요)"}`,
-    `주 사용처: ${usage || "미정"}`,
+    usage ? `주 사용처: ${usage}` : "",
     upload.desiredFeel && !isImitationRequest(upload.desiredFeel) ? `사업 내용과 추구하는 가치: ${upload.desiredFeel}` : "",
+    attributeBlock(upload),
     `보기(readTones): ${BRAND_TONES.map((t) => `${t.value}=${t.label}`).join(", ")}`,
     `서체 계열 보기(family): ${STYLE_FAMILIES.map((f) => `${f.value}=${f.label}(${f.hint})`).join(", ")}`,
     "",
@@ -246,14 +287,14 @@ export function rankDirections(directions: StyleDirection[], tones: BrandTone[])
 }
 
 /** 방향 3개를 다듬는다: 빈 표현 방식과 같은 표현 방식은 빼고, 설계 지시문은 금지된 문장을 걷어 낸다. */
-function cleanDirections(directions: StyleDirection[], storeName: string, weightFloor: number): StyleDirection[] {
+function cleanDirections(directions: StyleDirection[], storeName: string, weightFloor: number, weightRange: [number, number] | null = null): StyleDirection[] {
   const seen = new Set<string>();
   const out: StyleDirection[] = [];
   for (const d of directions) {
     const expression = d.expression.trim();
     if (!expression || seen.has(expression)) continue;
     seen.add(expression);
-    const w = typeof d.weight === "number" && Number.isFinite(d.weight) ? Math.round(Math.min(WEIGHT_CAP, Math.max(150, weightFloor, d.weight))) : undefined; // 범위와 주 사용처의 하한에 맞춘다
+    const w = typeof d.weight === "number" && Number.isFinite(d.weight) ? Math.round(Math.min(weightRange?.[1] ?? WEIGHT_CAP, WEIGHT_CAP, Math.max(weightRange?.[0] ?? 150, 150, weightFloor, d.weight))) : undefined; // 범위와 주 사용처의 하한에 맞춘다
     out.push({ family: d.family, expression, brief: d.brief ? sanitizeBrief(d.brief, storeName) : null, weight: w });
   }
   return out.slice(0, 3);
@@ -283,7 +324,7 @@ export async function analyzeStyle(upload: UploadInput): Promise<StyleCard> {
       signature: interpretation.signature,
       toneMismatch,
       directions: rankDirections(
-        cleanDirections(interpretation.directions, upload.storeName ?? "", Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0))),
+        cleanDirections(interpretation.directions, upload.storeName ?? "", Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0)), upload.attributes ? ATTRIBUTE_WEIGHT[upload.attributes.weight] : null),
         chosen ? upload.brandTones : interpretation.readTones.slice(0, 3),
       ),
       slogans: cleanSlogans(interpretation.slogans),

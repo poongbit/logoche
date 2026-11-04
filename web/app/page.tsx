@@ -13,7 +13,7 @@ import { KSX1001_HANGUL } from "@/lib/hangul";
 const HANGUL = KSX1001_HANGUL.size.toLocaleString();
 
 const STEPS: { title: string; body: string }[] = [
-  { title: "로고 올리기", body: "로고 이미지와 가게 이름, 사업 내용과 추구하는 가치를 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요." },
+  { title: "로고 올리기", body: "로고 이미지와 가게 이름을 올리고, 업종과 사업 내용, 원하는 글씨 모양을 한 가지씩 골라요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요." },
   { title: "30자 보고 정하기", body: "AI가 느낌 세 가지를 보여 드리고, 고른 느낌으로 먼저 30자를 그려요. 마음에 들면 이어서 그리고, 아니면 다른 느낌으로 다시 해 볼 수 있어요." },
   {
     title: "나머지 글자 그리기",

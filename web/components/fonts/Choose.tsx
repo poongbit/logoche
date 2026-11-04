@@ -74,7 +74,7 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
 
   return (
     <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-7 px-5 pt-8 lg:px-10 lg:pt-10">
-      <Steps current={1} />
+      <Steps current={3} />
       <div className="flex flex-col gap-2">
         <span className="text-15 font-bold text-muted">{view.name}</span>
         <h1 className="text-26 font-extrabold lg:text-32">{choose?.again ? "다른 느낌으로 골라 볼까요?" : "어떤 느낌의 글씨로 만들까요?"}</h1>

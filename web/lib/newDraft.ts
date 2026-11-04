@@ -15,7 +15,11 @@ export interface NewDraft {
 
 export const EMPTY_DRAFT: NewDraft = { upload: EMPTY_UPLOAD };
 
+// 11/4: 질문 페이지(/make/...)로 옮겨 다녀도 큰 로고가 사라지지 않게 메모리에도 들고 있다(sessionStorage는 5MB 한도라 큰 로고를 못 담을 수 있다).
+let memory: NewDraft | null = null;
+
 export function loadDraft(): NewDraft {
+  if (memory) return memory;
   try {
     const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? "null") as NewDraft | null;
     if (saved) return { upload: { ...EMPTY_UPLOAD, ...saved.upload } };
@@ -24,6 +28,7 @@ export function loadDraft(): NewDraft {
 }
 
 export function saveDraft(draft: NewDraft) {
+  memory = draft;
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
   } catch {
@@ -34,6 +39,7 @@ export function saveDraft(draft: NewDraft) {
 }
 
 export function clearDraft() {
+  memory = null;
   try {
     sessionStorage.removeItem(STORAGE_KEY);
   } catch {}
