@@ -396,5 +396,5 @@ export const STYLE_FAMILIES: { value: StyleFamily; label: string; hint: string; 
 ];
 export const FAMILY_LABEL: Record<StyleFamily, string> = Object.fromEntries(STYLE_FAMILIES.map((f) => [f.value, f.label])) as Record<StyleFamily, string>;
 
-/** 굵기 축 값을 말로(화면 표시). 이미지 모델 지시문의 굵기 말은 glyphs.ts weightWord가 같은 경계(350·550·750)를 쓴다. */
-export const weightLabel = (v: number) => (v < 350 ? "가는" : v < 550 ? "보통" : v < 750 ? "굵은" : "아주 굵은");
+/** 굵기 축 값을 말로(화면 표시). 이미지 모델 지시문의 굵기 말은 glyphs.ts weightWord가 같은 경계(300·420·540·680)를 쓴다(서체 계열이 있는 작업). */
+export const weightLabel = (v: number) => (v < 300 ? "아주 가는" : v < 420 ? "가는" : v < 540 ? "보통" : v < 680 ? "굵은" : "아주 굵은");

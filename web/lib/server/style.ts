@@ -146,7 +146,7 @@ const InterpretationSchema = z.object({
         brief: z.string().describe("이 방향의 서체 설계 지시문. 한국어 4~6문장(아래 조건)"),
         weight: z
           .number()
-          .describe("이 방향의 기본 굵기(굵기 축 값, 150~850의 정수). 말로 옮기면 350 미만 가늘게, 350~549 보통, 550~749 굵게, 750 이상 아주 굵게"),
+          .describe("이 방향의 기본 굵기(굵기 축 값, 150~850의 정수). 말로 옮기면 300 미만 아주 가늘게, 300~419 가늘게, 420~539 보통, 540~679 굵게, 680 이상 아주 굵게"),
       }),
     )
     .describe("서체 방향 3개. 첫 안이 가장 추천하는 안. 3개 중 적어도 2개는 계열이 달라야 하고, 표현 방식도 서로 뚜렷이 달라야 한다."),
@@ -218,6 +218,33 @@ function interpretPrompt(upload: UploadInput): string {
     .join("\n");
 }
 
+// 톤별로 어울리는 서체 계열(임시 값. TONE_RANGES처럼 분위기 사전이 확정되면 바꾼다). 첫(AI 추천) 안을 정하는 데 쓴다.
+const TONE_FAMILIES: Record<BrandTone, StyleFamily[]> = {
+  cute: ["rounded", "display"],
+  warm: ["rounded", "brush"],
+  playful: ["rounded", "display", "brush"],
+  premium: ["myeongjo", "gothic"],
+  trustworthy: ["gothic", "myeongjo"],
+  traditional: ["myeongjo", "brush"],
+  modern: ["gothic"],
+  natural: ["brush", "rounded"],
+  retro: ["display", "gothic"],
+  hip: ["display", "gothic"],
+  bold: ["gothic", "display"],
+  calm: ["myeongjo", "gothic"],
+  fresh: ["rounded", "gothic"],
+  elegant: ["myeongjo", "brush"],
+};
+
+/** 방향을 톤 적합도 순으로 세운다(11/4). 점수 = 방향의 계열이 어울리는 톤의 수 − 굵기가 톤 권장 굵기 가운데에서 벗어난 정도(200당 1점).
+ * 이전에는 Claude가 낸 순서 그대로라 "우아한" 톤에서도 굵은 둥근 고딕이 추천 첫 안이 될 수 있었다. 점수가 같으면 Claude의 순서를 지킨다. */
+export function rankDirections(directions: StyleDirection[], tones: BrandTone[]): StyleDirection[] {
+  if (directions.length < 2 || tones.length === 0) return directions;
+  const mid = tones.reduce((a, t) => a + (TONE_RANGES[t].weight[0] + TONE_RANGES[t].weight[1]) / 2, 0) / tones.length;
+  const score = (d: StyleDirection) => tones.filter((t) => TONE_FAMILIES[t].includes(d.family)).length - (d.weight ? Math.abs(d.weight - mid) / 200 : 0);
+  return directions.map((d, i) => ({ d, i, s: score(d) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.d);
+}
+
 /** 방향 3개를 다듬는다: 빈 표현 방식과 같은 표현 방식은 빼고, 설계 지시문은 금지된 문장을 걷어 낸다. */
 function cleanDirections(directions: StyleDirection[], storeName: string, weightFloor: number): StyleDirection[] {
   const seen = new Set<string>();
@@ -255,7 +282,10 @@ export async function analyzeStyle(upload: UploadInput): Promise<StyleCard> {
       strokeEnd: interpretation.strokeEnd,
       signature: interpretation.signature,
       toneMismatch,
-      directions: cleanDirections(interpretation.directions, upload.storeName ?? "", Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0))),
+      directions: rankDirections(
+        cleanDirections(interpretation.directions, upload.storeName ?? "", Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0))),
+        chosen ? upload.brandTones : interpretation.readTones.slice(0, 3),
+      ),
       slogans: cleanSlogans(interpretation.slogans),
       valueMappings: interpretation.valueMappings.slice(0, 4),
     },
