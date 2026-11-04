@@ -8,11 +8,12 @@ import { saveBlob } from "@/lib/files";
 import { buildRecordText } from "@/lib/record";
 import type { ProjectPhase, RecordEvent } from "@/lib/types";
 
-export const RUNNING_PHASES: ProjectPhase[] = ["analyzing", "drawing", "reviewing", "building"];
+export const RUNNING_PHASES: ProjectPhase[] = ["analyzing", "choosing", "drawing", "reviewing", "building"];
 export const isRunning = (phase: ProjectPhase) => RUNNING_PHASES.includes(phase);
 
 export const PHASE_LABELS: Record<ProjectPhase, string> = {
   analyzing: "로고 읽는 중",
+  choosing: "느낌을 골라 주세요",
   drawing: "참고 글자 그리는 중",
   reviewing: "확인을 기다려요",
   building: "그리는 중",
@@ -34,7 +35,7 @@ export function StatusPill({ phase }: { phase: ProjectPhase }) {
   const base = "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-13 font-bold";
   if (phase === "done") return <span className={`${base} border-[1.5px] border-good text-good`}>{PHASE_LABELS.done}</span>;
   if (phase === "failed") return <span className={`${base} border-[1.5px] border-bad text-bad`}>{PHASE_LABELS.failed}</span>;
-  if (phase === "reviewing") return <span className={`${base} border-[1.5px] border-ink`}>{PHASE_LABELS.reviewing}</span>;
+  if (phase === "reviewing" || phase === "choosing") return <span className={`${base} border-[1.5px] border-ink`}>{PHASE_LABELS[phase]}</span>;
   return (
     <span className={`${base} bg-stage`}>
       <span aria-hidden className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-track border-t-ink" />

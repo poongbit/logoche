@@ -25,6 +25,7 @@ import type {
   ProjectView,
   RecordCategory,
   RecordEvent,
+  ChooseAction,
   ReviewAction,
   SaveGlyphTweakRequest,
   SaveGlyphTweakResponse,
@@ -37,17 +38,19 @@ import type {
 import { getBuild, startBuild } from "./build";
 import { engineRequest, readEdits } from "./edits";
 import { engine } from "./engine";
-import { RouteError } from "./env";
+import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
 import { doneMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
+import { createSample } from "./samples";
 import { analyzeStyle, cleanSlogans } from "./style";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
 const REVIEW_SECONDS = 20; // 참고 글자를 보여 주고 저절로 계속하기까지
 const ID = /^[0-9a-f-]{36}$/;
-const RUNNING: ProjectPhase[] = ["analyzing", "drawing", "reviewing", "building"];
+const RUNNING: ProjectPhase[] = ["analyzing", "choosing", "drawing", "reviewing", "building"];
+const CHOOSE_SECONDS = 40; // 견본이 다 되면 고르지 않아도 이만큼 뒤 추천 안으로 저절로 계속한다(창을 닫아도 계속 만든다는 약속을 지킨다)
 
 interface Stored {
   id: string;
@@ -65,12 +68,14 @@ interface Stored {
   phase: ProjectPhase;
   error: string | null;
   review: { readyAt: number | null; held: boolean; continued: boolean };
+  // 느낌 고르기(11/4). 견본 그림은 방향마다 한 장. 서버를 다시 켜도 이어 가려고 파일에 둔다(그리는 일꾼은 메모리에 있다).
+  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null };
   result: { build: BuildJob; missing: string[]; extras: string[] } | null;
   record: RecordEvent[];
   notified?: "done" | "failed"; // 완성·멈춤 알림 메일을 이미 보낸 종류(같은 메일을 두 번 보내지 않게)
 }
 
-const store = globalThis as unknown as { __logocheProjectLocks?: Map<string, Promise<unknown>>; __logocheDrivers?: Set<string> };
+const store = globalThis as unknown as { __logocheProjectLocks?: Map<string, Promise<unknown>>; __logocheDrivers?: Set<string>; __logocheSampleWorkers?: Set<string> };
 const locks: Map<string, Promise<unknown>> = (store.__logocheProjectLocks ??= new Map());
 const drivers: Set<string> = (store.__logocheDrivers ??= new Set());
 
@@ -149,9 +154,9 @@ export async function ownsGlyphJob(owner: string, jobId: string): Promise<boolea
   return (await ownedProjects(owner)).some((p) => p.glyphJobId === jobId);
 }
 
-async function glyphRequest(p: Stored): Promise<StartGlyphJobRequest> {
+async function glyphRequest(p: Stored, sampleId: string | null = null): Promise<StartGlyphJobRequest> {
   if (!p.style) throw new RouteError(409, "로고를 아직 읽는 중이에요");
-  return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: p.style, sampleId: null, quality: p.quality };
+  return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: p.style, sampleId, quality: p.quality };
 }
 
 async function buildRequest(p: Stored): Promise<StartBuildJobRequest> {
@@ -216,24 +221,96 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
 
 // ---------- 단계 ----------
 
-/** 로고를 읽어 조절값·표현 방식을 정하고 참고 글자 30자를 그리기 시작한다. */
+/** 로고를 읽어 조절값·서체 방향 3개를 정하고, 방향마다 가게 이름 견본을 그리는 느낌 고르기 단계로 넘어간다(11/4).
+ * 방향이 없으면(모의 응답 등) 예전처럼 바로 참고 글자 30자를 그린다. */
 async function analyze(p: Stored) {
   const style = await analyzeStyle({ ...p.upload, logoImage: await logoOf(p.id) });
-  const glyphJobId = startGlyphJob(await glyphRequest({ ...p, style }));
+  const choosing = !MOCK && (style.directions?.length ?? 0) > 0;
+  const glyphJobId = choosing ? null : startGlyphJob(await glyphRequest({ ...p, style }));
   await update(p.id, (q) => {
     q.style = style;
     q.glyphJobId = glyphJobId;
-    q.phase = "drawing";
+    q.phase = choosing ? "choosing" : "drawing";
+    if (choosing) q.choose = { samples: style.directions!.map(() => ({ sampleId: null, status: "drawing" as const })), readyAt: null, held: false, picked: null };
     for (const m of style.models) q.record.push(event("ai_model", `스타일 분석: ${m}`));
     q.record.push(event("selection", `AI가 정한 조절값: ${style.axes.map((a) => `${AXES[a.key].label} ${a.value}`).join(" · ")}`));
-    q.record.push(event("creative_intent", `표현 방식: ${style.expression} (AI 제안${q.upload.desiredFeel.trim() ? ", 사업 내용·가치 반영" : ""})`));
-    if (style.family) q.record.push(event("creative_intent", `서체 계열: ${FAMILY_LABEL[style.family]} (AI 제안)`));
-    if (style.designBrief) q.record.push(event("creative_intent", `서체 설계 지시: ${style.designBrief}`));
+    if (choosing) {
+      q.record.push(event("creative_intent", `AI가 낸 서체 방향 ${style.directions!.length}개: ${style.directions!.map((d) => `${FAMILY_LABEL[d.family]} '${d.expression}'`).join(" / ")}${q.upload.desiredFeel.trim() ? " (사업 내용·가치 반영)" : ""}`));
+    } else {
+      q.record.push(event("creative_intent", `표현 방식: ${style.expression} (AI 제안${q.upload.desiredFeel.trim() ? ", 사업 내용·가치 반영" : ""})`));
+    }
     for (const v of style.valueMappings ?? []) q.record.push(event("creative_intent", `브랜드 가치 → 조형: ${v.value} → ${v.form} (${v.why})`));
   });
 }
 
-/** 참고 글자 작업이 끝나기를 기다렸다가 확인 단계로 넘어간다. */
+// 견본을 그리는 일꾼. 서버를 다시 켜면 사라지므로, 파일에 'drawing'으로 남은 견본은 waitChoice가 다시 그린다.
+const sampleWorkers: Set<string> = (store.__logocheSampleWorkers ??= new Set());
+
+/** 방향 하나의 견본 그림을 그려 파일에 적는다. 실패해도 작업은 계속된다(그 방향은 그림 없이 고를 수 있다). */
+function drawSample(id: string, index: number) {
+  const key = `${id}:${index}`;
+  if (sampleWorkers.has(key)) return;
+  sampleWorkers.add(key);
+  void (async () => {
+    let sampleId: string | null = null;
+    try {
+      const p = await read(id);
+      const d = p.style?.directions?.[index];
+      if (!p.style || !d) return;
+      const style = { ...p.style, expression: d.expression, family: d.family, designBrief: d.brief };
+      sampleId = (await createSample({ upload: { ...p.upload, logoImage: await logoOf(id) }, style, expression: d.expression })).sampleId;
+    } catch (err) {
+      console.error("[logoche] 느낌 견본 실패", id, index, err);
+    } finally {
+      sampleWorkers.delete(key);
+      await update(id, (q) => {
+        const s = q.choose?.samples[index];
+        if (s) {
+          s.sampleId = sampleId;
+          s.status = sampleId ? "ready" : "failed";
+        }
+      }).catch(() => {});
+    }
+  })();
+}
+
+/** 느낌 고르기 단계: 견본이 다 되면 CHOOSE_SECONDS 뒤(기다리기를 누르지 않았다면) 추천 안으로, 사용자가 고르면 그 안으로 참고 글자 그리기를 시작한다. */
+async function waitChoice(p: Stored) {
+  let idx = 0;
+  for (;;) {
+    const q = await read(p.id);
+    if (q.phase !== "choosing" || !q.choose || !q.style?.directions) return;
+    const { samples } = q.choose;
+    samples.forEach((s, i) => s.status === "drawing" && drawSample(p.id, i)); // 서버를 다시 켜 끊긴 견본은 다시 그린다
+    const settled = samples.every((s) => s.status !== "drawing");
+    if (settled && q.choose.readyAt === null) await update(p.id, (r) => void (r.choose && (r.choose.readyAt = Date.now())));
+    const timeUp = settled && !q.choose.held && q.choose.readyAt !== null && Date.now() >= q.choose.readyAt + CHOOSE_SECONDS * 1000;
+    const noneReady = settled && samples.every((s) => s.status === "failed"); // 보여 줄 견본이 없으면 기다릴 이유가 없다
+    if (q.choose.picked !== null || timeUp || noneReady) {
+      idx = q.choose.picked ?? 0;
+      break;
+    }
+    await sleep(1000);
+  }
+  const q = await read(p.id);
+  const d = q.style!.directions![idx] ?? q.style!.directions![0];
+  const sample = q.choose!.samples[idx];
+  const style = { ...q.style!, expression: d.expression, family: d.family, designBrief: d.brief };
+  const glyphJobId = startGlyphJob(await glyphRequest({ ...q, style }, sample?.status === "ready" ? sample.sampleId : null));
+  const auto = q.choose!.picked === null;
+  await update(p.id, (r) => {
+    r.style = style;
+    r.glyphJobId = glyphJobId;
+    r.phase = "drawing";
+    if (r.choose) r.choose.picked = idx;
+    r.record.push(event("selection", auto ? `서체 방향을 고르지 않아 ${CHOOSE_SECONDS}초 뒤 AI 추천 안으로 계속함` : "서체 방향을 직접 고름"));
+    r.record.push(event("creative_intent", `고른 서체 방향: ${FAMILY_LABEL[d.family]} · ${d.expression}${sample?.status === "ready" ? " (견본 그림을 참고 이미지로 사용)" : ""}`));
+    if (d.brief) r.record.push(event("creative_intent", `서체 설계 지시: ${d.brief}`));
+  });
+}
+
+/** 참고 글자 작업이 끝나기를 기다렸다가 나머지 글자를 그리러 간다. 11/4부터 참고 글자 확인 단계(20초)는 거치지 않는다
+ * (느낌은 앞의 견본 고르기에서 정했다). 이전에 만들다 만 작업의 reviewing 단계는 waitReview가 그대로 이어 받는다. */
 async function waitRefs(p: Stored) {
   const id = p.glyphJobId!;
   let job = await getGlyphJob(id);
@@ -243,11 +320,13 @@ async function waitRefs(p: Stored) {
   }
   const ready = job.items.filter((i) => i.status === "ready").length;
   if (ready === 0) throw new Error("참고 글자를 하나도 그리지 못했어요");
-  await update(p.id, (q) => {
-    q.phase = "reviewing";
-    q.review = { readyAt: Date.now(), held: false, continued: false };
-    for (const m of job.models) q.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
-    q.record.push(event("selection", `참고 글자 ${job.items.length}자 중 ${ready}자 통과`));
+  const q = await read(p.id);
+  const buildJobId = await startBuild(await buildRequest(q));
+  await update(p.id, (r) => {
+    r.phase = "building";
+    r.buildJobId = buildJobId;
+    for (const m of job.models) r.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
+    r.record.push(event("selection", `참고 글자 ${job.items.length}자 중 ${ready}자 통과`));
   });
 }
 
@@ -335,6 +414,7 @@ async function waitBuild(p: Stored) {
 
 const STEPS: Partial<Record<ProjectPhase, (p: Stored) => Promise<void>>> = {
   analyzing: analyze,
+  choosing: waitChoice,
   drawing: waitRefs,
   reviewing: waitReview,
   building: waitBuild,
@@ -447,6 +527,24 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
       held: p.review.held,
     };
   }
+  let choose: ProjectView["choose"] = null;
+  if (p.phase === "choosing" && p.choose && p.style?.directions) {
+    const c = p.choose;
+    const settled = c.samples.every((s) => s.status !== "drawing");
+    choose = {
+      directions: p.style.directions.map((d, i) => ({
+        family: d.family,
+        familyLabel: FAMILY_LABEL[d.family],
+        expression: d.expression,
+        summary: d.brief ? (d.brief.split(/(?<=[.!?。])\s+/)[0] ?? null) : null,
+        imageUrl: c.samples[i]?.status === "ready" && c.samples[i].sampleId ? `/api/style/samples/${c.samples[i].sampleId}` : null,
+        status: c.samples[i]?.status ?? "failed",
+        recommended: i === 0,
+      })),
+      continueAt: settled && !c.held && c.readyAt !== null ? c.readyAt + CHOOSE_SECONDS * 1000 : null,
+      held: c.held,
+    };
+  }
   let recent: ProjectView["recent"] = [];
   if (p.phase === "building" && p.glyphJobId) {
     const jobId = p.glyphJobId;
@@ -461,6 +559,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     upload: upload as Omit<UploadInput, "logoImage">,
     colors: p.style?.colors ?? [],
     review,
+    choose,
     build,
     recent,
     missing: p.result?.missing ?? [],
@@ -500,6 +599,24 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
       if (action.action === "continue") q.review.continued = true;
     });
   }
+  drive(id);
+}
+
+/** 느낌 고르기 단계의 동작: 기다리기(hold) · 다시 시간 세기(release) · 방향 고르기(pick) */
+export async function chooseProject(owner: string, id: string, action: ChooseAction): Promise<void> {
+  const p = await readOwned(owner, id);
+  if (p.phase !== "choosing" || !p.choose) throw new RouteError(409, "느낌을 고르는 단계가 아니에요");
+  const count = p.style?.directions?.length ?? 0;
+  if (action.action === "pick" && !(Number.isInteger(action.index) && action.index >= 0 && action.index < count)) throw new RouteError(400, "고를 수 있는 안이 아니에요");
+  await update(id, (q) => {
+    if (!q.choose) return;
+    if (action.action === "hold") q.choose.held = true;
+    if (action.action === "release") {
+      q.choose.held = false;
+      q.choose.readyAt = Date.now();
+    }
+    if (action.action === "pick") q.choose.picked = action.index;
+  });
   drive(id);
 }
 
@@ -616,6 +733,7 @@ export async function deleteAllProjects(owner: string): Promise<number> {
       });
     }
     if (p.glyphJobId && ID.test(p.glyphJobId)) await fs.rm(path.join(process.cwd(), ".data", "glyphs", p.glyphJobId), { recursive: true, force: true });
+    for (const s of p.choose?.samples ?? []) if (s.sampleId && ID.test(s.sampleId)) await fs.rm(path.join(process.cwd(), ".data", "samples", `${s.sampleId}.png`), { force: true }); // 견본에는 가게 이름이 그려 있다
     await fs.rm(file(p.id), { force: true });
     await fs.rm(file(p.id, "logo"), { force: true });
   }

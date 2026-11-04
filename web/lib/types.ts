@@ -388,7 +388,7 @@ export interface PreviewResponse {
 
 /** 서버가 이어서 돌리는 단계. analyzing 로고 읽기 → drawing 참고 글자 30자 → reviewing 사용자 확인(20초 뒤 저절로 계속)
  * → building 나머지 글자·숫자·문장부호 그리기와 폰트 파일·검사 → done. */
-export type ProjectPhase = "analyzing" | "drawing" | "reviewing" | "building" | "done" | "failed";
+export type ProjectPhase = "analyzing" | "choosing" | "drawing" | "reviewing" | "building" | "done" | "failed"; // reviewing은 11/4 이전에 만든 작업만 거친다(참고 글자 확인)
 
 export interface CreateProjectRequest {
   upload: UploadInput;
@@ -420,10 +420,30 @@ export interface ProjectReview {
   held: boolean;
 }
 
+/** 느낌 고르기(11/4): AI가 낸 서체 방향 3개를 가게 이름 견본 그림으로 보여 주고 하나를 고르게 한다. */
+export interface ChooseDirection {
+  family: StyleFamily;
+  familyLabel: string;
+  expression: string;
+  summary: string | null; // 설계 지시문 첫 문장
+  imageUrl: string | null; // 견본 그림(그리는 중·실패면 null)
+  status: "drawing" | "ready" | "failed";
+  recommended: boolean; // AI가 가장 추천하는 안(첫 안)
+}
+
+export interface ProjectChoose {
+  directions: ChooseDirection[];
+  continueAt: number | null; // epoch ms. 견본이 다 되면 이때 추천 안으로 저절로 계속한다
+  held: boolean; // 기다리기를 눌렀다
+}
+
+export type ChooseAction = { action: "hold" } | { action: "release" } | { action: "pick"; index: number };
+
 export interface ProjectView extends ProjectSummary {
   upload: Omit<UploadInput, "logoImage">;
   colors: string[]; // 로고에서 뽑은 색(시안에만 쓴다)
   review: ProjectReview | null;
+  choose: ProjectChoose | null; // 느낌 고르는 단계(11/4)
   build: BuildJob | null;
   recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자(그리는 중)
   missing: string[]; // 서체에 없는 한글(다 만든 뒤)

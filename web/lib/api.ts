@@ -1,5 +1,6 @@
 import type {
   AnalyzeStyleRequest,
+  ChooseAction,
   CreateProjectRequest,
   ProjectSummary,
   ProjectView,
@@ -86,6 +87,7 @@ export const api = {
   getProject: (id: string) => request<ProjectView>(`/api/projects/${id}`),
   updateProject: (id: string, body: UpdateProjectRequest) => post<{ ok: boolean }>(`/api/projects/${id}`, body, undefined, "PATCH"),
   deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
+  chooseProject: (id: string, body: ChooseAction) => post<{ ok: boolean }>(`/api/projects/${id}/choose`, body),
   reviewProject: (id: string, body: ReviewAction) => post<{ ok: boolean }>(`/api/projects/${id}/review`, body),
   rebuildProject: (id: string) => post<{ ok: boolean }>(`/api/projects/${id}/rebuild`, {}),
   redrawGlyphs: (id: string, chars: string[]) => post<{ ok: boolean }>(`/api/projects/${id}/redraw`, { chars }),

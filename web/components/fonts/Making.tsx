@@ -9,11 +9,12 @@ import { CheckIcon, StepMark } from "@/components/ui";
 import { BUILD_STAGES } from "@/lib/constants";
 import type { ProjectView } from "@/lib/types";
 
-const STEPS = ["로고 읽기", "참고 글자 30자 확인", "나머지 글자·숫자", "폰트 파일·검사"];
+const STEPS = ["로고 읽기", "느낌 고르기", "글자 그리기", "폰트 파일·검사"];
 
 export function stepOf(view: ProjectView): number {
   if (view.phase === "analyzing") return 0;
-  if (view.phase === "drawing" || view.phase === "reviewing") return 1;
+  if (view.phase === "choosing") return 1;
+  if (view.phase === "drawing" || view.phase === "reviewing") return 2;
   const draw = view.build?.stages.find((s) => s.key === "draw");
   return draw && draw.status !== "done" ? 2 : 3;
 }
@@ -67,9 +68,9 @@ export function Making({ view }: { view: ProjectView }) {
           : "폰트 파일을 만들고 검사하는 중이에요";
   const subtitle =
     view.phase === "analyzing"
-      ? "로고의 분위기와 획 모양을 읽어 그릴 방향을 정해요. 곧 참고 글자를 그려요."
+      ? "로고와 가게 이야기를 읽어 서체 방향 세 가지를 정해요. 곧 가게 이름 견본을 그려 보여 드려요."
       : view.phase === "drawing"
-        ? "다 그리면 한 번 보여 드릴게요. 이 30자의 모양을 나머지 글자가 따라가요."
+        ? "고른 느낌으로 먼저 30자를 그려요. 이 30자의 모양을 나머지 글자가 따라가요."
         : step === 2
           ? "참고 글자와 같은 글씨로 30자씩 그리고 검사해요. 숫자와 문장부호도 그려요."
           : "외곽선을 따서 폰트 파일로 묶고, 상업용 검사와 AI 판독을 해요.";
