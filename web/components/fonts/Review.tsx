@@ -7,6 +7,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Steps } from "@/components/fonts/Making";
+import { StickyBar } from "@/components/fonts/shared";
 import { Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { GLYPH_FONT_STACK } from "@/lib/preview";
@@ -90,7 +91,7 @@ export function Review({ view, onChanged }: { view: ProjectView; onChanged: () =
             >
               {item.status === "ready" && item.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 글자 그림
-                <img src={item.imageUrl} alt="" className="h-[78%] w-[78%] object-contain mix-blend-multiply" />
+                <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="h-[78%] w-[78%] object-contain mix-blend-multiply" />
               ) : (
                 <span className="text-3xl text-muted" style={{ fontFamily: GLYPH_FONT_STACK }}>
                   {item.char}
@@ -101,8 +102,8 @@ export function Review({ view, onChanged }: { view: ProjectView; onChanged: () =
                   <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-track border-t-ink" />
                 </span>
               )}
-              {on && <span className="absolute top-1.5 right-1.5 rounded-full bg-ink px-1.5 py-0.5 text-[0.6875rem] font-extrabold text-bg">다시</span>}
-              {item.status === "failed" && !on && <span className="absolute bottom-1.5 text-[0.6875rem] font-bold text-muted">떨어짐</span>}
+              {on && <span className="absolute top-1.5 right-1.5 rounded-full bg-ink px-1.5 py-0.5 text-12 font-extrabold text-bg">다시</span>}
+              {item.status === "failed" && !on && <span className="absolute bottom-1.5 text-12 font-bold text-muted">떨어짐</span>}
             </button>
           );
         })}
@@ -110,14 +111,14 @@ export function Review({ view, onChanged }: { view: ProjectView; onChanged: () =
 
       {error && <Notice tone="error">{error}</Notice>}
 
-      <div className="sticky bottom-0 z-10 -mx-5 mt-auto flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-line bg-paper px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-mx-10 lg:px-10 lg:pb-5">
+      <StickyBar className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div className="flex min-w-0 basis-full flex-col gap-1 sm:flex-1 sm:basis-auto">
           <span aria-live="polite" className="text-15 font-bold">
             {status}
           </span>
           <span className="text-13 text-muted">
             창을 닫아도 돼요.{" "}
-            <Link href="/fonts" className="font-bold underline underline-offset-4">
+            <Link href="/fonts" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">
               나중에 정하기
             </Link>
           </span>
@@ -152,7 +153,7 @@ export function Review({ view, onChanged }: { view: ProjectView; onChanged: () =
             이어서 나머지 그리기
           </button>
         </div>
-      </div>
+      </StickyBar>
     </div>
   );
 }

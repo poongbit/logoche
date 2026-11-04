@@ -4,6 +4,7 @@
 // 서버는 DELETE /api/account(lib/server/account.ts). 만드는 중인 폰트가 있으면 서버가 거절하므로 미리 알리고 막는다.
 
 import { useEffect, useRef, useState } from "react";
+import { ModalPortal } from "@/components/ModalPortal";
 import { Button, Notice, Spinner, TextField } from "@/components/ui";
 
 interface Summary {
@@ -16,6 +17,9 @@ function go() {
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign("/");
 }
+
+/** 탈퇴 창을 연 '탈퇴' 항목은 메뉴와 함께 사라지므로, 닫으면 계정 단추로 포커스를 돌려준다 */
+const accountButton = () => document.querySelector<HTMLElement>('button[aria-label^="내 계정"]');
 
 const CONFIRM = "탈퇴"; // lib/server/account.ts DELETE_CONFIRM과 같다
 
@@ -74,6 +78,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
   const ready = text.trim() === CONFIRM && !!summary && !blocked && !busy;
 
   return (
+    <ModalPortal restoreTo={accountButton}>
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
       onPointerDown={(e) =>
@@ -168,5 +173,6 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 }

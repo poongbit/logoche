@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PlusIcon } from "@/components/AppHeader";
-import { DownloadMenu, HeartButton, StatusPill, formatDate, isRunning, remainingLabel } from "@/components/fonts/shared";
+import { DownloadMenu, HeartButton, StatusPill, formatDate, isRunning, isWorking, remainingLabel } from "@/components/fonts/shared";
 import { SignInPrompt } from "@/components/GoogleSignIn";
 import { Notice, Spinner } from "@/components/ui";
 import { ApiError, api, errorMessage } from "@/lib/api";
@@ -47,7 +47,7 @@ export function FontList() {
   }, []);
 
   useEffect(load, [load]);
-  const running = !!fonts?.some((f) => isRunning(f.phase));
+  const running = !!fonts?.some((f) => isWorking(f.phase)); // 결정을 기다리는 폰트는 새로 받지 않는다(11/4)
   useEffect(() => {
     if (!running) return;
     const timer = setInterval(load, 3000);
@@ -206,7 +206,7 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
     <article className="flex flex-col rounded-[1.25rem] border border-line bg-bg">
       <div className="relative flex h-[10.5rem] items-center justify-center rounded-t-[1.25rem] bg-stage px-4">
         {/* eslint-disable-next-line @next/next/no-img-element -- 사용자가 올린 로고(서버가 그대로 돌려줌) */}
-        <img src={font.logoUrl} alt={`${font.storeName} 로고`} className="absolute top-3 left-3 h-[1.875rem] w-[3.75rem] rounded-md bg-bg object-contain" />
+        <img src={font.logoUrl} loading="lazy" decoding="async" alt={`${font.storeName} 로고`} className="absolute top-3 left-3 h-[1.875rem] w-[3.75rem] rounded-md bg-bg object-contain" />
         {font.phase === "done" ? (
           <input
             type="text"

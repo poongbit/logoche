@@ -222,7 +222,7 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
               </>
             ) : (
               <>
-                <span aria-hidden className="grid h-12 w-12 place-items-center rounded-[0.875rem] bg-ink text-bg">
+                <span aria-hidden className="text-ink [&>svg]:h-9 [&>svg]:w-9">
                   <ImageIcon />
                 </span>
                 <span className="text-18 font-extrabold">로고 이미지를 놓으세요</span>

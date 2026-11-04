@@ -2,7 +2,7 @@
 
 // 11/2 B안 내 폰트·스튜디오가 같이 쓰는 조각: 상태 표시, 즐겨찾기, 받기 메뉴.
 
-import { useEffect, useId, useRef, useState, type FocusEvent } from "react";
+import { useEffect, useId, useRef, useState, type FocusEvent, type ReactNode } from "react";
 import { api, errorMessage, type FontFormat } from "@/lib/api";
 import { saveBlob } from "@/lib/files";
 import { buildRecordText } from "@/lib/record";
@@ -10,6 +10,8 @@ import type { ProjectPhase, RecordEvent } from "@/lib/types";
 
 export const RUNNING_PHASES: ProjectPhase[] = ["analyzing", "choosing", "drawing", "reviewing", "building"];
 export const isRunning = (phase: ProjectPhase) => RUNNING_PHASES.includes(phase);
+/** 서버가 지금 일을 하는 단계. 느낌 고르기·30자 결정은 사용자의 결정을 기다리는 단계라 일을 하지 않는다. */
+export const isWorking = (phase: ProjectPhase) => phase === "analyzing" || phase === "drawing" || phase === "building";
 
 export const PHASE_LABELS: Record<ProjectPhase, string> = {
   analyzing: "로고 읽는 중",
@@ -20,6 +22,13 @@ export const PHASE_LABELS: Record<ProjectPhase, string> = {
   done: "완성",
   failed: "멈춤",
 };
+
+/** 화면 아래에 붙는 막대(느낌 고르기·30자 결정이 같이 쓴다). 휴대폰에서 내용이 길어 아래로 밀려도 결정 단추가 늘 보이게 한다. 안쪽 배치는 className으로 정한다. */
+export function StickyBar({ className = "", children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={`sticky bottom-0 z-10 -mx-5 mt-auto border-t border-line bg-paper px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-mx-10 lg:px-10 lg:pb-5 ${className}`}>{children}</div>
+  );
+}
 
 export function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -52,7 +61,7 @@ export function HeartButton({ label, on, onToggle, size = 18 }: { label: string;
       aria-label={`${label} 즐겨찾기`}
       aria-pressed={on}
       onClick={onToggle}
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors hover:bg-subtle"
+      className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-subtle"
     >
       <svg aria-hidden viewBox="0 0 20 20" style={{ width: size, height: size }}>
         <path

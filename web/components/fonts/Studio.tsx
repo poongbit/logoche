@@ -6,11 +6,13 @@
 // YoFont와 다르게 뺀 것: 공개 범위(늘 나만 쓴다), 키를 붙인 CDN 주소(원본이 새어 나간다), 언어 추가.
 // 11/4: '글자' 카드의 글자 하나 옆에 다듬기 편집기(GlyphPolish: 슬라이더·끌어서 바꾸기·직접 그리기·조정 기록)를 둔다. 10/30에 뺀 글자 편집기를 사용자 결정으로 되살린 것이다.
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LazyMount } from "@/components/LazyMount";
 import { MockupStage } from "@/components/Mockups";
 import { GlyphPolish } from "@/components/fonts/GlyphPolish";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { RecordLog } from "@/components/RecordLog";
 import { RightsCard } from "@/components/RightsCard";
 import { DownloadMenu, HeartButton, StatusPill, formatDate } from "@/components/fonts/shared";
@@ -59,7 +61,7 @@ function Tabs<T extends string>({ label, tabs, value, onChange }: { label: strin
           type="button"
           aria-pressed={value === t.key}
           onClick={() => onChange(t.key)}
-          className={`h-9 flex-1 shrink-0 rounded-full px-2.5 text-15 whitespace-nowrap transition-colors sm:flex-none sm:px-3.5 ${
+          className={`h-10 flex-1 shrink-0 rounded-full px-2.5 text-15 whitespace-nowrap transition-colors sm:flex-none sm:px-3.5 ${
             value === t.key ? "bg-ink font-bold text-bg" : "font-semibold hover:bg-stage"
           }`}
         >
@@ -124,12 +126,56 @@ function PencilIcon() {
   );
 }
 
+/** 글자 표 한 칸. memo라서 예문 입력처럼 글자 표와 상관없는 상태가 바뀔 때 120칸을 다시 그리지 않는다(11/4 성능 점검). */
+const GlyphCell = memo(function GlyphCell({
+  c,
+  on,
+  ok,
+  pick,
+  tab,
+  family,
+  mark,
+  onSelect,
+}: {
+  c: string;
+  on: boolean;
+  ok: boolean;
+  pick: boolean;
+  tab: number;
+  family: string;
+  mark: boolean;
+  onSelect: (c: string, pick: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-char={c}
+      tabIndex={tab}
+      aria-label={`${c} ${code(c)}${ok ? "" : " · 빠짐"}${pick ? " · 다시 그리기" : ""}`}
+      aria-pressed={on}
+      onClick={() => onSelect(c, pick)}
+      className={`relative aspect-square rounded-[0.625rem] text-[1.5rem] transition-colors hover:border-ink ${
+        on ? "border-2 border-ink" : ok ? "border border-line" : "border-[1.5px] border-dashed border-edge bg-subtle text-muted"
+      } ${pick && on ? "bg-subtle" : ""}`}
+      style={{ fontFamily: ok ? family : GLYPH_FONT_STACK, fontSize: ok ? undefined : "1.125rem" }}
+    >
+      {c}
+      {mark && <span aria-hidden className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-accent" />}
+      {pick && on && (
+        <svg aria-hidden viewBox="0 0 16 16" className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-ink p-0.5 text-bg">
+          <path d="M4 8.5l2.5 2.5L12 5.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  );
+});
+
 export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () => void }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const { state: fontState, fontFamily } = useGeneratedFont(view.fontId, view.revision, attempt); // revision: 글자를 다듬어 파일이 바뀌면 다시 불러온다
   const family = fontFamily ?? GLYPH_FONT_STACK;
-  const fontStyle: CSSProperties = { fontFamily: family };
+  const fontStyle = useMemo<CSSProperties>(() => ({ fontFamily: family }), [family]); // 시안이 memo라 같은 값이면 다시 그리지 않는다
 
   const [name, setName] = useState(view.name);
   const [copied, setCopied] = useState<{ key: string; ok: boolean } | null>(null);
@@ -185,6 +231,15 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   const inFont = (c: string) => (KSX1001_HANGUL.has(c) ? !missingSet.has(c) : view.extras.includes(c));
   const shown = cells.slice(0, limit);
   const glyphGrid = useRef<HTMLDivElement>(null);
+  const onCell = useCallback((c: string, pick: boolean) => {
+    setSelected(c);
+    if (pick)
+      setPicked((prev) => {
+        const next = new Set(prev);
+        if (!next.delete(c)) next.add(c);
+        return next;
+      });
+  }, []);
 
   // 글자 표는 Tab 한 번으로 들어가고(고른 칸 하나만 Tab에 멈춘다) 안에서는 화살표로 옮긴다. 240칸을 Tab으로 다 지나지 않게(11/2 다시 점검).
   const tabCell = Math.max(0, sel ? shown.indexOf(sel) : 0);
@@ -297,7 +352,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
               <button
                 type="button"
                 onClick={() => void copy("feel", view.desiredFeel)}
-                className="h-7 rounded-full border-[1.5px] border-edge px-2.5 text-13 font-bold hover:border-ink"
+                className="h-9 rounded-full border-[1.5px] border-edge px-3 text-13 font-bold hover:border-ink"
               >
                 {copyLabel("feel")}
               </button>
@@ -370,7 +425,9 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
           </Card>
 
           <Card title="시안" id="mockups">
-            <MockupStage storeName={view.storeName} menu={menu} fontStyle={fontStyle} colors={view.colors} logo={view.logoUrl} />
+            <LazyMount>
+              <MockupStage storeName={view.storeName} menu={menu} fontStyle={fontStyle} colors={view.colors} logo={view.logoUrl} />
+            </LazyMount>
           </Card>
 
           <Card
@@ -427,7 +484,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                   )}
                 </div>
                 {confirmFill && (
-                  <div role="alertdialog" aria-label="빠진 글자 그리기 확인" className="flex flex-col gap-3 rounded-xl border-[1.5px] border-ink bg-bg p-4 text-15 leading-normal">
+                  <InlineConfirm label="빠진 글자 그리기 확인" className="flex flex-col gap-3 rounded-xl border-[1.5px] border-ink bg-bg p-4 text-15 leading-normal">
                     <p>
                       <b>빠진 글자 {fillCount.toLocaleString()}자만</b> 그려요. 이미 그린 글자와 직접 다듬은 글자는 그대로 들어가고, 폰트 파일은 새로 만들어져요. 약 {fillMinutes}분 걸려요.
                     </p>
@@ -441,11 +498,11 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                       >
                         {busy ? "시작하는 중" : "그리기 시작"}
                       </button>
-                      <button type="button" disabled={busy} onClick={() => setConfirmFill(false)} className="h-10 rounded-full border-[1.5px] border-edge px-4 text-15 font-bold hover:border-ink">
+                      <button type="button" data-autofocus disabled={busy} onClick={() => setConfirmFill(false)} className="h-10 rounded-full border-[1.5px] border-edge px-4 text-15 font-bold hover:border-ink">
                         취소
                       </button>
                     </div>
-                  </div>
+                  </InlineConfirm>
                 )}
               </div>
             )}
@@ -472,42 +529,19 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                     onKeyDown={onGlyphKeys}
                     className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5"
                   >
-                    {shown.map((c, i) => {
-                      const ok = inFont(c);
-                      const pick = glyphTab === "check";
-                      const on = pick ? picked.has(c) : sel === c;
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          data-char={c}
-                          tabIndex={i === tabCell ? 0 : -1}
-                          aria-label={`${c} ${code(c)}${ok ? "" : " · 빠짐"}${pick ? " · 다시 그리기" : ""}`}
-                          aria-pressed={on}
-                          onClick={() => {
-                            setSelected(c);
-                            if (pick)
-                              setPicked((prev) => {
-                                const next = new Set(prev);
-                                if (!next.delete(c)) next.add(c);
-                                return next;
-                              });
-                          }}
-                          className={`relative aspect-square rounded-[0.625rem] text-[1.5rem] transition-colors hover:border-ink ${
-                            on ? "border-2 border-ink" : ok ? "border border-line" : "border-[1.5px] border-dashed border-edge bg-subtle text-muted"
-                          } ${pick && on ? "bg-subtle" : ""}`}
-                          style={{ fontFamily: ok ? family : GLYPH_FONT_STACK, fontSize: ok ? undefined : "1.125rem" }}
-                        >
-                          {c}
-                          {(view.tweaks[c] || view.edited.includes(c)) && <span aria-hidden className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-accent" />}
-                          {pick && on && (
-                            <svg aria-hidden viewBox="0 0 16 16" className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-ink p-0.5 text-bg">
-                              <path d="M4 8.5l2.5 2.5L12 5.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          )}
-                        </button>
-                      );
-                    })}
+                    {shown.map((c, i) => (
+                      <GlyphCell
+                        key={c}
+                        c={c}
+                        on={glyphTab === "check" ? picked.has(c) : sel === c}
+                        ok={inFont(c)}
+                        pick={glyphTab === "check"}
+                        tab={i === tabCell ? 0 : -1}
+                        family={family}
+                        mark={!!view.tweaks[c] || view.edited.includes(c)}
+                        onSelect={onCell}
+                      />
+                    ))}
                   </div>
                 )}
                 <span id="glyph-keys" className="sr-only">
@@ -597,7 +631,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                   <li key={c.key} className="grid grid-cols-[1.25rem_1fr] gap-x-2.5 gap-y-0.5 border-b border-line py-2.5 last:border-b-0">
                     <span
                       aria-hidden
-                      className={`mt-px grid h-5 w-5 place-items-center rounded-full text-[0.6875rem] font-extrabold ${c.pass ? "bg-stage" : "border-[1.5px] border-muted text-muted"}`}
+                      className={`mt-px grid h-5 w-5 place-items-center rounded-full text-12 font-extrabold ${c.pass ? "bg-stage" : "border-[1.5px] border-muted text-muted"}`}
                     >
                       {c.pass ? <CheckIcon className="h-2.5 w-2.5" /> : "!"}
                     </span>
@@ -632,7 +666,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
               <RecordLog bare events={recordOpen ? view.record : view.record.slice(-5)} />
             </div>
             {view.record.length > 5 && (
-              <button type="button" onClick={() => setRecordOpen(!recordOpen)} className="self-start text-15 font-bold underline underline-offset-4">
+              <button type="button" onClick={() => setRecordOpen(!recordOpen)} className="-my-1 inline-flex min-h-11 items-center self-start text-15 font-bold underline underline-offset-4">
                 {recordOpen ? "최근 것만 보기" : `전체 보기 (${view.record.length})`}
               </button>
             )}

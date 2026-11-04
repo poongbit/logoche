@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BASE_GOTHIC_STACK } from "@/lib/preview";
 
 // 화면 5 시안(Claude Design 'Logoche Final' 3k·3l·3s). 로고 색 [대표색, 어두운 색, 밝은 색]을 입힌다.
@@ -353,7 +353,7 @@ export function InstaScene(props: MockupProps) {
 }
 
 /** 기본 보기: 시안 3종을 한 무대에. 크기는 이 무대(@container/mock)의 폭을 따른다. */
-export function MockupStage(props: MockupProps) {
+export const MockupStage = memo(function MockupStage(props: MockupProps) {
   return (
     <div className="@container/mock h-full">
       <div className="grid gap-2 @2xl/mock:grid-cols-2 @6xl/mock:h-full @6xl/mock:grid-cols-[1.2fr_1fr_0.9fr] @6xl/mock:overflow-hidden @6xl/mock:rounded-[1.25rem]">
@@ -363,7 +363,7 @@ export function MockupStage(props: MockupProps) {
       </div>
     </div>
   );
-}
+});
 
 function CompareCell({ className, children }: { className: string; children: ReactNode }) {
   return <div className={`grid min-h-[12.5rem] place-items-center overflow-hidden rounded-[0.875rem] p-4 ${className}`}>{children}</div>;

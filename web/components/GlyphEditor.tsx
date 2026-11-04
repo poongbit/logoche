@@ -6,6 +6,7 @@
 // 되돌리기는 칠하기 한 번(누르고 뗄 때까지)이 한 단계다.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { ModalPortal } from "@/components/ModalPortal";
 import { Button, Notice, Spinner } from "@/components/ui";
 import { errorMessage } from "@/lib/api";
 import type { GlyphGuides } from "@/lib/types";
@@ -612,6 +613,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
   const toolLabel = TOOLS.find((t) => t.key === tool)!.label;
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 lg:items-center lg:p-6" onPointerDown={(e) => e.target === e.currentTarget && requestClose()}>
       <div
         ref={dialogRef}
@@ -627,7 +629,9 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
             {toolLabel} · {tool === "select" ? (floating ? "끌어서 옮기고 Enter로 내려놓기 · Delete로 지우기" : "옮길 부분을 네모로 둘러싸기") : `굵기 ${size}px`}
           </span>
           <button type="button" onClick={requestClose} aria-label="닫기" className="ml-auto grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-stage">
-            ✕
+            <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
+              <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
 
@@ -662,7 +666,9 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
               title="되돌리기 (⌘Z)"
               className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold hover:bg-stage disabled:text-muted disabled:hover:bg-transparent"
             >
-              <span aria-hidden className="text-lg leading-5">↶</span>
+              <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5">
+                <path d="M7 4.5L3.5 8 7 11.5M4 8h8a4 4 0 010 8H8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               되돌리기
             </button>
             <button
@@ -672,7 +678,9 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
               title="다시 하기 (⇧⌘Z)"
               className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold hover:bg-stage disabled:text-muted disabled:hover:bg-transparent"
             >
-              <span aria-hidden className="text-lg leading-5">↷</span>
+              <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5">
+                <path d="M13 4.5L16.5 8 13 11.5M16 8H8a4 4 0 000 8h4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               다시 하기
             </button>
           </div>
@@ -921,6 +929,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 

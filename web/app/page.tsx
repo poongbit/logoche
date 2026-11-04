@@ -12,25 +12,23 @@ import { KSX1001_HANGUL } from "@/lib/hangul";
 
 const HANGUL = KSX1001_HANGUL.size.toLocaleString();
 
-const STEPS: { title: string; body: string; icon: ReactNode }[] = [
-  { title: "로고 올리기", body: "로고 이미지와 가게 이름, 사업 내용과 추구하는 가치를 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요.", icon: <UploadIcon /> },
-  { title: "30자 보고 정하기", body: "AI가 느낌 세 가지를 보여 드리고, 고른 느낌으로 먼저 30자를 그려요. 마음에 들면 이어서 그리고, 아니면 다른 느낌으로 다시 해 볼 수 있어요.", icon: <GridIcon /> },
+const STEPS: { title: string; body: string }[] = [
+  { title: "로고 올리기", body: "로고 이미지와 가게 이름, 사업 내용과 추구하는 가치를 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요." },
+  { title: "30자 보고 정하기", body: "AI가 느낌 세 가지를 보여 드리고, 고른 느낌으로 먼저 30자를 그려요. 마음에 들면 이어서 그리고, 아니면 다른 느낌으로 다시 해 볼 수 있어요." },
   {
     title: "나머지 글자 그리기",
     body: `먼저 30자를 그려 보여 드려요. 마음에 들면 같은 느낌으로 한글 ${HANGUL}자와 숫자·문장부호 ${EXTRA_CHARS.length}자를 이어서 그려요.`,
-    icon: <PenIcon />,
   },
-  { title: "받아서 쓰기", body: "TTF·OTF·WOFF2로 받아 컴퓨터에 설치하거나 홈페이지에 바로 써요.", icon: <DownloadIcon /> },
+  { title: "받아서 쓰기", body: "TTF·OTF·WOFF2로 받아 컴퓨터에 설치하거나 홈페이지에 바로 써요." },
 ];
 
-const DELIVERABLES: { title: string; body: string; icon: ReactNode }[] = [
+const DELIVERABLES: { title: string; body: string }[] = [
   {
     title: "폰트 파일",
     body: "컴퓨터·인쇄용 TTF, 디자인 프로그램용 OTF, 홈페이지용 WOFF2 가운데 필요한 것을 골라 받아요.",
-    icon: <span className="text-22 leading-none font-extrabold">가</span>,
   },
-  { title: "간판·메뉴판 시안", body: "간판, 메뉴판, 인스타그램 게시물에 내 폰트를 쓴 모습을 미리 봐요.", icon: <SignIcon /> },
-  { title: "권리 카드와 제작 기록", body: "할 수 있는 일과 없는 일을 권리 카드로 정리하고, 무엇을 골라 만들었는지 제작 기록으로 남겨요.", icon: <CardIcon /> },
+  { title: "간판·메뉴판 시안", body: "간판, 메뉴판, 인스타그램 게시물에 내 폰트를 쓴 모습을 미리 봐요." },
+  { title: "권리 카드와 제작 기록", body: "할 수 있는 일과 없는 일을 권리 카드로 정리하고, 무엇을 골라 만들었는지 제작 기록으로 남겨요." },
 ];
 
 const FAQ: { q: string; a: ReactNode }[] = [
@@ -107,7 +105,7 @@ export default function HomePage() {
         <Section id="how" eyebrow="만드는 순서" title="로고에서 폰트까지 네 단계">
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((step, i) => (
-              <NumberedCard key={step.title} number={i + 1} {...step} />
+              <Step key={step.title} number={i + 1} {...step} />
             ))}
           </ol>
         </Section>
@@ -118,8 +116,8 @@ export default function HomePage() {
 
         <Section id="deliverables" eyebrow="받는 것" title="폰트 파일과 함께 드려요">
           <ul className="grid gap-4 md:grid-cols-3">
-            {DELIVERABLES.map((item, i) => (
-              <NumberedCard key={item.title} number={i + 1} {...item} />
+            {DELIVERABLES.map((item) => (
+              <Deliverable key={item.title} {...item} />
             ))}
           </ul>
         </Section>
@@ -182,76 +180,26 @@ function Section({ id, eyebrow, title, lead, children }: { id: string; eyebrow: 
   );
 }
 
-/** 번호 카드: 검정 둥근 네모 아이콘 + 오른쪽 위 번호 + 제목 + 설명 */
-function NumberedCard({ number, title, body, icon }: { number: number; title: string; body: string; icon: ReactNode }) {
+/** 만드는 순서 한 칸(11/4 UI 점검): 아이콘 상자와 카드 테두리를 걷고, 순서가 실제 정보인 번호만 남겼다. */
+function Step({ number, title, body }: { number: number; title: string; body: string }) {
   return (
-    <li className="relative flex flex-col gap-3 rounded-[1.25rem] border border-line bg-bg p-5 lg:p-6">
-      <span aria-hidden className="absolute top-5 right-5 font-mono text-13 text-muted lg:top-6 lg:right-6">
+    <li className="flex flex-col gap-2 border-t-2 border-ink pt-4">
+      <span aria-hidden className="font-mono text-13 text-muted">
         {String(number).padStart(2, "0")}
       </span>
-      <span aria-hidden className="grid h-11 w-11 place-items-center rounded-xl bg-ink text-bg">
-        {icon}
-      </span>
-      <h3 className="mt-1 text-18 font-extrabold">{title}</h3>
+      <h3 className="text-18 font-extrabold">{title}</h3>
       <p className="text-15 leading-normal text-muted">{body}</p>
     </li>
   );
 }
 
-const ICON = { viewBox: "0 0 24 24", className: "h-5 w-5", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" } as const;
-
-function UploadIcon() {
+/** 받는 것 한 칸: 순서가 없으므로 번호와 아이콘 없이 제목과 설명만 */
+function Deliverable({ title, body }: { title: string; body: string }) {
   return (
-    <svg {...ICON}>
-      <path d="M12 15V4M7.5 8.5L12 4l4.5 4.5" />
-      <path d="M4.5 14.5v3a2 2 0 002 2h11a2 2 0 002-2v-3" />
-    </svg>
+    <li className="flex flex-col gap-2 border-t border-line pt-4">
+      <h3 className="text-18 font-extrabold">{title}</h3>
+      <p className="text-15 leading-normal text-muted">{body}</p>
+    </li>
   );
 }
 
-function GridIcon() {
-  return (
-    <svg {...ICON}>
-      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
-      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
-      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
-      <path d="M14.5 16.8l1.8 1.8 3.2-3.6" />
-    </svg>
-  );
-}
-
-function PenIcon() {
-  return (
-    <svg {...ICON}>
-      <path d="M15.5 4.5l4 4L9 19H5v-4L15.5 4.5z" />
-      <path d="M13 7l4 4" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg {...ICON}>
-      <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" />
-      <path d="M4.5 14.5v3a2 2 0 002 2h11a2 2 0 002-2v-3" />
-    </svg>
-  );
-}
-
-function SignIcon() {
-  return (
-    <svg {...ICON}>
-      <rect x="3.5" y="5" width="17" height="10" rx="2" />
-      <path d="M8 19.5h8M12 15v4.5M7 10h10" />
-    </svg>
-  );
-}
-
-function CardIcon() {
-  return (
-    <svg {...ICON}>
-      <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
-      <path d="M8 8.5h8M8 12h8M8 15.5h4.5" />
-    </svg>
-  );
-}

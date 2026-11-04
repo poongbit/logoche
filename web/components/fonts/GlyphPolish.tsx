@@ -6,13 +6,17 @@
 // 굵기만은 윤곽을 옮기는 일이라 CSS로 어림하고(늘리는 쪽만), 저장하면 정확히 반영된다.
 // 아직 없는 것: 전체 글자에 한 번에 적용(폰트를 다시 만들어야 해서 따로 만든다), AI로 다시 그리기(프롬프트 탭).
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
-import { GlyphEditor, type EditorSource } from "@/components/GlyphEditor";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import dynamic from "next/dynamic";
+import type { EditorSource } from "@/components/GlyphEditor";
 import { Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { GLYPH_FONT_STACK } from "@/lib/preview";
 import { NO_TWEAK, TWEAK_FIELDS, TWEAK_PRESETS, clampTweakValue, deltaTransform, isNoTweak, strokeFor } from "@/lib/tweak";
 import type { GlyphTweak, ProjectView } from "@/lib/types";
+
+// 그림판(934줄)은 "직접 그리기"를 누를 때만 받는다(11/4 성능 점검)
+const GlyphEditor = dynamic(() => import("@/components/GlyphEditor").then((m) => m.GlyphEditor), { ssr: false });
 
 const SIZE = 190; // 글자 칸 높이(px). 1em = SIZE
 const ADVANCE = 0.946; // 한글 글자 폭(em). 폰트 hmtx와 같다
@@ -41,7 +45,7 @@ function clock(iso: string): string {
 type Mode = "slider" | "xform";
 type Drag = { handle: string; x: number; y: number; start: GlyphTweak; w: number; h: number };
 
-export function GlyphPolish({
+export const GlyphPolish = memo(function GlyphPolish({
   view,
   char,
   family,
@@ -64,6 +68,13 @@ export function GlyphPolish({
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<{ at: string; tweak: GlyphTweak | null; note: string }[]>([]);
   const [drawing, setDrawing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null); // 저장했다는 알림(몇 초 뒤 사라진다)
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function tell(message: string) {
+    setNotice(message);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), 4000);
+  }
   const stageRef = useRef<HTMLDivElement>(null);
   const glyphRef = useRef<HTMLSpanElement>(null);
   const [box, setBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
@@ -112,6 +123,7 @@ export function GlyphPolish({
       await api.saveGlyphTweak(view.id, { char, tweak: tweak && !isNoTweak(tweak) ? tweak : null, note });
       await sleep(700); // 엔진이 다른 형식(woff2 등) 파일을 다시 만드는 동안 잠깐 기다린다
       onSaved();
+      tell(tweak && !isNoTweak(tweak) ? "저장했어요. 폰트에 넣었어요." : "원래 모양으로 돌렸어요.");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -183,21 +195,22 @@ export function GlyphPolish({
         <span className="text-17 font-extrabold">
           {char} <span className="font-medium text-muted">{code(char)}</span>
         </span>
-        {(!isNoTweak(saved) || edited) && <span className="rounded-full bg-ink px-2 py-0.5 text-[0.6875rem] font-extrabold text-bg">손봤어요</span>}
+        {(!isNoTweak(saved) || edited) && <span className="rounded-full bg-ink px-2 py-0.5 text-12 font-extrabold text-bg">손봤어요</span>}
       </div>
 
       <div ref={stageRef} className="relative grid place-items-center overflow-hidden rounded-2xl bg-stage" style={{ height: H }}>
-        <svg aria-hidden className="absolute inset-0 h-full w-full" viewBox={`0 0 ${SIZE * 1.6} ${H}`} preserveAspectRatio="none">
-          {lines.map((l) => (
-            <g key={l.name}>
-              <line x1="0" x2={SIZE * 1.6} y1={l.y} y2={l.y} stroke={l.name === "baseline" ? "var(--ink)" : "var(--accent)"} strokeWidth="1" strokeDasharray={l.name === "baseline" ? "2 3" : undefined} opacity={l.name === "baseline" ? 0.5 : 0.45} />
-              <text x="6" y={l.y - 3} fontSize="9" fill="var(--accent)" fontFamily="ui-monospace, monospace">
-                {l.name}
-              </text>
-            </g>
-          ))}
-        </svg>
-        <span ref={glyphRef} className="relative z-[1] block select-none" style={glyphStyle} aria-label={`${char} 미리보기`}>
+        {/* 가이드선: HTML로 그려 라벨 글자가 늘어나지 않게 한다(이전 SVG는 가로로 늘려 글자가 찌그러졌다) */}
+        {lines.map((l) => (
+          <div
+            key={l.name}
+            aria-hidden
+            className={`pointer-events-none absolute inset-x-0 border-t ${l.name === "baseline" ? "border-dashed border-ink/50" : "border-accent/45"}`}
+            style={{ top: l.y }}
+          >
+            <span className="absolute -top-4 left-2 font-mono text-12 text-accent">{l.name}</span>
+          </div>
+        ))}
+        <span ref={glyphRef} role="img" className="relative z-[1] block select-none" style={glyphStyle} aria-label={`${char} 미리보기`}>
           {char}
         </span>
         {mode === "xform" && box && tweakable && inFont && (
@@ -222,7 +235,7 @@ export function GlyphPolish({
               <i
                 key={h as string}
                 data-h={h}
-                className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 touch-none rounded-[3px] border-[1.5px] border-accent bg-bg"
+                className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 touch-none rounded-[3px] border-[1.5px] border-accent bg-bg after:absolute after:-inset-3 after:content-['']"
                 style={{ left: `${x}%`, top: `${y}%`, cursor: `${cur}-resize` }}
               />
             ))}
@@ -256,7 +269,7 @@ export function GlyphPolish({
                     type="button"
                     aria-pressed={pressedPreset(p.values)}
                     onClick={() => setValues({ ...NO_TWEAK, ...p.values })}
-                    className={`h-8 rounded-full border px-3 text-13 font-semibold transition-colors ${pressedPreset(p.values) ? "border-ink bg-ink text-bg" : "border-line bg-subtle hover:border-ink"}`}
+                    className={`h-10 rounded-full border px-3 text-13 font-semibold transition-colors ${pressedPreset(p.values) ? "border-ink bg-ink text-bg" : "border-line bg-subtle hover:border-ink"}`}
                   >
                     {p.label}
                   </button>
@@ -292,10 +305,10 @@ export function GlyphPolish({
                 크기 {values.scale}% · 가로 {values.width}% · 세로 {values.height}% · 이동 {values.tx}, {values.ty}
               </p>
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" onClick={() => setValues((v) => ({ ...v, tx: 0, ty: 0 }))} className="h-8 rounded-full border border-line bg-subtle px-3 text-13 font-semibold hover:border-ink">
+                <button type="button" onClick={() => setValues((v) => ({ ...v, tx: 0, ty: 0 }))} className="h-10 rounded-full border border-line bg-subtle px-3 text-13 font-semibold hover:border-ink">
                   가운데로
                 </button>
-                <button type="button" onClick={() => setValues((v) => ({ ...v, scale: 100, width: 100, height: 100 }))} className="h-8 rounded-full border border-line bg-subtle px-3 text-13 font-semibold hover:border-ink">
+                <button type="button" onClick={() => setValues((v) => ({ ...v, scale: 100, width: 100, height: 100 }))} className="h-10 rounded-full border border-line bg-subtle px-3 text-13 font-semibold hover:border-ink">
                   크기 100%
                 </button>
               </div>
@@ -306,6 +319,9 @@ export function GlyphPolish({
       )}
 
       {error && <Notice tone="error">{error}</Notice>}
+      <p role="status" className={notice ? "text-13 font-bold text-good" : "sr-only"}>
+        {notice}
+      </p>
 
       <div className="flex gap-2">
         {tweakable && inFont && (
@@ -333,16 +349,19 @@ export function GlyphPolish({
         type="button"
         disabled={busy}
         onClick={() => setDrawing(true)}
-        className="h-11 rounded-full border-[1.5px] border-edge bg-bg px-3 text-14 font-bold hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:text-muted"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-edge bg-bg px-3 text-14 font-bold hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:text-muted"
       >
-        ✎ 직접 그리기{edited ? " (고친 적 있어요)" : ""}
+        <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
+          <path d="M3 13l.6-2.7 7.2-7.2a1.4 1.4 0 0 1 2 2l-7.2 7.2zM9.6 4.3l2 2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        직접 그리기{edited ? " (고친 적 있어요)" : ""}
       </button>
 
       {tweakable && inFont && (
         <div className="flex flex-col gap-1.5 border-t border-line pt-3">
           <span className="text-12 font-bold text-muted">조정 기록 · 최대 100개</span>
           <div className="rounded-xl border-[1.5px] border-good bg-subtle px-3 py-2 text-13">
-            <b>● 현재 버전</b> <span className="text-muted">지금 폰트에 들어 있는 것</span>
+            <b className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full bg-good" />현재 버전</b> <span className="text-muted">지금 폰트에 들어 있는 것</span>
             <div className="text-12 text-muted">{summary(isNoTweak(saved) ? null : saved)}</div>
           </div>
           {history5.slice(1, 5).map((h, i) => (
@@ -357,7 +376,7 @@ export function GlyphPolish({
                 type="button"
                 disabled={busy}
                 onClick={() => void send(h.tweak, `v${history.length - 1 - i}로 되돌림`)}
-                className="h-8 shrink-0 rounded-full border border-edge px-3 text-12 font-bold hover:border-ink disabled:text-muted"
+                className="h-10 shrink-0 rounded-full border border-edge px-3 text-13 font-bold hover:border-ink disabled:text-muted"
               >
                 되돌리기
               </button>
@@ -381,6 +400,7 @@ export function GlyphPolish({
             await sleep(700);
             setDrawing(false);
             onSaved();
+            tell("그린 글자를 폰트에 넣었어요.");
           }}
           saveLabel="저장하고 폰트에 넣기"
           onRevert={
@@ -390,6 +410,7 @@ export function GlyphPolish({
                   await sleep(700);
                   setDrawing(false);
                   onSaved();
+                  tell("직접 고친 것을 지우고 AI가 그린 모양으로 돌렸어요.");
                 }
               : undefined
           }
@@ -398,4 +419,4 @@ export function GlyphPolish({
       )}
     </div>
   );
-}
+});

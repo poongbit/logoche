@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { StickyBar } from "@/components/fonts/shared";
 import { Steps } from "@/components/fonts/Making";
 import { Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
@@ -16,7 +17,7 @@ function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; b
     <li className={`flex min-w-0 flex-col gap-3 rounded-[1.25rem] border-[1.5px] bg-bg p-4 ${d.recommended ? "border-ink" : "border-line"}`}>
       <div className="flex items-center gap-2">
         <span className="text-17 font-extrabold">{d.familyLabel}</span>
-        {d.recommended && <span className="rounded-full bg-ink px-2 py-0.5 text-[0.6875rem] font-extrabold text-bg">AI 추천</span>}
+        {d.recommended && <span className="rounded-full bg-ink px-2 py-0.5 text-12 font-extrabold text-bg">AI 추천</span>}
       </div>
       <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-stage">
         {d.status === "ready" && d.imageUrl ? (
@@ -83,7 +84,7 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
         </p>
       </div>
 
-      <ul aria-label="서체 느낌" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <ul aria-label="서체 느낌" className="grid gap-4 md:grid-cols-3">
         {directions.map((d, i) => (
           <Card key={`${d.family}-${i}`} d={d} index={i} busy={sending} onPick={(index) => void pick(index)} />
         ))}
@@ -91,17 +92,17 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
 
       {error && <Notice tone="error">{error}</Notice>}
 
-      <div className="sticky bottom-0 z-10 -mx-5 mt-auto flex flex-col gap-1 border-t border-line bg-paper px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-mx-10 lg:px-10 lg:pb-5">
+      <StickyBar className="flex flex-col gap-1">
         <span aria-live="polite" className="text-15 font-bold">
           {status}
         </span>
         <span className="text-13 text-muted">
           창을 닫아도 돼요. 견본이 그려지면 메일로 알려 드려요.{" "}
-          <Link href="/fonts" className="font-bold underline underline-offset-4">
+          <Link href="/fonts" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">
             나중에 고르기
           </Link>
         </span>
-      </div>
+      </StickyBar>
     </div>
   );
 }

@@ -50,6 +50,7 @@
    예전에는 text-[15px]처럼 px로 박아, 글자 크기를 키우면 rem인 text-sm만 커져 위계가 뒤집혔다. */
 @theme {
   --text-10: 0.625rem;
+  --text-12: 0.75rem;
   --text-13: 0.8125rem;
   --text-15: 0.9375rem;
   --text-17: 1.0625rem;

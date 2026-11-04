@@ -11,7 +11,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Choose } from "@/components/fonts/Choose";
 import { Making, Steps } from "@/components/fonts/Making";
 import { Review } from "@/components/fonts/Review";
-import { isRunning } from "@/components/fonts/shared";
+import { InlineConfirm } from "@/components/InlineConfirm";
+import { isWorking } from "@/components/fonts/shared";
 import { Studio } from "@/components/fonts/Studio";
 import { SignInPrompt } from "@/components/GoogleSignIn";
 import { Notice, Spinner } from "@/components/ui";
@@ -40,12 +41,18 @@ export function FontView() {
   }, [id]);
 
   useEffect(load, [load]);
-  const running = view ? isRunning(view.phase) : false;
+  // 11/4 성능 점검: 서버가 일하는 동안과, 일하는 장(견본·다시 그리는 글자)이 남은 동안만 1.5초마다 받는다.
+  // 사용자의 결정을 기다리는 동안은 받지 않는다(누르면 그 동작이 화면을 새로 받는다). 이전에는 기다리는 동안에도 계속 불러 서버가 매번 일을 다시 돌려 봤다.
+  const polling =
+    !!view &&
+    (isWorking(view.phase) ||
+      (view.phase === "choosing" && !!view.choose?.directions.some((d) => d.status === "drawing")) ||
+      (view.phase === "reviewing" && !!view.review?.items.some((i) => i.status === "drawing" || i.status === "redrawing")));
   useEffect(() => {
-    if (!running) return;
+    if (!polling) return;
     const timer = setInterval(load, 1500);
     return () => clearInterval(timer);
-  }, [running, load]);
+  }, [polling, load]);
 
   if (!view) {
     return (
@@ -109,7 +116,7 @@ export function FontView() {
         </Link>
       </div>
       {confirmQuit && (
-        <div role="alertdialog" aria-label="그만두기 확인" className="flex flex-col gap-3 rounded-[1.25rem] border-[1.5px] border-ink bg-bg p-5">
+        <InlineConfirm label="그만두기 확인" className="flex flex-col gap-3 rounded-[1.25rem] border-[1.5px] border-ink bg-bg p-5">
           <p className="text-15 leading-normal font-bold">이 폰트를 그만둘까요? 그린 글자와 폰트가 모두 지워지고 되돌릴 수 없어요.</p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -129,11 +136,11 @@ export function FontView() {
             >
               {quitting ? "지우는 중" : "지우고 그만두기"}
             </button>
-            <button type="button" disabled={quitting} onClick={() => setConfirmQuit(false)} className="h-11 rounded-full border-[1.5px] border-edge px-5 text-15 font-bold hover:border-ink">
+            <button type="button" data-autofocus disabled={quitting} onClick={() => setConfirmQuit(false)} className="h-11 rounded-full border-[1.5px] border-edge px-5 text-15 font-bold hover:border-ink">
               계속하기
             </button>
           </div>
-        </div>
+        </InlineConfirm>
       )}
       <p className="text-15 text-muted">이미 그린 글자는 그대로 쓰고, 못 그린 글자만 이어서 그려요.</p>
     </div>

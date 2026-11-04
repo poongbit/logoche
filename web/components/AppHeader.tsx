@@ -28,7 +28,7 @@ function ListLink({ current }: { current: boolean }) {
     <Link
       href="/fonts"
       aria-current={current ? "page" : undefined}
-      className={`flex h-9 items-center rounded-full px-3.5 text-15 font-bold transition-colors ${current ? "bg-stage" : "hover:bg-subtle"}`}
+      className={`flex h-11 items-center rounded-full px-3.5 text-15 font-bold transition-colors ${current ? "bg-stage" : "hover:bg-subtle"}`}
     >
       내 폰트
     </Link>
@@ -37,7 +37,7 @@ function ListLink({ current }: { current: boolean }) {
 
 function NewLink() {
   return (
-    <Link href="/#make" className="inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-15 font-bold text-bg transition-colors hover:bg-hover">
+    <Link href="/#make" className="inline-flex h-11 items-center gap-1.5 rounded-full bg-ink px-4 text-15 font-bold text-bg transition-colors hover:bg-hover">
       <PlusIcon />
       <span className="hidden sm:inline">새 폰트 만들기</span>
       <span className="sm:hidden">새 폰트</span>
@@ -58,7 +58,7 @@ function SignInButton() {
         type="button"
         disabled={starting}
         onClick={() => void start(location.pathname + location.search)}
-        className="flex h-9 items-center rounded-full px-3.5 text-15 font-bold transition-colors hover:bg-subtle disabled:text-muted"
+        className="flex h-11 items-center rounded-full px-3.5 text-15 font-bold transition-colors hover:bg-subtle disabled:text-muted"
       >
         로그인
       </button>
@@ -105,7 +105,7 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
         aria-expanded={open}
         aria-label={`내 계정: ${name || email}`}
         onClick={() => setOpen((v) => !v)}
-        className="grid h-9 w-9 place-items-center rounded-full bg-stage text-15 font-extrabold transition-colors hover:bg-line"
+        className="grid h-11 w-11 place-items-center rounded-full bg-stage text-15 font-extrabold transition-colors hover:bg-line"
       >
         {(name || email).slice(0, 1).toUpperCase()}
       </button>
@@ -144,7 +144,7 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
 function Account() {
   const inBrowser = useSyncExternalStore(noSubscribe, () => true, () => false);
   const { data, isPending } = authClient.useSession();
-  if (!inBrowser || isPending) return <span aria-hidden className="block h-9 w-9" />;
+  if (!inBrowser || isPending) return <span aria-hidden className="block h-11 w-11" />;
   return data ? <AccountMenu name={data.user.name} email={data.user.email} /> : <SignInButton />;
 }
 
@@ -152,7 +152,7 @@ export function AppHeader() {
   return (
     <header className="border-b border-line bg-paper">
       <div className="mx-auto flex h-16 max-w-[90rem] items-center gap-3 px-5 lg:h-[4.5rem] lg:gap-6 lg:px-10">
-        <Link href="/" className="text-18 font-extrabold lg:text-22">
+        <Link href="/" className="-my-3 inline-flex items-center py-3 text-18 font-extrabold lg:text-22">
           로고체
         </Link>
         <nav aria-label="메뉴" className="flex items-center">

@@ -37,6 +37,8 @@ npm run dev                  # http://localhost:3000
 
 요청·응답 타입은 `lib/types.ts`, 서버 코드는 `lib/server/`에 있다. 키는 라우트 핸들러(서버)에서만 읽는다.
 
+> **11/4 정리**: 아래 표의 옛 단계 화면(화면 2~4) API(`/api/style/analyze`, `/api/style/samples` POST, `/api/glyphs/jobs` 생성·진행·다시 그리기·고치기, `/api/build/jobs`, `/api/preview`)와 그 화면(`/draft`, `/build`, `/style`, `/download`, `/kit`)은 삭제했다. 지금 흐름은 `/api/projects/*`(만들기·고르기·확인·중단·다듬기·직접 그리기)와 `/api/font/*`, `/api/account`가 맡는다. 글자 그림을 보여 주는 `GET /api/glyphs/jobs/[id]/images/[index]`·`rest/[hex]`와 견본 그림 `GET /api/style/samples/[id]`만 남았다. 표는 옛 설명이라 새 문서로 바꿀 때까지 참고용이다.
+
 | 경로 | 화면 | 하는 일 | 부르는 곳 |
 |---|---|---|---|
 | `POST /api/style/analyze` | 2 | 로고 측정과 분위기 해석을 함께 부르고, 분위기 사전 규칙으로 7축을 정한다. 부딪히면 3안 | 엔진 `/measure`, Claude(로고 해석) |

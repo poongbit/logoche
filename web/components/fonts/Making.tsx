@@ -7,6 +7,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { remainingLabel } from "@/components/fonts/shared";
 import { CheckIcon, Notice, StepMark } from "@/components/ui";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { api, errorMessage } from "@/lib/api";
 import { BUILD_STAGES } from "@/lib/constants";
 import type { ProjectView } from "@/lib/types";
@@ -28,7 +29,7 @@ export function Steps({ current }: { current: number }) {
         <li key={label} className="flex items-center gap-2">
           {i === current ? (
             <span aria-current="step" className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink pr-3.5 pl-1.5 text-bg">
-              <span aria-hidden className="grid h-[1.375rem] w-[1.375rem] place-items-center rounded-full border-2 border-bg text-[0.6875rem]">
+              <span aria-hidden className="grid h-[1.375rem] w-[1.375rem] place-items-center rounded-full border-2 border-bg text-12">
                 {i + 1}
               </span>
               {label}
@@ -40,7 +41,7 @@ export function Steps({ current }: { current: number }) {
                   <CheckIcon />
                 </span>
               ) : (
-                <span aria-hidden className="grid h-[1.375rem] w-[1.375rem] place-items-center rounded-full border-2 border-edge text-[0.6875rem]">
+                <span aria-hidden className="grid h-[1.375rem] w-[1.375rem] place-items-center rounded-full border-2 border-edge text-12">
                   {i + 1}
                 </span>
               )}
@@ -78,7 +79,7 @@ function StopBox({ view, onChanged }: { view: ProjectView; onChanged: () => void
     );
   }
   return (
-    <div role="alertdialog" aria-label="중단 확인" className="flex flex-col gap-2 rounded-2xl bg-subtle p-4 text-15 leading-normal">
+    <InlineConfirm label="중단 확인" className="flex flex-col gap-2 rounded-2xl bg-subtle p-4 text-15 leading-normal">
       <span className="font-bold">지금 멈출까요?</span>
       <span className="text-muted">
         지금까지 그린 글자는 남아 있어요. {view.rebuilding ? "이미 만든 폰트는 그대로 쓸 수 있어요." : "나중에 이어서 만들거나 그만둘 수 있어요."} 지금 그리는 중인 글자표는 끝까지 그려질 수 있어요.
@@ -88,11 +89,11 @@ function StopBox({ view, onChanged }: { view: ProjectView; onChanged: () => void
         <button type="button" disabled={busy} onClick={() => void stop()} className="h-10 rounded-full bg-ink px-4 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted">
           {busy ? "멈추는 중" : "멈추기"}
         </button>
-        <button type="button" disabled={busy} onClick={() => setAsking(false)} className="h-10 rounded-full border-[1.5px] border-edge px-4 font-bold hover:border-ink">
+        <button type="button" data-autofocus disabled={busy} onClick={() => setAsking(false)} className="h-10 rounded-full border-[1.5px] border-edge px-4 font-bold hover:border-ink">
           계속 만들기
         </button>
       </div>
-    </div>
+    </InlineConfirm>
   );
 }
 
@@ -166,7 +167,7 @@ export function Making({ view, onChanged }: { view: ProjectView; onChanged: () =
               {(refs.length ? refs : Array.from({ length: 30 }, () => null)).map((item, i) =>
                 item?.status === "ready" && item.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 글자 그림
-                  <img key={i} src={item.imageUrl} alt={item.char} className="aspect-square w-full rounded-xl border border-line bg-bg object-contain p-2 motion-safe:animate-[ds-pop_260ms_ease-out]" />
+                  <img key={i} src={item.imageUrl} loading="lazy" decoding="async" alt={item.char} className="aspect-square w-full rounded-xl border border-line bg-bg object-contain p-2 motion-safe:animate-[ds-pop_260ms_ease-out]" />
                 ) : (
                   <span key={i} aria-hidden className="aspect-square rounded-xl border-[1.5px] border-dashed border-track bg-subtle" />
                 ),
@@ -177,7 +178,7 @@ export function Making({ view, onChanged }: { view: ProjectView; onChanged: () =
             <div className="grid grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-1.5">
               {view.recent.map((g) => (
                 // eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 글자 그림
-                <img key={g.char} src={g.imageUrl} alt={g.char} className="aspect-square w-full rounded-[0.625rem] border border-line bg-bg object-contain motion-safe:animate-[ds-pop_260ms_ease-out]" />
+                <img key={g.char} src={g.imageUrl} loading="lazy" decoding="async" alt={g.char} className="aspect-square w-full rounded-[0.625rem] border border-line bg-bg object-contain motion-safe:animate-[ds-pop_260ms_ease-out]" />
               ))}
               {Array.from({ length: Math.max(0, 40 - view.recent.length) }, (_, i) => (
                 <span key={`wait-${i}`} aria-hidden className="aspect-square rounded-[0.625rem] border-[1.5px] border-dashed border-track bg-subtle" />
