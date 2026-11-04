@@ -246,6 +246,12 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   const build = view.build;
   const glyphCount = view.glyphCount ?? present.length;
   const canRedraw = view.missing.length > 0 || view.extras.length < EXTRA_CHARS.length;
+  // 빠진 글자 그리기(11/4): 안 그린 글자만 그린다(rest.ts plan). 장 수와 시간은 어림(장 35초, 동시 8장, 폰트 만들기 약 1분)
+  const [confirmFill, setConfirmFill] = useState(false);
+  const extrasMissing = EXTRA_CHARS.length - view.extras.length;
+  const fillCount = view.missing.length + extrasMissing;
+  const fillSheets = Math.ceil(view.missing.length / 30) + (extrasMissing > 0 ? 1 : 0);
+  const fillMinutes = Math.max(2, Math.ceil((Math.ceil(fillSheets / 8) * 35 + 70) / 60));
   const meta = ["GPT Image", `한글 ${glyphCount.toLocaleString()}자`, `숫자·부호 ${view.extras.length}자`, formatDate(view.createdAt)];
 
   return (
@@ -404,18 +410,43 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
               </div>
             )}
             {canRedraw && glyphTab !== "check" && (
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-subtle px-5 py-4">
-                <span className="min-w-0 flex-[1_1_16rem] text-15 font-semibold">
-                  빠진 글자 {(view.missing.length + EXTRA_CHARS.length - view.extras.length).toLocaleString()}자를 이 폰트 스타일로 다시 그려요. 그린 글자는 그대로 둬요.
-                </span>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void run(() => api.rebuildProject(view.id))}
-                  className="ml-auto h-10 rounded-full bg-ink px-4 text-15 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted"
-                >
-                  빠진 글자 다시 그리기
-                </button>
+              <div className="flex flex-col gap-3 rounded-2xl bg-subtle px-5 py-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="min-w-0 flex-[1_1_16rem] text-15 font-semibold">
+                    빠진 글자 {fillCount.toLocaleString()}자를 이 폰트 스타일로 그려요. 이미 그린 글자는 그대로 둬요.
+                  </span>
+                  {!confirmFill && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirmFill(true)}
+                      className="ml-auto h-10 rounded-full bg-ink px-4 text-15 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted"
+                    >
+                      빠진 글자 그리기
+                    </button>
+                  )}
+                </div>
+                {confirmFill && (
+                  <div role="alertdialog" aria-label="빠진 글자 그리기 확인" className="flex flex-col gap-3 rounded-xl border-[1.5px] border-ink bg-bg p-4 text-15 leading-normal">
+                    <p>
+                      <b>빠진 글자 {fillCount.toLocaleString()}자만</b> 그려요. 이미 그린 글자와 직접 다듬은 글자는 그대로 들어가고, 폰트 파일은 새로 만들어져요. 약 {fillMinutes}분 걸려요.
+                    </p>
+                    <p className="text-muted">그리는 도중에 중단할 수 있어요. 중단하면 지금 폰트 그대로 돌아와요.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void run(() => api.rebuildProject(view.id))}
+                        className="h-10 rounded-full bg-ink px-4 text-15 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted"
+                      >
+                        {busy ? "시작하는 중" : "그리기 시작"}
+                      </button>
+                      <button type="button" disabled={busy} onClick={() => setConfirmFill(false)} className="h-10 rounded-full border-[1.5px] border-edge px-4 text-15 font-bold hover:border-ink">
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <input

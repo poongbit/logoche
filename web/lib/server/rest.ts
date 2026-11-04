@@ -53,8 +53,12 @@ export interface RestRun {
   finishedAt: number | null;
   sheetSeconds: number[];
   error: string | null;
+  aborted: boolean; // 사용자가 중단했다(11/4). 아직 시작하지 않은 장은 그리지 않는다. 이미 그리는 중인 장은 끝까지 간다.
   promise: Promise<void>;
 }
+
+/** 사용자가 중단해서 그리지 않은 장. 떨어진 글자로 세지 않는다(다음에 이어서 그린다). */
+class Aborted extends Error {}
 
 const globalRest = globalThis as unknown as { __logocheRest?: Map<string, RestRun> };
 const runs: Map<string, RestRun> = (globalRest.__logocheRest ??= new Map());
@@ -161,7 +165,10 @@ async function drawSheet(
   const cause = { draw: 0, engine: 0, check: 0, style: 0 };
   try {
     const sheet = await engine.glyphSheet(chars.join(""));
-    const { value: image, model } = await sheetLimit(() => generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, ctx.quality));
+    const { value: image, model } = await sheetLimit(() => {
+      if (run.aborted) throw new Aborted(); // 순서를 기다리는 동안 중단됐으면 이미지를 부르지 않는다
+      return generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, ctx.quality);
+    });
     job.models.add(modelLabel("image", model));
     const sheetNo = ++index.sheets;
     const placed = await engine.placeGlyphs(sheet.chars, image, refs);
@@ -207,6 +214,10 @@ async function drawSheet(
     );
     run.sheetSeconds.push((Date.now() - startedAt) / 1000);
   } catch (err) {
+    if (err instanceof Aborted) {
+      for (const c of chars) failed.set(c, "중단"); // drawAll이 중단을 보고 이 글자들을 떨어진 글자로 적지 않는다
+      return failed;
+    }
     if (isFatal(err)) throw err;
     console.error("[logoche] 나머지 글자표 실패", err);
     for (const c of chars) failed.set(c, `글자표 그리기 실패: ${err instanceof Error ? err.message : String(err)}`);
@@ -235,6 +246,10 @@ async function drawAll(job: JobState, ctx: Context, chars: string[], run: RestRu
     // 다시 그리는 바퀴도 짜임별로 묶는다(첫 바퀴는 plan이 이미 묶었다)
     const sheets = sheetsOf(round === 0 ? todo : byShape(todo));
     const results = await Promise.all(sheets.map((s) => drawSheet(job, ctx, s, approved, refs, index, run, save, round === REDRAW_ROUNDS, force)));
+    if (run.aborted) {
+      await save();
+      return; // 중단: 못 그린 글자는 떨어진 글자로 적지 않는다. 이어서 만들면 그때 그린다.
+    }
     problems = new Map(results.flatMap((m) => [...m]));
     todo = [...problems.keys()];
     ledger("round", { round: round + 1, sheets: sheets.length, todo: todo.length, styleRedrawn: index.styleRedrawn ?? 0 });
@@ -272,7 +287,7 @@ export async function ensureRest(jobId: string, req: StartBuildJobRequest): Prom
   const force = new Set((req.redraw ?? []).filter((c) => c in index.drawn).slice(0, RECHECK_COUNT));
   const chars = [...byShape([...force]), ...plan(job, index, req.upload.storeName, new Set(await listEdits(jobId)))];
   const ctx = await jobContext(job, req);
-  const run: RestRun = { total: chars.length, done: 0, failed: 0, startedAt: Date.now(), finishedAt: null, sheetSeconds: [], error: null, promise: Promise.resolve() };
+  const run: RestRun = { total: chars.length, done: 0, failed: 0, startedAt: Date.now(), finishedAt: null, sheetSeconds: [], error: null, aborted: false, promise: Promise.resolve() };
   run.promise = (async () => {
     try {
       if (chars.length) await drawAll(job, ctx, chars, run, force);
@@ -297,4 +312,10 @@ export function restRemaining(run: RestRun): number {
   const spent = (Date.now() - run.startedAt) / 1000;
   // 첫 장이 끝나기 전에는 시작한 뒤 지난 시간을 뺀다
   return run.sheetSeconds.length ? waves * per : Math.max(per / 2, waves * per - spent);
+}
+
+/** 나머지 글자 그리기를 중단한다(11/4). 아직 시작하지 않은 장은 그리지 않고, 이미 그리는 중인 장은 끝난 뒤 멈춘다. 그린 글자는 남는다. */
+export function abortRest(jobId: string): void {
+  const run = runs.get(jobId);
+  if (run && run.finishedAt === null) run.aborted = true;
 }

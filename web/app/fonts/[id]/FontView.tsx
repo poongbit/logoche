@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Choose } from "@/components/fonts/Choose";
 import { Making, Steps } from "@/components/fonts/Making";
 import { Review } from "@/components/fonts/Review";
@@ -23,6 +23,9 @@ export function FontView() {
   const [view, setView] = useState<ProjectView | null>(null);
   const [error, setError] = useState<{ message: string; notFound: boolean; signedOut?: boolean } | null>(null);
   const [resuming, setResuming] = useState(false);
+  const [confirmQuit, setConfirmQuit] = useState(false); // 멈춤 화면의 '그만두기'(폰트를 지움) 확인
+  const [quitting, setQuitting] = useState(false);
+  const router = useRouter();
 
   const load = useCallback(() => {
     api
@@ -66,7 +69,7 @@ export function FontView() {
   if (view.phase === "choosing") return <Choose view={view} onChanged={load} />;
   if (view.phase === "reviewing") return <Review view={view} onChanged={load} />;
   if (view.phase === "done") return <Studio key={view.fontId} view={view} onChanged={load} />;
-  if (view.phase !== "failed") return <Making view={view} />;
+  if (view.phase !== "failed") return <Making view={view} onChanged={load} />;
 
   return (
     <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
@@ -93,10 +96,45 @@ export function FontView() {
         >
           {resuming ? "다시 시작하는 중" : "이어서 만들기"}
         </button>
-        <Link href="/fonts" className="inline-flex h-12 items-center rounded-full border-[1.5px] border-edge px-6 text-15 font-bold hover:border-ink">
+        <button
+          type="button"
+          disabled={resuming || quitting}
+          onClick={() => setConfirmQuit(true)}
+          className="h-12 rounded-full border-[1.5px] border-edge px-6 text-15 font-bold hover:border-ink disabled:border-dashed disabled:text-muted"
+        >
+          그만두기
+        </button>
+        <Link href="/fonts" className="inline-flex h-12 items-center rounded-full px-4 text-15 font-bold text-muted underline underline-offset-4 hover:text-ink">
           내 폰트로 가기
         </Link>
       </div>
+      {confirmQuit && (
+        <div role="alertdialog" aria-label="그만두기 확인" className="flex flex-col gap-3 rounded-[1.25rem] border-[1.5px] border-ink bg-bg p-5">
+          <p className="text-15 leading-normal font-bold">이 폰트를 그만둘까요? 그린 글자와 폰트가 모두 지워지고 되돌릴 수 없어요.</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={quitting}
+              onClick={() => {
+                setQuitting(true);
+                api
+                  .deleteProject(view.id)
+                  .then(() => router.push("/fonts"))
+                  .catch((err) => {
+                    setError({ message: errorMessage(err), notFound: false });
+                    setQuitting(false);
+                  });
+              }}
+              className="h-11 rounded-full bg-bad px-5 text-15 font-bold text-bg disabled:bg-line disabled:text-muted"
+            >
+              {quitting ? "지우는 중" : "지우고 그만두기"}
+            </button>
+            <button type="button" disabled={quitting} onClick={() => setConfirmQuit(false)} className="h-11 rounded-full border-[1.5px] border-edge px-5 text-15 font-bold hover:border-ink">
+              계속하기
+            </button>
+          </div>
+        </div>
+      )}
       <p className="text-15 text-muted">이미 그린 글자는 그대로 쓰고, 못 그린 글자만 이어서 그려요.</p>
     </div>
   );

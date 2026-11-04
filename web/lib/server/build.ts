@@ -13,7 +13,7 @@ import { readEdits } from "./edits";
 import { readTweakTable } from "./tweaks";
 import { glyphDrawWeight, glyphModels, readyRefs } from "./glyphs";
 import { imagePart } from "./parts";
-import { ensureRest, readRestGlyphs, restRemaining, type RestRun } from "./rest";
+import { abortRest, ensureRest, readRestGlyphs, restRemaining, type RestRun } from "./rest";
 
 const OCR_MAX_MISREAD_RATIO = 0.1; // 판독 글자의 10%까지 잘못 읽어도 통과(임시 값)
 // OCR 시간 어림(초) = 기본 + 글자당. 임시 값이고, 판독이 끝날 때마다 실제로 걸린 시간으로 비율을 맞춘다.
@@ -36,6 +36,7 @@ interface DrawState {
   rest: RestRun;
   engineStarted: boolean;
   error: string | null;
+  cancelled?: boolean; // 사용자가 중단했다(11/4). 엔진 빌드를 시작하지 않는다.
 }
 
 const globalBuilds = globalThis as unknown as {
@@ -103,6 +104,7 @@ export async function startBuild(req: StartBuildJobRequest): Promise<string> {
     try {
       await draw.rest.promise;
       if (draw.rest.error) throw new Error(draw.rest.error);
+      if (draw.cancelled) return; // 사용자가 중단했으면 폰트 파일을 만들지 않는다
       await engine.startBuild({
         buildId,
         storeName: req.storeName,
@@ -248,4 +250,12 @@ export async function getBuild(buildId: string): Promise<BuildJob> {
     models: ocr.model ? [modelLabel("ocr", ocr.model)] : [],
     error: e.error ?? (ocr.state === "failed" ? `OCR 판독 실패: ${ocr.error}` : null),
   };
+}
+
+/** 폰트 만들기를 중단한다(11/4). 나머지 글자를 그리는 중이면 새 장을 그만 그리고 엔진 빌드를 시작하지 않는다.
+ * 엔진이 이미 폰트 파일을 만들고 있으면 끊지 못하고 결과를 쓰지 않는다(약 1분, 이미지 비용 없음). 그린 글자는 남는다. */
+export function cancelBuild(buildId: string, glyphJobId: string | null): void {
+  const draw = drawStates.get(buildId);
+  if (draw) draw.cancelled = true;
+  if (glyphJobId) abortRest(glyphJobId);
 }

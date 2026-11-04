@@ -3,9 +3,11 @@
 // 만드는 중 화면(11/2 B안, YoFont 로딩 화면을 따름): 단계 표시 · 그린 글자가 하나씩 채워지는 판 · 창을 닫아도 된다는 안내.
 // 로고 읽기 → 참고 글자 30자 → (확인은 Review.tsx) → 나머지 글자·숫자 → 폰트 파일·검사.
 
+import { useState } from "react";
 import Link from "next/link";
 import { remainingLabel } from "@/components/fonts/shared";
-import { CheckIcon, StepMark } from "@/components/ui";
+import { CheckIcon, Notice, StepMark } from "@/components/ui";
+import { api, errorMessage } from "@/lib/api";
 import { BUILD_STAGES } from "@/lib/constants";
 import type { ProjectView } from "@/lib/types";
 
@@ -52,7 +54,49 @@ export function Steps({ current }: { current: number }) {
   );
 }
 
-export function Making({ view }: { view: ProjectView }) {
+/** 만드는 중인 일을 멈춘다(11/4). 그린 글자는 남는다. 이미 완성한 폰트가 있으면 그 폰트로 돌아간다. */
+function StopBox({ view, onChanged }: { view: ProjectView; onChanged: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function stop() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.cancelProject(view.id);
+      onChanged();
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  }
+  if (!asking) {
+    return (
+      <button type="button" onClick={() => setAsking(true)} className="self-start text-15 font-bold text-muted underline underline-offset-4 hover:text-ink">
+        중단하기
+      </button>
+    );
+  }
+  return (
+    <div role="alertdialog" aria-label="중단 확인" className="flex flex-col gap-2 rounded-2xl bg-subtle p-4 text-15 leading-normal">
+      <span className="font-bold">지금 멈출까요?</span>
+      <span className="text-muted">
+        지금까지 그린 글자는 남아 있어요. {view.rebuilding ? "이미 만든 폰트는 그대로 쓸 수 있어요." : "나중에 이어서 만들거나 그만둘 수 있어요."} 지금 그리는 중인 글자표는 끝까지 그려질 수 있어요.
+      </span>
+      {error && <Notice tone="error">{error}</Notice>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={busy} onClick={() => void stop()} className="h-10 rounded-full bg-ink px-4 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted">
+          {busy ? "멈추는 중" : "멈추기"}
+        </button>
+        <button type="button" disabled={busy} onClick={() => setAsking(false)} className="h-10 rounded-full border-[1.5px] border-edge px-4 font-bold hover:border-ink">
+          계속 만들기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function Making({ view, onChanged }: { view: ProjectView; onChanged: () => void }) {
   const step = stepOf(view);
   const draw = view.build?.stages.find((s) => s.key === "draw");
   const engineStages = view.build?.stages.filter((s) => s.key !== "draw") ?? [];
@@ -64,7 +108,9 @@ export function Making({ view }: { view: ProjectView }) {
       : view.phase === "drawing"
         ? "참고 글자 30자를 그리고 있어요"
         : step === 3
-          ? "나머지 글자를 그리고 있어요"
+          ? view.rebuilding
+            ? "빠진 글자를 그리고 있어요"
+            : "나머지 글자를 그리고 있어요"
           : "폰트 파일을 만들고 검사하는 중이에요";
   const subtitle =
     view.phase === "analyzing"
@@ -72,7 +118,9 @@ export function Making({ view }: { view: ProjectView }) {
       : view.phase === "drawing"
         ? "고른 느낌으로 먼저 30자를 그려요. 다 그리면 결과를 보여 드려요. 나머지 글자를 그릴지는 그때 정해요."
         : step === 3
-          ? "참고 글자와 같은 글씨로 30자씩 그리고 검사해요. 숫자와 문장부호도 그려요."
+          ? view.rebuilding
+            ? "이미 만든 폰트는 그대로예요. 빠진 글자만 같은 글씨로 그려서 폰트를 다시 만들어요. 중단하면 지금 폰트로 돌아가요."
+            : "참고 글자와 같은 글씨로 30자씩 그리고 검사해요. 숫자와 문장부호도 그려요."
           : "외곽선을 따서 폰트 파일로 묶고, 상업용 검사와 AI 판독을 해요.";
 
   return (
@@ -159,6 +207,7 @@ export function Making({ view }: { view: ProjectView }) {
           <Link href="/fonts" className="mt-1 inline-flex h-10 items-center self-start rounded-full border-[1.5px] border-edge bg-bg px-4 font-bold hover:border-ink">
             내 폰트로 가기
           </Link>
+          <StopBox view={view} onChanged={onChanged} />
         </aside>
       </div>
     </div>

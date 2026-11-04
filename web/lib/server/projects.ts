@@ -35,7 +35,7 @@ import type {
   UpdateProjectRequest,
   UploadInput,
 } from "@/lib/types";
-import { getBuild, startBuild } from "./build";
+import { cancelBuild, getBuild, startBuild } from "./build";
 import { editSource, engineRequest, listEdits, readEdits, saveEdit } from "./edits";
 import { engine } from "./engine";
 import { MOCK, RouteError } from "./env";
@@ -227,6 +227,7 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
  * 방향이 없으면(모의 응답 등) 예전처럼 바로 참고 글자 30자를 그린다. */
 async function analyze(p: Stored) {
   const style = await analyzeStyle({ ...p.upload, logoImage: await logoOf(p.id) });
+  if ((await read(p.id)).phase !== "analyzing") return; // 읽는 동안 사용자가 중단했다
   const choosing = !MOCK && (style.directions?.length ?? 0) > 0;
   const glyphJobId = choosing ? null : startGlyphJob(await glyphRequest({ ...p, style }));
   await update(p.id, (q) => {
@@ -322,6 +323,7 @@ async function waitRefs(p: Stored) {
   }
   const ready = job.items.filter((i) => i.status === "ready").length;
   if (ready === 0) throw new Error("참고 글자를 하나도 그리지 못했어요");
+  if ((await read(p.id)).phase !== "drawing") return; // 그리는 동안 사용자가 중단했다
   await update(p.id, (q) => {
     q.phase = "reviewing";
     q.review = { readyAt: Date.now(), held: false, continued: false };
@@ -409,12 +411,13 @@ async function waitBuild(p: Stored) {
     const job = await getBuild(q.buildJobId!);
     if (job.phase === "failed") throw new Error(job.error ?? "폰트를 만들지 못했어요");
     if (job.phase === "done") {
-      const present = new Set([...(await readyRefs(q.glyphJobId!)).map((r) => r.char), ...(await restDrawnChars(q.glyphJobId!))]);
+      const present = new Set([...(await readyRefs(q.glyphJobId!)).map((r) => r.char), ...(await restDrawnChars(q.glyphJobId!)), ...(await listEdits(q.glyphJobId!))]); // 직접 그려 넣은 글자도 폰트에 들어 있다
       const missing = [...KSX1001_HANGUL].filter((c) => !present.has(c));
       const extras = [...EXTRA_CHARS].filter((c) => present.has(c));
       const glyphModels = (await getGlyphJob(q.glyphJobId!).catch(() => null))?.models ?? [];
       const restyled = await restStyleRedrawn(q.glyphJobId!);
       await update(p.id, (r) => {
+        if (r.phase !== "building") return; // 끝나는 사이 사용자가 중단했다
         r.phase = "done";
         r.fontId = job.fontId;
         r.error = null;
@@ -424,7 +427,7 @@ async function waitBuild(p: Stored) {
         if (restyled) r.record.push(event("check", `획 두께·크기가 다른 글자와 달라 다시 그린 글자 ${restyled}자`));
         r.record.push(event("check", summarize(job)));
       });
-      void notify(p.id, "done");
+      if ((await read(p.id)).phase === "done") void notify(p.id, "done");
       return;
     }
     await sleep(3000);
@@ -579,6 +582,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
     tweaks: p.glyphJobId ? await readTweakTable(p.glyphJobId) : {},
     edited: p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [],
+    rebuilding: p.phase === "building" && !!p.fontId && !!p.result,
     revision: p.updatedAt,
     slogans: cleanSlogans(p.style?.slogans),
     record: p.record,
@@ -629,6 +633,29 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
   drive(id);
 }
 
+/** 만드는 중인 일을 멈춘다(11/4). 그린 글자는 남는다. 이미 완성한 폰트가 있으면(빠진 글자 그리기 도중) 그 폰트로 돌아가고,
+ * 아니면 '멈춤'이 되어 이어서 만들거나 그만둘 수 있다. 멈춤 메일은 보내지 않는다(사용자가 한 일이다). */
+export async function cancelProject(owner: string, id: string): Promise<void> {
+  const p = await readOwned(owner, id);
+  if (!ACTIVE.includes(p.phase)) throw new RouteError(409, "지금 만드는 중이 아니에요");
+  const hasFont = !!(p.fontId && p.result);
+  if (p.buildJobId) cancelBuild(p.buildJobId, p.glyphJobId);
+  await update(id, (q) => {
+    if (!ACTIVE.includes(q.phase)) return;
+    const was = q.phase;
+    if (hasFont) {
+      q.phase = "done";
+      q.buildJobId = q.fontId;
+      q.error = null;
+      q.record.push(event("selection", "빠진 글자 그리기를 중단함 (이미 만든 폰트는 그대로)"));
+    } else {
+      q.phase = "failed";
+      q.error = "직접 멈췄어요. 그린 글자는 남아 있어요. 이어서 만들거나 그만둘 수 있어요.";
+      q.record.push(event("selection", `만드는 도중 직접 멈춤 (${was === "analyzing" ? "로고 읽는 중" : was === "drawing" ? "참고 글자 그리는 중" : "글자 그리는 중"})`));
+    }
+  });
+}
+
 /** 느낌 고르기 단계에서 방향을 고른다(pick). 고르면 그 방향으로 참고 글자 그리기를 시작한다. */
 export async function chooseProject(owner: string, id: string, action: ChooseAction): Promise<void> {
   const p = await readOwned(owner, id);
@@ -651,6 +678,14 @@ export async function rebuildProject(owner: string, id: string): Promise<void> {
       q.glyphJobId = null;
       q.buildJobId = null;
       q.record.push(event("selection", "처음부터 다시 만듦"));
+    });
+  } else if (!p.buildJobId && !p.fontId) {
+    // 나머지 글자를 그리기 전에 멈췄다(참고 글자 그리는 중). 30자를 보고 이어서 그릴지 정하는 단계로 간다.
+    await update(id, (q) => {
+      q.phase = "reviewing";
+      q.error = null;
+      q.review = { readyAt: Date.now(), held: false, continued: false };
+      q.record.push(event("selection", "멈춘 곳부터 이어서 만듦 (참고 글자 확인 단계로)"));
     });
   } else {
     const buildJobId = await startBuild(await buildRequest(p));
@@ -754,30 +789,34 @@ export async function accountSummary(owner: string): Promise<{ fonts: number; bu
   return { fonts: mine.length, building: mine.filter((p) => ACTIVE.includes(p.phase)).length };
 }
 
+/** 폰트 작업 하나의 데이터를 모두 지운다: 엔진의 폰트 파일(메인에 진열하는 폰트는 제외), 그린 글자·고친 글자·조정(.data/glyphs/<작업>),
+ * 견본 그림(가게 이름이 그려 있다), 로고, 작업 파일(마지막에 지워서 중간에 실패해도 다시 눌러 이어서 지운다). 엔진의 발급 기록은 지우지 않는다. */
+async function purgeProject(p: Stored): Promise<void> {
+  const keep = new Set(SHOWCASE_FONTS.map((f) => f.fontId));
+  for (const id of new Set([p.fontId, p.buildJobId])) {
+    if (!id || keep.has(id) || !/^[0-9a-f]{32}$/.test(id)) continue;
+    await engine.discardBuild(id).catch((err) => {
+      if (!(err instanceof RouteError && err.status === 404)) throw err; // 이미 없으면 넘어간다
+    });
+  }
+  if (p.glyphJobId && ID.test(p.glyphJobId)) await fs.rm(path.join(process.cwd(), ".data", "glyphs", p.glyphJobId), { recursive: true, force: true });
+  for (const s of p.choose?.samples ?? []) if (s.sampleId && ID.test(s.sampleId)) await fs.rm(path.join(process.cwd(), ".data", "samples", `${s.sampleId}.png`), { force: true });
+  await fs.rm(file(p.id), { force: true });
+  await fs.rm(file(p.id, "logo"), { force: true });
+}
+
 /** 탈퇴(11/4): 이 사람의 폰트 작업을 모두 지운다. 로고·제작 기록(작업 파일), 그린 글자·고친 글자·조정(.data/glyphs/<작업>), 엔진의 폰트 파일.
  * 만드는 중인 폰트가 있으면 아무것도 지우지 않고 409를 낸다. 메인에 진열하는 폰트 파일은 지우지 않는다.
  * 작업 파일은 가장 마지막에 지워서, 중간에 실패해도 다시 눌러 이어서 지울 수 있게 한다. 엔진의 발급 기록(issued)은 지우지 않는다. */
 export async function deleteAllProjects(owner: string): Promise<number> {
   const mine = await ownedProjects(owner);
   if (mine.some((p) => ACTIVE.includes(p.phase))) throw new RouteError(409, "만드는 중인 폰트가 있어요. 다 만든 뒤에 탈퇴해 주세요.");
-  const keep = new Set(SHOWCASE_FONTS.map((f) => f.fontId));
-  for (const p of mine) {
-    for (const id of new Set([p.fontId, p.buildJobId])) {
-      if (!id || keep.has(id) || !/^[0-9a-f]{32}$/.test(id)) continue;
-      await engine.discardBuild(id).catch((err) => {
-        if (!(err instanceof RouteError && err.status === 404)) throw err; // 이미 없으면 넘어간다
-      });
-    }
-    if (p.glyphJobId && ID.test(p.glyphJobId)) await fs.rm(path.join(process.cwd(), ".data", "glyphs", p.glyphJobId), { recursive: true, force: true });
-    for (const s of p.choose?.samples ?? []) if (s.sampleId && ID.test(s.sampleId)) await fs.rm(path.join(process.cwd(), ".data", "samples", `${s.sampleId}.png`), { force: true }); // 견본에는 가게 이름이 그려 있다
-    await fs.rm(file(p.id), { force: true });
-    await fs.rm(file(p.id, "logo"), { force: true });
-  }
+  for (const p of mine) await purgeProject(p);
   return mine.length;
 }
 
 export async function deleteProject(owner: string, id: string): Promise<void> {
-  await readOwned(owner, id);
-  await fs.rm(file(id), { force: true });
-  await fs.rm(file(id, "logo"), { force: true });
+  const p = await readOwned(owner, id);
+  if (ACTIVE.includes(p.phase)) throw new RouteError(409, "아직 만드는 중이에요. 먼저 중단해 주세요.");
+  await purgeProject(p); // 11/4: 폰트·글자·견본까지 모두 지운다(이전에는 작업 파일과 로고만 지웠다)
 }
