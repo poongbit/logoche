@@ -171,6 +171,16 @@ class BuildManager:
         with self._lock:
             return self._builds.get(build_id)
 
+    def discard(self, build_id: str) -> bool:
+        """만든 폰트와 작업 상태를 지운다(탈퇴·삭제). 만드는 중이면 지우지 않고 False를 돌려준다. 발급 기록(ISSUED_DIR)은 건드리지 않는다."""
+        with self._lock:
+            state = self._builds.get(build_id)
+            if state is not None and state.phase in ("composing", "checking"):
+                return False
+            self._builds.pop(build_id, None)
+        shutil.rmtree(BUILDS_DIR / build_id, ignore_errors=True)
+        return True
+
     def start(
         self, glyphs: dict[str, np.ndarray], axes: Axes, meta: FontMeta, logo_hash: str | None, edits: dict[str, drawn.Edit] | None = None,
         tweaks: dict[str, Tweak] | None = None,

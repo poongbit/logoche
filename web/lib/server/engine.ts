@@ -133,6 +133,8 @@ export const engine = {
   /** 만든 폰트에서 글자 하나만 다시 딴다(edit가 null이면 AI가 만든 그대로) */
   patchGlyph: (buildId: string, body: EngineGlyphEditRequest) => json<{ ok: boolean }>(`/builds/${buildId}/glyph`, body),
   build: (buildId: string) => json<EngineBuild>(`/builds/${buildId}`),
+  /** 만든 폰트 폴더를 지운다(탈퇴). 발급 기록은 남는다. 만드는 중이면 409 */
+  discardBuild: (buildId: string) => call(`/builds/${buildId}`, { method: "DELETE" }),
   /** OCR용 그림. 서체에 있는 글자만 놓고, 놓은 글자를 chars로 돌려준다 */
   ocrSheet: (buildId: string, chars: string) => json<{ image: string; chars: string }>(`/builds/${buildId}/ocr-sheet`, { chars }),
   font: (buildId: string, format: FontFormat = "ttf") => call(`/builds/${buildId}/font.${format}`),

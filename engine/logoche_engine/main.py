@@ -7,6 +7,7 @@ uv run uvicorn logoche_engine.main:app --port 8000
 
 from __future__ import annotations
 
+import re
 import threading
 from contextlib import asynccontextmanager
 
@@ -355,6 +356,16 @@ def patch_build_glyph(build_id: str, req: GlyphEditRequest) -> dict:
         raise HTTPException(400, str(err)) from err
     builds.refresh_glyph_set(build_id)
     export_later(path)
+    return {"ok": True}
+
+
+@app.delete("/builds/{build_id}")
+def discard_build(build_id: str) -> dict:
+    """만든 폰트 폴더를 지운다(탈퇴·폰트 삭제). 만드는 중이면 409. 발급 기록은 남긴다."""
+    if not re.fullmatch(r"[0-9a-f]{32}", build_id):
+        raise HTTPException(404, "빌드를 찾을 수 없어요")
+    if not builds.discard(build_id):
+        raise HTTPException(409, "아직 만드는 중이에요")
     return {"ok": True}
 
 

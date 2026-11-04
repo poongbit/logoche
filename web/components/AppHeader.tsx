@@ -8,6 +8,7 @@
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { InAppNotice, useGoogleSignIn } from "@/components/GoogleSignIn";
 import { Notice } from "@/components/ui";
 import { authClient } from "@/lib/authClient";
@@ -74,6 +75,7 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -96,7 +98,8 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
   }
 
   return (
-    <div ref={ref} className="relative">
+    <>
+      <div ref={ref} className="relative">
       <button
         type="button"
         aria-expanded={open}
@@ -120,9 +123,21 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
           >
             {leaving ? "로그아웃하는 중" : "로그아웃"}
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setDeleting(true);
+            }}
+            className="self-center text-13 text-muted underline underline-offset-4 hover:text-ink"
+          >
+            탈퇴
+          </button>
         </div>
       )}
-    </div>
+      </div>
+      {deleting && <DeleteAccountDialog onClose={() => setDeleting(false)} />}
+    </>
   );
 }
 

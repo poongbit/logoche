@@ -13,7 +13,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { industryText, isImitationRequest } from "@/lib/rules";
 import type {
@@ -588,6 +588,33 @@ export async function updateProject(owner: string, id: string, req: UpdateProjec
     }
     if (typeof req.favorite === "boolean") p.favorite = req.favorite;
   });
+}
+
+/** 탈퇴 안내용: 이 사람이 만든 폰트 수와, 지금 만드는 중인 폰트 수 */
+export async function accountSummary(owner: string): Promise<{ fonts: number; building: number }> {
+  const mine = await ownedProjects(owner);
+  return { fonts: mine.length, building: mine.filter((p) => RUNNING.includes(p.phase) || drivers.has(p.id)).length };
+}
+
+/** 탈퇴(11/4): 이 사람의 폰트 작업을 모두 지운다. 로고·제작 기록(작업 파일), 그린 글자·고친 글자·조정(.data/glyphs/<작업>), 엔진의 폰트 파일.
+ * 만드는 중인 폰트가 있으면 아무것도 지우지 않고 409를 낸다. 메인에 진열하는 폰트 파일은 지우지 않는다.
+ * 작업 파일은 가장 마지막에 지워서, 중간에 실패해도 다시 눌러 이어서 지울 수 있게 한다. 엔진의 발급 기록(issued)은 지우지 않는다. */
+export async function deleteAllProjects(owner: string): Promise<number> {
+  const mine = await ownedProjects(owner);
+  if (mine.some((p) => RUNNING.includes(p.phase) || drivers.has(p.id))) throw new RouteError(409, "만드는 중인 폰트가 있어요. 다 만든 뒤에 탈퇴해 주세요.");
+  const keep = new Set(SHOWCASE_FONTS.map((f) => f.fontId));
+  for (const p of mine) {
+    for (const id of new Set([p.fontId, p.buildJobId])) {
+      if (!id || keep.has(id) || !/^[0-9a-f]{32}$/.test(id)) continue;
+      await engine.discardBuild(id).catch((err) => {
+        if (!(err instanceof RouteError && err.status === 404)) throw err; // 이미 없으면 넘어간다
+      });
+    }
+    if (p.glyphJobId && ID.test(p.glyphJobId)) await fs.rm(path.join(process.cwd(), ".data", "glyphs", p.glyphJobId), { recursive: true, force: true });
+    await fs.rm(file(p.id), { force: true });
+    await fs.rm(file(p.id, "logo"), { force: true });
+  }
+  return mine.length;
 }
 
 export async function deleteProject(owner: string, id: string): Promise<void> {
