@@ -1,6 +1,9 @@
 import type {
   AnalyzeStyleRequest,
   ChooseAction,
+  GlyphTweak,
+  SaveGlyphTweakRequest,
+  SaveGlyphTweakResponse,
   CreateProjectRequest,
   ProjectSummary,
   ProjectView,
@@ -88,6 +91,14 @@ export const api = {
   updateProject: (id: string, body: UpdateProjectRequest) => post<{ ok: boolean }>(`/api/projects/${id}`, body, undefined, "PATCH"),
   deleteProject: (id: string) => request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
   chooseProject: (id: string, body: ChooseAction) => post<{ ok: boolean }>(`/api/projects/${id}/choose`, body),
+  /** 다듬기(11/4): 글자 하나 또는 전체("*")의 조정 저장. 글자 하나는 지금 폰트에 바로 들어간다. */
+  saveGlyphTweak: (id: string, body: SaveGlyphTweakRequest) => post<SaveGlyphTweakResponse>(`/api/projects/${id}/tweaks`, body, undefined, "PUT"),
+  /** 그 글자의 조정 기록(최대 100개) */
+  glyphTweakHistory: (id: string, char: string) =>
+    request<{ history: { at: string; tweak: GlyphTweak | null; note: string }[] }>(`/api/projects/${id}/tweaks?char=${encodeURIComponent(char)}`),
+  /** 다듬기의 직접 그리기: 편집 화면에 띄울 그림 / 저장(image가 null이면 직접 고친 것을 지움) */
+  projectGlyphEditSource: (id: string, char: string) => post<GlyphEditSource>(`/api/projects/${id}/glyph-edit`, { char }),
+  saveProjectGlyphEdit: (id: string, body: { char: string; image: string | null }) => post<{ edited: string[] }>(`/api/projects/${id}/glyph-edit`, body, undefined, "PUT"),
   reviewProject: (id: string, body: ReviewAction) => post<{ ok: boolean }>(`/api/projects/${id}/review`, body),
   rebuildProject: (id: string) => post<{ ok: boolean }>(`/api/projects/${id}/rebuild`, {}),
   redrawGlyphs: (id: string, chars: string[]) => post<{ ok: boolean }>(`/api/projects/${id}/redraw`, { chars }),

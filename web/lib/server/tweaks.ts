@@ -8,6 +8,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { WEIGHT_CAP } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
+import { NO_TWEAK, TWEAK_RANGES, isNoTweak } from "@/lib/tweak";
 import type { GlyphTweak, TweakTable } from "@/lib/types";
 import { RouteError } from "./env";
 
@@ -17,18 +18,7 @@ export const ALL_GLYPHS = "*";
 export const HISTORY_MAX = 100;
 const WEIGHT_FLOOR = 100; // 굵기 축 아래쪽 한도
 
-export const NO_TWEAK: GlyphTweak = { pull: 0, slant: 0, width: 100, height: 100, scale: 100, tx: 0, ty: 0 };
-
-/** 화면 슬라이더와 같은 범위. 엔진은 이보다 넉넉하게 받는다(엔진 main.TweakInput). */
-export const TWEAK_RANGES: Record<keyof GlyphTweak, [number, number]> = {
-  pull: [-150, 150],
-  slant: [-10, 30],
-  width: [60, 140],
-  height: [60, 140],
-  scale: [50, 150],
-  tx: [-200, 200],
-  ty: [-200, 200],
-};
+export { NO_TWEAK, TWEAK_RANGES, isNoTweak };
 
 export interface TweakHistoryEntry {
   at: string;
@@ -40,8 +30,6 @@ interface Stored {
   table: TweakTable;
   history: Record<string, TweakHistoryEntry[]>;
 }
-
-export const isNoTweak = (t: GlyphTweak) => (Object.keys(NO_TWEAK) as (keyof GlyphTweak)[]).every((k) => t[k] === NO_TWEAK[k]);
 
 const file = (jobId: string) => {
   if (!UUID.test(jobId)) throw new RouteError(404, "작업을 찾을 수 없어요");

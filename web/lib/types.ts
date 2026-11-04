@@ -450,6 +450,8 @@ export interface ProjectView extends ProjectSummary {
   extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
   recheck: string[]; // 다시 볼 글자: 획 두께·크기가 기준에서 가장 많이 벗어난 나머지 글자(다 만든 뒤, 최대 30자)
   tweaks: TweakTable; // 사용자가 더한 조정(11/3 다듬기). "*"는 전체 글자
+  edited: string[]; // 그림판으로 직접 고친 글자(11/4)
+  revision: number; // 폰트 파일이 바뀔 때마다 달라지는 값. 글자를 고치면 파일이 바뀌어 폰트를 다시 불러오는 열쇠로 쓴다
   slogans: string[]; // AI가 쓴 브랜드 맞춤 문장(없으면 빈 배열). 견본·목업의 문장
   record: RecordEvent[];
 }

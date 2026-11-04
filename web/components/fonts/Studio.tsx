@@ -3,12 +3,14 @@
 // 폰트 스튜디오(11/2 B안, YoFont 스튜디오 배치를 따름). 위 카드: 이름(바로 고치기) · 즐겨찾기 · 원하는 느낌 · 받기.
 // 왼쪽: 써 보기(예문 탭 · 크기 · 글자 간격 · 줄 간격 · 색) · 시안(간판·메뉴판·인스타, 예전 화면 5) · 글자 표 · 설치·홈페이지.
 // 오른쪽: 문자 세트와 검사 · 권리 카드 · 제작 기록 · 지우기.
-// YoFont와 다르게 뺀 것: 공개 범위(늘 나만 쓴다), 키를 붙인 CDN 주소(원본이 새어 나간다), 글자 편집기(10/30 멘토링 결정), 굵기·언어 추가.
+// YoFont와 다르게 뺀 것: 공개 범위(늘 나만 쓴다), 키를 붙인 CDN 주소(원본이 새어 나간다), 언어 추가.
+// 11/4: '글자' 카드의 글자 하나 옆에 다듬기 편집기(GlyphPolish: 슬라이더·끌어서 바꾸기·직접 그리기·조정 기록)를 둔다. 10/30에 뺀 글자 편집기를 사용자 결정으로 되살린 것이다.
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MockupStage } from "@/components/Mockups";
+import { GlyphPolish } from "@/components/fonts/GlyphPolish";
 import { RecordLog } from "@/components/RecordLog";
 import { RightsCard } from "@/components/RightsCard";
 import { DownloadMenu, HeartButton, StatusPill, formatDate } from "@/components/fonts/shared";
@@ -125,7 +127,7 @@ function PencilIcon() {
 export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () => void }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
-  const { state: fontState, fontFamily } = useGeneratedFont(view.fontId, 0, attempt);
+  const { state: fontState, fontFamily } = useGeneratedFont(view.fontId, view.revision, attempt); // revision: 글자를 다듬어 파일이 바뀌면 다시 불러온다
   const family = fontFamily ?? GLYPH_FONT_STACK;
   const fontStyle: CSSProperties = { fontFamily: family };
 
@@ -466,6 +468,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                           style={{ fontFamily: ok ? family : GLYPH_FONT_STACK, fontSize: ok ? undefined : "1.125rem" }}
                         >
                           {c}
+                          {(view.tweaks[c] || view.edited.includes(c)) && <span aria-hidden className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-accent" />}
                           {pick && on && (
                             <svg aria-hidden viewBox="0 0 16 16" className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-ink p-0.5 text-bg">
                               <path d="M4 8.5l2.5 2.5L12 5.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -490,16 +493,8 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                 )}
               </div>
               {sel && (
-                <div className="order-first grid grid-cols-[6rem_1fr] items-center gap-x-4 gap-y-1 md:order-none md:flex md:w-48 md:shrink-0 md:flex-col md:items-stretch md:gap-2">
-                  <div className="row-span-2 grid aspect-square place-items-center rounded-2xl bg-stage">
-                    <span className="text-[4rem] leading-none md:text-[7rem]" style={{ fontFamily: inFont(sel) ? family : GLYPH_FONT_STACK, color: inFont(sel) ? undefined : "var(--edge)" }}>
-                      {sel}
-                    </span>
-                  </div>
-                  <span className="self-end text-17 font-extrabold md:self-auto">
-                    {sel} <span className="font-medium text-muted">{code(sel)}</span>
-                  </span>
-                  <span className="self-start text-13 text-muted md:self-auto">{inFont(sel) ? "폰트에 들어 있어요." : "빠진 글자예요. 다시 그리기로 채울 수 있어요."}</span>
+                <div className="order-first min-w-0 md:order-none md:w-[22rem] md:shrink-0">
+                  <GlyphPolish key={sel} view={view} char={sel} family={family} inFont={inFont(sel)} tweakable={KSX1001_HANGUL.has(sel)} onSaved={onChanged} />
                 </div>
               )}
             </div>

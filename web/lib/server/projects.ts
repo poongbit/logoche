@@ -36,7 +36,7 @@ import type {
   UploadInput,
 } from "@/lib/types";
 import { getBuild, startBuild } from "./build";
-import { engineRequest, readEdits } from "./edits";
+import { editSource, engineRequest, listEdits, readEdits, saveEdit } from "./edits";
 import { engine } from "./engine";
 import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
@@ -566,6 +566,8 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     extras: p.result?.extras ?? [],
     recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
     tweaks: p.glyphJobId ? await readTweakTable(p.glyphJobId) : {},
+    edited: p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [],
+    revision: p.updatedAt,
     slogans: cleanSlogans(p.style?.slogans),
     record: p.record,
   };
@@ -691,6 +693,23 @@ export async function saveProjectTweak(owner: string, id: string, req: SaveGlyph
   }
   if (JSON.stringify(previous) !== JSON.stringify(table[key] ?? null)) await update(id, (q) => void q.record.push(event("human_edit", describeTweak(key, previous, table[key] ?? null, note))));
   return { tweaks: table, patched, rebuild: key === ALL_GLYPHS };
+}
+
+/** 다듬기의 "직접 그리기": 편집 화면에 띄울 그림(지금 글자, AI가 그린 그대로, 글자 틀 자리). */
+export async function projectGlyphEditSource(owner: string, id: string, char: string) {
+  const p = await readOwned(owner, id);
+  if (p.phase !== "done" || !p.glyphJobId || !p.style) throw new RouteError(409, "다 만든 폰트만 고칠 수 있어요");
+  return editSource(p.glyphJobId, { char, axes: p.style.axes });
+}
+
+/** 직접 그린 그림을 저장해 지금 폰트에 바로 바꿔 끼운다(image가 null이면 직접 고친 것을 지우고 AI가 그린 그대로). 제작 기록(사용자 조정)에 남는다. */
+export async function saveProjectGlyphEdit(owner: string, id: string, req: { char: string; image: string | null }): Promise<{ edited: string[] }> {
+  const p = await readOwned(owner, id);
+  if (p.phase !== "done" || !p.glyphJobId || !p.style || !p.fontId) throw new RouteError(409, "다 만든 폰트만 고칠 수 있어요");
+  if (drivers.has(id)) throw new RouteError(409, "아직 만드는 중이에요");
+  const res = await saveEdit(p.glyphJobId, { char: req.char, image: req.image, axes: p.style.axes, buildId: p.fontId });
+  await update(id, (q) => void q.record.push(event("human_edit", req.image ? `'${req.char}' 직접 그려 고침 (그림판)` : `'${req.char}' 직접 고친 그림을 지우고 AI가 그린 그대로 돌림`)));
+  return { edited: res.edits };
 }
 
 /** 글자 하나(또는 전체)의 조정 기록(최대 100개). 되돌리기에 쓴다. */
