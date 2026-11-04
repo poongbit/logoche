@@ -40,7 +40,7 @@ import { editSource, engineRequest, listEdits, readEdits, saveEdit } from "./edi
 import { engine } from "./engine";
 import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
-import { doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
+import { chooseMail, doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
 import { analyzeStyle, cleanSlogans } from "./style";
@@ -51,7 +51,6 @@ const ID = /^[0-9a-f-]{36}$/;
 const RUNNING: ProjectPhase[] = ["analyzing", "choosing", "drawing", "reviewing", "building"];
 // 서버가 지금 일을 하고 있는 단계. choosing·reviewing은 사용자의 결정을 기다리는 단계라 탈퇴를 막지 않는다.
 const ACTIVE: ProjectPhase[] = ["analyzing", "drawing", "building"];
-const CHOOSE_SECONDS = 40; // 견본이 다 되면 고르지 않아도 이만큼 뒤 추천 안으로 저절로 계속한다(창을 닫아도 계속 만든다는 약속을 지킨다)
 
 interface Stored {
   id: string;
@@ -72,6 +71,7 @@ interface Stored {
   // 느낌 고르기(11/4). 견본 그림은 방향마다 한 장. 서버를 다시 켜도 이어 가려고 파일에 둔다(그리는 일꾼은 메모리에 있다).
   choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null; again?: boolean };
   draftNotified?: boolean; // 30자 초안 알림 메일을 보냈다(결정을 기다리는 단계에 들어갈 때 한 번)
+  chooseNotified?: boolean; // 느낌 고르기 알림 메일을 보냈다(견본이 다 그려졌을 때 한 번)
   result: { build: BuildJob; missing: string[]; extras: string[] } | null;
   record: RecordEvent[];
   notified?: "done" | "failed"; // 완성·멈춤 알림 메일을 이미 보낸 종류(같은 메일을 두 번 보내지 않게)
@@ -276,36 +276,36 @@ function drawSample(id: string, index: number) {
   })();
 }
 
-/** 느낌 고르기 단계: 견본이 다 되면 CHOOSE_SECONDS 뒤(기다리기를 누르지 않았다면) 추천 안으로, 사용자가 고르면 그 안으로 참고 글자 그리기를 시작한다. */
-async function waitChoice(p: Stored) {
-  let idx = 0;
+/** 느낌 고르기 단계(11/4 사용자 결정: 저절로 고르지 않는다): 견본이 다 그려지면 메일로 알리고, 사용자가 고를 때까지 일을 멈춘다(false).
+ * 사용자가 고르면 chooseProject가 다시 돌려 그 방향으로 참고 글자 그리기를 시작한다. 서버를 다시 켜 끊긴 견본은 다시 그린다. */
+async function waitChoice(p: Stored): Promise<boolean | void> {
   for (;;) {
     const q = await read(p.id);
     if (q.phase !== "choosing" || !q.choose || !q.style?.directions) return;
     const { samples } = q.choose;
-    samples.forEach((s, i) => s.status === "drawing" && drawSample(p.id, i)); // 서버를 다시 켜 끊긴 견본은 다시 그린다
-    const settled = samples.every((s) => s.status !== "drawing");
-    if (settled && q.choose.readyAt === null) await update(p.id, (r) => void (r.choose && (r.choose.readyAt = Date.now())));
-    const timeUp = settled && !q.choose.held && q.choose.readyAt !== null && Date.now() >= q.choose.readyAt + CHOOSE_SECONDS * 1000;
-    const noneReady = settled && samples.every((s) => s.status === "failed"); // 보여 줄 견본이 없으면 기다릴 이유가 없다
-    if (q.choose.picked !== null || timeUp || noneReady) {
-      idx = q.choose.picked ?? 0;
-      break;
+    samples.forEach((s, i) => s.status === "drawing" && drawSample(p.id, i));
+    if (samples.some((s) => s.status === "drawing")) {
+      await sleep(1000);
+      continue;
     }
-    await sleep(1000);
+    if (q.choose.picked === null) {
+      void notify(p.id, "choose");
+      return false; // 고를 때까지 기다린다
+    }
+    break;
   }
+  const idx = (await read(p.id)).choose!.picked!;
   const q = await read(p.id);
   const d = q.style!.directions![idx] ?? q.style!.directions![0];
   const sample = q.choose!.samples[idx];
   const style = { ...q.style!, expression: d.expression, family: d.family, designBrief: d.brief };
   const glyphJobId = startGlyphJob(await glyphRequest({ ...q, style }, sample?.status === "ready" ? sample.sampleId : null));
-  const auto = q.choose!.picked === null;
   await update(p.id, (r) => {
     r.style = style;
     r.glyphJobId = glyphJobId;
     r.phase = "drawing";
     if (r.choose) r.choose.picked = idx;
-    r.record.push(event("selection", auto ? `서체 방향을 고르지 않아 ${CHOOSE_SECONDS}초 뒤 AI 추천 안으로 계속함` : "서체 방향을 직접 고름"));
+    r.record.push(event("selection", "서체 방향을 직접 고름"));
     r.record.push(event("creative_intent", `고른 서체 방향: ${FAMILY_LABEL[d.family]} · ${d.expression}${sample?.status === "ready" ? " (견본 그림을 참고 이미지로 사용)" : ""}`));
     if (d.brief) r.record.push(event("creative_intent", `서체 설계 지시: ${d.brief}`));
   });
@@ -367,18 +367,22 @@ function summarize(job: BuildJob): string {
 
 /** 완성·멈춤·30자 초안 완료를 만든 사람에게 메일로 알린다. 같은 종류는 한 번만 보내고, 실패해도 작업에는 영향이 없다.
  * draft(11/4): 30자를 그리고 나서 나머지를 그릴지 정하기를 기다리는 단계에 들어갔을 때. 창을 닫았어도 결정하러 돌아오게 한다. */
-async function notify(id: string, kind: "done" | "failed" | "draft") {
+const unclaimSafe = (id: string, kind: "done" | "failed" | "draft" | "choose") =>
+  update(id, (r) => void (kind === "draft" ? (r.draftNotified = false) : kind === "choose" ? (r.chooseNotified = false) : (r.notified = undefined))).catch(() => {});
+
+async function notify(id: string, kind: "done" | "failed" | "draft" | "choose") {
   try {
     let claimed = false;
     const p = await update(id, (r) => {
       if (r.upload.notifyByEmail === false) return;
-      if (kind === "draft" ? r.draftNotified : r.notified === kind) return;
+      if (kind === "draft" ? r.draftNotified : kind === "choose" ? r.chooseNotified : r.notified === kind) return;
       if (kind === "draft") r.draftNotified = true;
+      else if (kind === "choose") r.chooseNotified = true;
       else r.notified = kind;
       claimed = true;
     });
     if (!claimed) return;
-    const unclaim = () => update(id, (r) => void (kind === "draft" ? (r.draftNotified = false) : (r.notified = undefined)));
+    const unclaim = () => update(id, (r) => void (kind === "draft" ? (r.draftNotified = false) : kind === "choose" ? (r.chooseNotified = false) : (r.notified = undefined)));
     const to = emailOf(p.owner);
     if (!to) return; // 로그인 없이 만든 작업
     const missing = p.result?.missing.length ?? 0;
@@ -387,11 +391,13 @@ async function notify(id: string, kind: "done" | "failed" | "draft") {
         ? doneMail(to, p.name, p.id, KSX1001_HANGUL.size - missing, p.result?.extras.length ?? 0)
         : kind === "draft"
           ? draftMail(to, p.name, p.id)
-          : failedMail(to, p.name, p.id);
+          : kind === "choose"
+            ? chooseMail(to, p.name, p.id)
+            : failedMail(to, p.name, p.id);
     if (!(await sendMail(mail))) await unclaim(); // 키가 없어 못 보냈으면 나중에 다시 시도할 수 있게
   } catch (err) {
     console.error("[logoche] 알림 메일 실패", id, err);
-    await update(id, (r) => void (kind === "draft" ? (r.draftNotified = false) : (r.notified = undefined))).catch(() => {});
+    await unclaimSafe(id, kind);
   }
 }
 
@@ -538,7 +544,6 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
   let choose: ProjectView["choose"] = null;
   if (p.phase === "choosing" && p.choose && p.style?.directions) {
     const c = p.choose;
-    const settled = c.samples.every((s) => s.status !== "drawing");
     choose = {
       directions: p.style.directions.map((d, i) => ({
         family: d.family,
@@ -549,8 +554,6 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
         status: c.samples[i]?.status ?? "failed",
         recommended: i === 0,
       })),
-      continueAt: settled && !c.held && c.readyAt !== null ? c.readyAt + CHOOSE_SECONDS * 1000 : null,
-      held: c.held,
       again: !!c.again,
     };
   }
@@ -609,7 +612,8 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
       q.glyphJobId = null;
       q.review = { readyAt: null, held: false, continued: false };
       q.draftNotified = false;
-      if (q.choose) q.choose = { ...q.choose, picked: null, held: true, readyAt: Date.now(), again: true }; // 이번에는 저절로 고르지 않는다
+      if (q.choose) q.choose = { ...q.choose, picked: null, again: true };
+      q.chooseNotified = false; // 다시 고를 때도 견본이 준비돼 있다고 알린다
       q.record.push(event("selection", "참고 글자 30자를 보고 다른 느낌으로 다시 고르기로 함"));
     });
   } else {
@@ -625,21 +629,13 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
   drive(id);
 }
 
-/** 느낌 고르기 단계의 동작: 기다리기(hold) · 다시 시간 세기(release) · 방향 고르기(pick) */
+/** 느낌 고르기 단계에서 방향을 고른다(pick). 고르면 그 방향으로 참고 글자 그리기를 시작한다. */
 export async function chooseProject(owner: string, id: string, action: ChooseAction): Promise<void> {
   const p = await readOwned(owner, id);
   if (p.phase !== "choosing" || !p.choose) throw new RouteError(409, "느낌을 고르는 단계가 아니에요");
   const count = p.style?.directions?.length ?? 0;
-  if (action.action === "pick" && !(Number.isInteger(action.index) && action.index >= 0 && action.index < count)) throw new RouteError(400, "고를 수 있는 안이 아니에요");
-  await update(id, (q) => {
-    if (!q.choose) return;
-    if (action.action === "hold") q.choose.held = true;
-    if (action.action === "release") {
-      q.choose.held = false;
-      q.choose.readyAt = Date.now();
-    }
-    if (action.action === "pick") q.choose.picked = action.index;
-  });
+  if (action.action !== "pick" || !(Number.isInteger(action.index) && action.index >= 0 && action.index < count)) throw new RouteError(400, "고를 수 있는 안이 아니에요");
+  await update(id, (q) => void (q.choose && (q.choose.picked = action.index)));
   drive(id);
 }
 

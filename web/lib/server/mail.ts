@@ -78,3 +78,9 @@ export function draftMail(to: string, name: string, id: string): Mail {
   const lines = [`${name} 폰트의 참고 글자 30자를 그렸어요.`, "결과를 보고 나머지 글자를 이어서 그릴지, 다른 느낌으로 다시 할지 골라 주세요. 고를 때까지 기다려요."];
   return { to, subject: `${name} 30자 초안이 나왔어요`, ...layout(`${name} 30자 초안이 나왔어요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "초안 보고 고르기" }) };
 }
+
+/** 서체 방향 견본이 그려졌고 사용자가 고르기를 기다린다는 알림(11/4) */
+export function chooseMail(to: string, name: string, id: string): Mail {
+  const lines = [`${name} 폰트의 서체 느낌 견본을 그렸어요.`, "가게 이름이 세 가지 느낌으로 그려져 있어요. 마음에 드는 느낌을 고르면 그 느낌으로 먼저 30자를 그려 보여 드려요. 고를 때까지 기다려요."];
+  return { to, subject: `${name} 느낌을 골라 주세요`, ...layout(`${name} 느낌을 골라 주세요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "느낌 고르러 가기" }) };
+}

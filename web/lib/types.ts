@@ -433,12 +433,11 @@ export interface ChooseDirection {
 
 export interface ProjectChoose {
   directions: ChooseDirection[];
-  continueAt: number | null; // epoch ms. 견본이 다 되면 이때 추천 안으로 저절로 계속한다
-  held: boolean; // 기다리기를 눌렀다
   again: boolean; // 30자를 보고 다른 느낌을 다시 고르는 중
 }
 
-export type ChooseAction = { action: "hold" } | { action: "release" } | { action: "pick"; index: number };
+// 11/4 사용자 결정: 느낌은 저절로 고르지 않는다. 고를 때까지 서버가 기다린다.
+export type ChooseAction = { action: "pick"; index: number };
 
 export interface ProjectView extends ProjectSummary {
   upload: Omit<UploadInput, "logoImage">;
