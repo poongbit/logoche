@@ -14,10 +14,10 @@ const HANGUL = KSX1001_HANGUL.size.toLocaleString();
 
 const STEPS: { title: string; body: string; icon: ReactNode }[] = [
   { title: "로고 올리기", body: "로고 이미지와 가게 이름, 사업 내용과 추구하는 가치를 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요.", icon: <UploadIcon /> },
-  { title: "참고 글자 확인", body: "AI가 먼저 30자를 그려 보여 드려요. 마음에 안 드는 글자는 눌러서 다시 그려요.", icon: <GridIcon /> },
+  { title: "30자 보고 정하기", body: "AI가 느낌 세 가지를 보여 드리고, 고른 느낌으로 먼저 30자를 그려요. 마음에 들면 이어서 그리고, 아니면 다른 느낌으로 다시 해 볼 수 있어요.", icon: <GridIcon /> },
   {
     title: "나머지 글자 그리기",
-    body: `같은 느낌으로 한글 ${HANGUL}자와 숫자·문장부호 ${EXTRA_CHARS.length}자를 그려요. 창을 닫아도 계속 만들어요.`,
+    body: `먼저 30자를 그려 보여 드려요. 마음에 들면 같은 느낌으로 한글 ${HANGUL}자와 숫자·문장부호 ${EXTRA_CHARS.length}자를 이어서 그려요.`,
     icon: <PenIcon />,
   },
   { title: "받아서 쓰기", body: "TTF·OTF·WOFF2로 받아 컴퓨터에 설치하거나 홈페이지에 바로 써요.", icon: <DownloadIcon /> },
@@ -59,7 +59,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
       </p>
     ),
   },
-  { q: "얼마나 걸리나요?", a: <p>약 5분이에요. 만드는 동안 창을 닫아도 서버에서 계속 만들고, 내 폰트에서 이어서 볼 수 있어요.</p> },
+  { q: "얼마나 걸리나요?", a: <p>30자 초안은 1~2분, 이어서 나머지를 그리는 데 약 6분이에요. 창을 닫아도 서버에서 계속하고 메일로 알려 드려요.</p> },
   {
     q: "어떤 글자가 들어가나요?",
     a: (

@@ -15,7 +15,7 @@ export const PHASE_LABELS: Record<ProjectPhase, string> = {
   analyzing: "로고 읽는 중",
   choosing: "느낌을 골라 주세요",
   drawing: "참고 글자 그리는 중",
-  reviewing: "확인을 기다려요",
+  reviewing: "이어서 그릴지 골라 주세요",
   building: "그리는 중",
   done: "완성",
   failed: "멈춤",

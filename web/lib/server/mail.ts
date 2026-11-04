@@ -72,3 +72,9 @@ export function failedMail(to: string, name: string, id: string): Mail {
   const lines = [`${name} 폰트를 만들다 멈췄어요.`, "그린 글자는 그대로 남아 있어요. 아래 버튼에서 '이어서 만들기'를 누르면 멈춘 곳부터 다시 시작해요."];
   return { to, subject: `${name} 폰트 만들기가 멈췄어요`, ...layout(`${name} 폰트 만들기가 멈췄어요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "이어서 만들기" }) };
 }
+
+/** 30자 초안이 나왔고 나머지를 그릴지 정하기를 기다린다는 알림(11/4) */
+export function draftMail(to: string, name: string, id: string): Mail {
+  const lines = [`${name} 폰트의 참고 글자 30자를 그렸어요.`, "결과를 보고 나머지 글자를 이어서 그릴지, 다른 느낌으로 다시 할지 골라 주세요. 고를 때까지 기다려요."];
+  return { to, subject: `${name} 30자 초안이 나왔어요`, ...layout(`${name} 30자 초안이 나왔어요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "초안 보고 고르기" }) };
+}

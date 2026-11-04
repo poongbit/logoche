@@ -9,14 +9,14 @@ import { CheckIcon, StepMark } from "@/components/ui";
 import { BUILD_STAGES } from "@/lib/constants";
 import type { ProjectView } from "@/lib/types";
 
-const STEPS = ["로고 읽기", "느낌 고르기", "글자 그리기", "폰트 파일·검사"];
+const STEPS = ["로고 읽기", "느낌 고르기", "30자 확인", "나머지 글자", "폰트 파일·검사"];
 
 export function stepOf(view: ProjectView): number {
   if (view.phase === "analyzing") return 0;
   if (view.phase === "choosing") return 1;
   if (view.phase === "drawing" || view.phase === "reviewing") return 2;
   const draw = view.build?.stages.find((s) => s.key === "draw");
-  return draw && draw.status !== "done" ? 2 : 3;
+  return draw && draw.status !== "done" ? 3 : 4;
 }
 
 export function Steps({ current }: { current: number }) {
@@ -63,15 +63,15 @@ export function Making({ view }: { view: ProjectView }) {
       ? "로고를 읽고 있어요"
       : view.phase === "drawing"
         ? "참고 글자 30자를 그리고 있어요"
-        : step === 2
+        : step === 3
           ? "나머지 글자를 그리고 있어요"
           : "폰트 파일을 만들고 검사하는 중이에요";
   const subtitle =
     view.phase === "analyzing"
       ? "로고와 가게 이야기를 읽어 서체 방향 세 가지를 정해요. 곧 가게 이름 견본을 그려 보여 드려요."
       : view.phase === "drawing"
-        ? "고른 느낌으로 먼저 30자를 그려요. 이 30자의 모양을 나머지 글자가 따라가요."
-        : step === 2
+        ? "고른 느낌으로 먼저 30자를 그려요. 다 그리면 결과를 보여 드려요. 나머지 글자를 그릴지는 그때 정해요."
+        : step === 3
           ? "참고 글자와 같은 글씨로 30자씩 그리고 검사해요. 숫자와 문장부호도 그려요."
           : "외곽선을 따서 폰트 파일로 묶고, 상업용 검사와 AI 판독을 해요.";
 
@@ -125,7 +125,7 @@ export function Making({ view }: { view: ProjectView }) {
               )}
             </div>
           )}
-          {view.phase === "building" && step === 2 && (
+          {view.phase === "building" && step === 3 && (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-1.5">
               {view.recent.map((g) => (
                 // eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 글자 그림
@@ -136,7 +136,7 @@ export function Making({ view }: { view: ProjectView }) {
               ))}
             </div>
           )}
-          {view.phase === "building" && step === 3 && (
+          {view.phase === "building" && step === 4 && (
             <ol className="flex flex-col rounded-[1.25rem] border border-line bg-bg">
               {engineStages.map((s) => (
                 <li key={s.key} className="flex items-center gap-3 border-b border-line px-5 py-3.5 text-15 last:border-b-0">

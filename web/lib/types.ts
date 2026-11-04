@@ -435,6 +435,7 @@ export interface ProjectChoose {
   directions: ChooseDirection[];
   continueAt: number | null; // epoch ms. 견본이 다 되면 이때 추천 안으로 저절로 계속한다
   held: boolean; // 기다리기를 눌렀다
+  again: boolean; // 30자를 보고 다른 느낌을 다시 고르는 중
 }
 
 export type ChooseAction = { action: "hold" } | { action: "release" } | { action: "pick"; index: number };
@@ -456,7 +457,7 @@ export interface ProjectView extends ProjectSummary {
   record: RecordEvent[];
 }
 
-export type ReviewAction = { action: "hold" } | { action: "release" } | { action: "continue" } | { action: "redraw"; indices: number[] };
+export type ReviewAction = { action: "hold" } | { action: "release" } | { action: "continue" } | { action: "redraw"; indices: number[] } | { action: "restyle" }; // restyle: 30자를 보고 다른 느낌으로 다시 고른다(11/4)
 
 export interface UpdateProjectRequest {
   name?: string;

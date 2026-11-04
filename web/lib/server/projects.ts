@@ -40,16 +40,17 @@ import { editSource, engineRequest, listEdits, readEdits, saveEdit } from "./edi
 import { engine } from "./engine";
 import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
-import { doneMail, emailOf, failedMail, sendMail } from "./mail";
+import { doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
 import { analyzeStyle, cleanSlogans } from "./style";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
-const REVIEW_SECONDS = 20; // 참고 글자를 보여 주고 저절로 계속하기까지
 const ID = /^[0-9a-f-]{36}$/;
 const RUNNING: ProjectPhase[] = ["analyzing", "choosing", "drawing", "reviewing", "building"];
+// 서버가 지금 일을 하고 있는 단계. choosing·reviewing은 사용자의 결정을 기다리는 단계라 탈퇴를 막지 않는다.
+const ACTIVE: ProjectPhase[] = ["analyzing", "drawing", "building"];
 const CHOOSE_SECONDS = 40; // 견본이 다 되면 고르지 않아도 이만큼 뒤 추천 안으로 저절로 계속한다(창을 닫아도 계속 만든다는 약속을 지킨다)
 
 interface Stored {
@@ -69,7 +70,8 @@ interface Stored {
   error: string | null;
   review: { readyAt: number | null; held: boolean; continued: boolean };
   // 느낌 고르기(11/4). 견본 그림은 방향마다 한 장. 서버를 다시 켜도 이어 가려고 파일에 둔다(그리는 일꾼은 메모리에 있다).
-  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null };
+  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null; again?: boolean };
+  draftNotified?: boolean; // 30자 초안 알림 메일을 보냈다(결정을 기다리는 단계에 들어갈 때 한 번)
   result: { build: BuildJob; missing: string[]; extras: string[] } | null;
   record: RecordEvent[];
   notified?: "done" | "failed"; // 완성·멈춤 알림 메일을 이미 보낸 종류(같은 메일을 두 번 보내지 않게)
@@ -309,8 +311,8 @@ async function waitChoice(p: Stored) {
   });
 }
 
-/** 참고 글자 작업이 끝나기를 기다렸다가 나머지 글자를 그리러 간다. 11/4부터 참고 글자 확인 단계(20초)는 거치지 않는다
- * (느낌은 앞의 견본 고르기에서 정했다). 이전에 만들다 만 작업의 reviewing 단계는 waitReview가 그대로 이어 받는다. */
+/** 참고 글자 30자가 다 그려지면 결과를 보여 주고 사용자가 나머지를 그릴지 정하는 단계(reviewing)로 간다(11/4).
+ * 나머지 글자를 그리는 일(약 2,300자, 약 6분)이 이 서비스에서 가장 큰 비용이라, 30자를 보고 정한 뒤에만 시작한다. 저절로 계속하지 않는다. */
 async function waitRefs(p: Stored) {
   const id = p.glyphJobId!;
   let job = await getGlyphJob(id);
@@ -320,25 +322,27 @@ async function waitRefs(p: Stored) {
   }
   const ready = job.items.filter((i) => i.status === "ready").length;
   if (ready === 0) throw new Error("참고 글자를 하나도 그리지 못했어요");
-  const q = await read(p.id);
-  const buildJobId = await startBuild(await buildRequest(q));
-  await update(p.id, (r) => {
-    r.phase = "building";
-    r.buildJobId = buildJobId;
-    for (const m of job.models) r.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
-    r.record.push(event("selection", `참고 글자 ${job.items.length}자 중 ${ready}자 통과`));
+  await update(p.id, (q) => {
+    q.phase = "reviewing";
+    q.review = { readyAt: Date.now(), held: false, continued: false };
+    for (const m of job.models) q.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
+    q.record.push(event("selection", `참고 글자 ${job.items.length}자 중 ${ready}자 통과`));
   });
+  void notify(p.id, "draft");
 }
 
-/** 확인 단계: 20초가 지나거나(고른 글자가 없을 때) 사용자가 '계속'을 누르면 나머지 글자를 그린다. 다시 그리는 글자가 있으면 끝날 때까지 기다린다. */
-async function waitReview(p: Stored) {
+/** 확인 단계(11/4부터 사용자 결정을 기다린다): 다시 그리는 글자가 끝나면, 사용자가 '이어서 그리기'를 눌렀을 때만 나머지 글자를 그린다.
+ * 누르지 않았으면 false를 돌려 일을 멈춘다(drive가 이 작업을 그만 돈다). 사용자가 누르면 reviewProject가 다시 돌린다. */
+async function waitReview(p: Stored): Promise<boolean | void> {
   for (;;) {
     const q = await read(p.id);
     if (q.phase !== "reviewing") return;
     const job = await getGlyphJob(q.glyphJobId!);
     const busy = job.items.some((i) => i.status === "drawing" || i.status === "redrawing");
-    const timeUp = !q.review.held && q.review.readyAt !== null && Date.now() >= q.review.readyAt + REVIEW_SECONDS * 1000;
-    if ((q.review.continued || timeUp) && !busy) break;
+    if (!busy) {
+      if (!q.review.continued) return false; // 결정을 기다린다
+      break;
+    }
     await sleep(1000);
   }
   const q = await read(p.id);
@@ -346,7 +350,7 @@ async function waitReview(p: Stored) {
   await update(p.id, (r) => {
     r.phase = "building";
     r.buildJobId = buildJobId;
-    r.record.push(event("selection", r.review.continued ? "참고 글자를 확인하고 계속함" : `참고 글자를 ${REVIEW_SECONDS}초 동안 그대로 두어 저절로 계속함`));
+    r.record.push(event("selection", "참고 글자 30자를 보고 나머지 글자를 이어서 그리기로 함"));
   });
 }
 
@@ -361,24 +365,33 @@ function summarize(job: BuildJob): string {
   return parts.join(" · ");
 }
 
-/** 완성·멈춤을 만든 사람에게 메일로 알린다. 같은 종류는 한 번만 보내고, 실패해도 작업에는 영향이 없다. */
-async function notify(id: string, kind: "done" | "failed") {
+/** 완성·멈춤·30자 초안 완료를 만든 사람에게 메일로 알린다. 같은 종류는 한 번만 보내고, 실패해도 작업에는 영향이 없다.
+ * draft(11/4): 30자를 그리고 나서 나머지를 그릴지 정하기를 기다리는 단계에 들어갔을 때. 창을 닫았어도 결정하러 돌아오게 한다. */
+async function notify(id: string, kind: "done" | "failed" | "draft") {
   try {
     let claimed = false;
     const p = await update(id, (r) => {
-      if (r.notified === kind || r.upload.notifyByEmail === false) return;
-      r.notified = kind;
+      if (r.upload.notifyByEmail === false) return;
+      if (kind === "draft" ? r.draftNotified : r.notified === kind) return;
+      if (kind === "draft") r.draftNotified = true;
+      else r.notified = kind;
       claimed = true;
     });
     if (!claimed) return;
+    const unclaim = () => update(id, (r) => void (kind === "draft" ? (r.draftNotified = false) : (r.notified = undefined)));
     const to = emailOf(p.owner);
     if (!to) return; // 로그인 없이 만든 작업
     const missing = p.result?.missing.length ?? 0;
-    const mail = kind === "done" ? doneMail(to, p.name, p.id, KSX1001_HANGUL.size - missing, p.result?.extras.length ?? 0) : failedMail(to, p.name, p.id);
-    if (!(await sendMail(mail))) await update(id, (r) => void (r.notified = undefined)); // 키가 없어 못 보냈으면 나중에 다시 시도할 수 있게
+    const mail =
+      kind === "done"
+        ? doneMail(to, p.name, p.id, KSX1001_HANGUL.size - missing, p.result?.extras.length ?? 0)
+        : kind === "draft"
+          ? draftMail(to, p.name, p.id)
+          : failedMail(to, p.name, p.id);
+    if (!(await sendMail(mail))) await unclaim(); // 키가 없어 못 보냈으면 나중에 다시 시도할 수 있게
   } catch (err) {
     console.error("[logoche] 알림 메일 실패", id, err);
-    await update(id, (r) => void (r.notified = undefined)).catch(() => {});
+    await update(id, (r) => void (kind === "draft" ? (r.draftNotified = false) : (r.notified = undefined))).catch(() => {});
   }
 }
 
@@ -412,7 +425,7 @@ async function waitBuild(p: Stored) {
   }
 }
 
-const STEPS: Partial<Record<ProjectPhase, (p: Stored) => Promise<void>>> = {
+const STEPS: Partial<Record<ProjectPhase, (p: Stored) => Promise<boolean | void>>> = {
   analyzing: analyze,
   choosing: waitChoice,
   drawing: waitRefs,
@@ -432,7 +445,7 @@ function drive(id: string) {
         const step = STEPS[p.phase];
         if (!step) return;
         phase = p.phase;
-        await step(p);
+        if ((await step(p)) === false) return; // 사용자의 결정을 기다리는 단계는 일을 멈춘다(결정하면 다시 돌린다)
       }
     } catch (err) {
       if (err instanceof RouteError && err.status === 404 && phase === null) return; // 지운 작업
@@ -520,12 +533,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
   let review: ProjectView["review"] = null;
   if ((p.phase === "drawing" || p.phase === "reviewing") && p.glyphJobId) {
     const job = await getGlyphJob(p.glyphJobId).catch(() => null);
-    const waiting = p.phase === "reviewing" && !p.review.held && !p.review.continued && p.review.readyAt !== null;
-    review = {
-      items: job?.items ?? [],
-      continueAt: waiting ? p.review.readyAt! + REVIEW_SECONDS * 1000 : null,
-      held: p.review.held,
-    };
+    review = { items: job?.items ?? [], continueAt: null, held: p.review.held }; // 11/4: 저절로 계속하지 않으므로 시간은 없다
   }
   let choose: ProjectView["choose"] = null;
   if (p.phase === "choosing" && p.choose && p.style?.directions) {
@@ -543,6 +551,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
       })),
       continueAt: settled && !c.held && c.readyAt !== null ? c.readyAt + CHOOSE_SECONDS * 1000 : null,
       held: c.held,
+      again: !!c.again,
     };
   }
   let recent: ProjectView["recent"] = [];
@@ -590,6 +599,18 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
     await update(id, (q) => {
       q.review.held = true;
       q.record.push(event("selection", `참고 글자 다시 그리기: ${chars.join(", ")}`));
+    });
+  } else if (action.action === "restyle") {
+    // 30자를 보고 마음에 들지 않으면 다른 느낌을 다시 고른다(견본은 그대로 남아 있어 비용이 거의 안 든다). 그린 30자는 지운다.
+    const old = p.glyphJobId;
+    if (old && ID.test(old)) await fs.rm(path.join(process.cwd(), ".data", "glyphs", old), { recursive: true, force: true });
+    await update(id, (q) => {
+      q.phase = "choosing";
+      q.glyphJobId = null;
+      q.review = { readyAt: null, held: false, continued: false };
+      q.draftNotified = false;
+      if (q.choose) q.choose = { ...q.choose, picked: null, held: true, readyAt: Date.now(), again: true }; // 이번에는 저절로 고르지 않는다
+      q.record.push(event("selection", "참고 글자 30자를 보고 다른 느낌으로 다시 고르기로 함"));
     });
   } else {
     await update(id, (q) => {
@@ -734,7 +755,7 @@ export async function updateProject(owner: string, id: string, req: UpdateProjec
 /** 탈퇴 안내용: 이 사람이 만든 폰트 수와, 지금 만드는 중인 폰트 수 */
 export async function accountSummary(owner: string): Promise<{ fonts: number; building: number }> {
   const mine = await ownedProjects(owner);
-  return { fonts: mine.length, building: mine.filter((p) => RUNNING.includes(p.phase) || drivers.has(p.id)).length };
+  return { fonts: mine.length, building: mine.filter((p) => ACTIVE.includes(p.phase)).length };
 }
 
 /** 탈퇴(11/4): 이 사람의 폰트 작업을 모두 지운다. 로고·제작 기록(작업 파일), 그린 글자·고친 글자·조정(.data/glyphs/<작업>), 엔진의 폰트 파일.
@@ -742,7 +763,7 @@ export async function accountSummary(owner: string): Promise<{ fonts: number; bu
  * 작업 파일은 가장 마지막에 지워서, 중간에 실패해도 다시 눌러 이어서 지울 수 있게 한다. 엔진의 발급 기록(issued)은 지우지 않는다. */
 export async function deleteAllProjects(owner: string): Promise<number> {
   const mine = await ownedProjects(owner);
-  if (mine.some((p) => RUNNING.includes(p.phase) || drivers.has(p.id))) throw new RouteError(409, "만드는 중인 폰트가 있어요. 다 만든 뒤에 탈퇴해 주세요.");
+  if (mine.some((p) => ACTIVE.includes(p.phase))) throw new RouteError(409, "만드는 중인 폰트가 있어요. 다 만든 뒤에 탈퇴해 주세요.");
   const keep = new Set(SHOWCASE_FONTS.map((f) => f.fontId));
   for (const p of mine) {
     for (const id of new Set([p.fontId, p.buildJobId])) {

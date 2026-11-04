@@ -98,9 +98,11 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
       <Steps current={1} />
       <div className="flex flex-col gap-2">
         <span className="text-15 font-bold text-muted">{view.name}</span>
-        <h1 className="text-26 font-extrabold lg:text-32">어떤 느낌의 글씨로 만들까요?</h1>
+        <h1 className="text-26 font-extrabold lg:text-32">{choose?.again ? "다른 느낌으로 골라 볼까요?" : "어떤 느낌의 글씨로 만들까요?"}</h1>
         <p className="text-17 leading-normal font-medium text-muted">
-          가게 이름을 {directions.length || 3}가지 느낌으로 그려 봤어요. 하나를 고르면 그 느낌으로 모든 글자를 그려요. 견본과 최종 글자는 조금 다를 수 있어요.
+          {choose?.again
+            ? "그렸던 30자는 지웠어요. 다른 느낌을 고르면 그 느낌으로 30자를 다시 그려 보여 드려요."
+            : `가게 이름을 ${directions.length || 3}가지 느낌으로 그려 봤어요. 하나를 고르면 그 느낌으로 먼저 30자를 그려 보여 드려요. 견본과 최종 글자는 조금 다를 수 있어요.`}
         </p>
       </div>
 
