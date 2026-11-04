@@ -13,9 +13,9 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, FAMILY_LABEL, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
-import { industryText, isImitationRequest } from "@/lib/rules";
+import { DESIRED_FEEL_MAX, industryText, isImitationRequest } from "@/lib/rules";
 import type {
   BuildJob,
   CreateProjectRequest,
@@ -41,7 +41,7 @@ import { RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
 import { doneMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
-import { analyzeStyle } from "./style";
+import { analyzeStyle, cleanSlogans } from "./style";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
@@ -175,7 +175,7 @@ function firstRecord(u: UploadInput): RecordEvent[] {
     u.usageContexts.length && `주 사용처 ${u.usageContexts.map((x) => labelOf(USAGE_CONTEXTS, x)).join(", ")}`,
   ].filter(Boolean);
   out.push(event("creative_intent", intent.length ? intent.join(" · ") : "업종·톤·사용처는 고르지 않음(톤은 AI가 로고에서 읽음)"));
-  if (u.desiredFeel.trim()) out.push(event("creative_intent", `원하는 느낌: ${u.desiredFeel.trim()}`));
+  if (u.desiredFeel.trim()) out.push(event("creative_intent", `사업 내용·추구하는 가치: ${u.desiredFeel.trim()}`));
   return out;
 }
 
@@ -184,7 +184,8 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
   if (!u.logoImage) throw new RouteError(400, "로고를 올려 주세요");
   if (!u.storeName.trim()) throw new RouteError(400, "가게 이름을 적어 주세요");
   if (!u.logoSource || !u.logoFont) throw new RouteError(400, "권리 확인 두 가지를 골라 주세요");
-  if (isImitationRequest(u.desiredFeel)) throw new RouteError(400, "특정 서체는 따라 하지 않아요. 원하는 느낌을 말로 적어 주세요.");
+  if (isImitationRequest(u.desiredFeel)) throw new RouteError(400, "특정 서체는 따라 하지 않아요. 사업 내용과 원하는 모양을 말로 적어 주세요.");
+  if (u.desiredFeel.length > DESIRED_FEEL_MAX) throw new RouteError(400, `사업 내용은 ${DESIRED_FEEL_MAX}자까지 적을 수 있어요.`);
   const quality: DrawQuality = "fine"; // 11/3: 그리기 수준 선택을 없애고 정밀만 쓴다
   const id = crypto.randomUUID();
   const now = Date.now();
@@ -225,7 +226,10 @@ async function analyze(p: Stored) {
     q.phase = "drawing";
     for (const m of style.models) q.record.push(event("ai_model", `스타일 분석: ${m}`));
     q.record.push(event("selection", `AI가 정한 조절값: ${style.axes.map((a) => `${AXES[a.key].label} ${a.value}`).join(" · ")}`));
-    q.record.push(event("creative_intent", `표현 방식: ${style.expression} (AI 제안${q.upload.desiredFeel.trim() ? ", 원하는 느낌 반영" : ""})`));
+    q.record.push(event("creative_intent", `표현 방식: ${style.expression} (AI 제안${q.upload.desiredFeel.trim() ? ", 사업 내용·가치 반영" : ""})`));
+    if (style.family) q.record.push(event("creative_intent", `서체 계열: ${FAMILY_LABEL[style.family]} (AI 제안)`));
+    if (style.designBrief) q.record.push(event("creative_intent", `서체 설계 지시: ${style.designBrief}`));
+    for (const v of style.valueMappings ?? []) q.record.push(event("creative_intent", `브랜드 가치 → 조형: ${v.value} → ${v.form} (${v.why})`));
   });
 }
 
@@ -463,6 +467,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     extras: p.result?.extras ?? [],
     recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
     tweaks: p.glyphJobId ? await readTweakTable(p.glyphJobId) : {},
+    slogans: cleanSlogans(p.style?.slogans),
     record: p.record,
   };
 }

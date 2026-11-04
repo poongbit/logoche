@@ -56,7 +56,7 @@ export interface UploadInput {
   industryOther: string; // 업종이 '기타'일 때 직접 적은 업종(비워도 된다)
   brandTones: BrandTone[]; // 2~3개
   usageContexts: UsageContext[]; // 1개 이상
-  desiredFeel: string; // 원하는 느낌 한 줄, 비워도 된다
+  desiredFeel: string; // 11/4부터 '사업 내용과 추구하는 가치'(여러 문장). 키는 이전 작업과 맞추려고 그대로 둔다. 비워도 된다
   logoSource: LogoSource | null;
   logoFont: LogoFont | null;
   logoFontName: string; // 로고에 쓴 폰트 이름(알면), 비워도 된다
@@ -93,6 +93,23 @@ export interface StyleConflict {
   chosen: StyleOptionKind | null;
 }
 
+/** 서체 계열(11/4). 이미지 모델에게 가장 크게 먹히는 방향 지시라 따로 둔다. */
+export type StyleFamily = "gothic" | "myeongjo" | "rounded" | "brush" | "display";
+
+/** AI가 낸 서체 방향 하나: 계열 + 표현 방식(짧은 구) + 서체 설계 지시문(4~6문장). 안끼리 계열이 달라야 한다. */
+export interface StyleDirection {
+  family: StyleFamily;
+  expression: string;
+  brief: string | null; // 설계 지시문. 색·기울기·위치 같은 금지 내용이 든 문장은 걸러 낸다(server/style.ts)
+}
+
+/** 브랜드 가치 → 반영한 조형 요소 → 근거. 제작 기록(창작 의도)에 남는다. */
+export interface ValueMapping {
+  value: string;
+  form: string;
+  why: string;
+}
+
 export interface StyleCard {
   axes: StyleAxis[];
   strokeEnd: string; // 획 끝 묘사
@@ -103,6 +120,12 @@ export interface StyleCard {
   conflict: StyleConflict | null;
   colors: string[]; // 로고에서 뽑은 [대표색, 어두운 색, 밝은 색]. 자리로 읽으니 같은 색이 겹칠 수 있다. 적용 시안에만 쓴다
   models: string[]; // 쓴 모델 이름, 제작 기록에 남는다
+  // 11/4: 아래는 모두 없어도 된다. 이전에 만든 작업에는 없고, 없으면 지시문은 예전과 똑같이 만든다(이어서 만들기·다시 그리기에서 서체가 바뀌지 않게).
+  family?: StyleFamily; // 고른 방향의 서체 계열
+  designBrief?: string | null; // 고른 방향의 서체 설계 지시문. 한 번 정하면 모든 글자표에 같은 글을 쓴다(장마다 달라지면 서체가 흔들린다)
+  directions?: StyleDirection[]; // AI가 낸 방향 3개(첫 안이 추천)
+  slogans?: string[]; // 브랜드 맞춤 문장(견본·목업에 쓴다)
+  valueMappings?: ValueMapping[];
 }
 
 // ---------- 화면 3. AI 초안 ----------
@@ -407,6 +430,7 @@ export interface ProjectView extends ProjectSummary {
   extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
   recheck: string[]; // 다시 볼 글자: 획 두께·크기가 기준에서 가장 많이 벗어난 나머지 글자(다 만든 뒤, 최대 30자)
   tweaks: TweakTable; // 사용자가 더한 조정(11/3 다듬기). "*"는 전체 글자
+  slogans: string[]; // AI가 쓴 브랜드 맞춤 문장(없으면 빈 배열). 견본·목업의 문장
   record: RecordEvent[];
 }
 

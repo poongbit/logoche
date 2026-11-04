@@ -1,4 +1,5 @@
 import type {
+  StyleFamily,
   AxisKey,
   BrandTone,
   BuildStageKey,
@@ -382,3 +383,15 @@ export const RIGHTS = {
   screening:
     "유사도 검사는 다른 폰트와 닮지 않았는지 걸러 내는 선별 검사이고, 권리 문제가 없다는 보증은 아니에요. 로고에 쓴 폰트의 라이선스 확인과 최종 사용 책임은 사용하는 분께 있어요.",
 };
+
+// ---------- 서체 계열(11/4) ----------
+
+/** 서체 계열. text는 이미지 모델 지시문에 그대로 들어가고, hint는 화면 안내다. 특정 서체 이름은 쓰지 않는다. */
+export const STYLE_FAMILIES: { value: StyleFamily; label: string; hint: string; text: string }[] = [
+  { value: "gothic", label: "고딕", hint: "획 굵기가 고르고 끝이 반듯해요", text: "고딕 계열: 가로획과 세로획의 굵기가 거의 같고 획 끝이 반듯하게 끊김" },
+  { value: "myeongjo", label: "명조", hint: "세로획은 굵고 가로획은 가늘며 돌기가 있어요", text: "명조 계열: 가로획은 가늘고 세로획은 굵으며(굵기 대비가 큼), 가로획 끝에 작은 돌기와 삐침이 있음" },
+  { value: "rounded", label: "둥근 고딕", hint: "획 끝과 모서리가 둥글어요", text: "둥근 고딕 계열: 굵기가 고르고 획 끝과 모서리가 둥글게 맺힘" },
+  { value: "brush", label: "붓·손글씨", hint: "붓의 강약과 흐름이 보여요", text: "붓·손글씨 계열: 붓의 강약과 흐름이 보이고 획 끝이 점점 가늘어지거나 눌러 맺힘" },
+  { value: "display", label: "디스플레이", hint: "개성 있게 과장된 장식 글씨예요", text: "디스플레이 계열: 제목용으로 획 모양을 개성 있게 과장한 장식 글씨" },
+];
+export const FAMILY_LABEL: Record<StyleFamily, string> = Object.fromEntries(STYLE_FAMILIES.map((f) => [f.value, f.label])) as Record<StyleFamily, string>;

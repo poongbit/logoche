@@ -18,7 +18,7 @@ import { authClient } from "@/lib/authClient";
 import { ACCEPTED_LOGO_TYPES, BRAND_TONES, EXTRA_CHARS, INDUSTRIES, LOGO_FONTS, LOGO_SOURCES, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { EMPTY_DRAFT, clearDraft, loadDraft, logoFromFile, saveDraft, type NewDraft } from "@/lib/newDraft";
-import { INDUSTRY_OTHER_MAX, industryText, isImitationRequest } from "@/lib/rules";
+import { DESIRED_FEEL_MAX, INDUSTRY_OTHER_MAX, industryText, isImitationRequest } from "@/lib/rules";
 import type { BrandTone, UploadInput, UsageContext } from "@/lib/types";
 
 type Option = "industry" | "tones" | "usage";
@@ -73,7 +73,7 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
   const missing = [
     !upload.logoImage && { label: "로고", focus: () => logoRef.current?.focus() },
     !upload.storeName.trim() && { label: "가게 이름", focus: () => document.getElementById("hero-store")?.focus() },
-    feelRejected && { label: "원하는 느낌 고치기", focus: () => document.getElementById("hero-feel")?.focus() },
+    feelRejected && { label: "사업 내용 고치기", focus: () => document.getElementById("hero-feel")?.focus() },
     !upload.logoSource && { label: "로고 권리", focus: () => formRef.current?.querySelector<HTMLElement>('#hero-logo-source [role="radio"]')?.focus() },
     !upload.logoFont && { label: "로고 글자", focus: () => formRef.current?.querySelector<HTMLElement>('#hero-logo-font [role="radio"]')?.focus() },
   ].filter((x): x is { label: string; focus: () => void } => !!x);
@@ -306,7 +306,7 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
 
           <div className="flex flex-col gap-2.5">
             <label htmlFor="hero-feel" className="flex items-baseline gap-2 text-17 font-extrabold">
-              원하는 느낌
+              사업 내용과 추구하는 가치
               <span className="text-13 font-medium text-muted">비워도 돼요</span>
             </label>
             <div
@@ -316,10 +316,11 @@ function HeroForm({ initial, inBrowser }: { initial: NewDraft; inBrowser: boolea
             >
               <textarea
                 id="hero-feel"
-                rows={3}
+                rows={4}
+                maxLength={DESIRED_FEEL_MAX}
                 value={upload.desiredFeel}
                 onChange={(e) => setUpload({ desiredFeel: e.target.value })}
-                placeholder="예: 따뜻하고 손맛 있는 분식집 간판 글씨"
+                placeholder="예: 고양이의 우아하고 유연한 곡선과 집사와의 따뜻한 교감, 정직하고 건강한 수제 간식의 가치를 담은 브랜드예요."
                 className="w-full resize-none rounded-t-[1.125rem] bg-transparent px-5 pt-4 text-18 leading-normal font-semibold outline-none placeholder:font-medium placeholder:text-muted focus-visible:shadow-none"
               />
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pt-2 pb-3.5">

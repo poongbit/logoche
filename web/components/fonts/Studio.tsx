@@ -149,8 +149,9 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   const defaults: Record<TabKey, string> = {
     name: view.storeName,
     menu: menu.map(([item, price]) => `${item}  ${price}`).join("\n"),
-    sentence: PANGRAM,
-    para: `${industry ? `${PREVIEW_SENTENCES[industry]}. ` : ""}매일 아침 직접 만든 재료로 정성껏 준비합니다. 오늘도 찾아 주셔서 고맙습니다.`,
+    // 11/4: AI가 가게에 맞게 쓴 문장이 있으면 그것을 먼저 보여 준다(없으면 이전처럼 업종별 고정 문장)
+    sentence: view.slogans.length ? `${view.slogans.join("\n")}\n${PANGRAM}` : PANGRAM,
+    para: `${view.slogans[0] ? `${view.slogans[0]}. ` : industry ? `${PREVIEW_SENTENCES[industry]}. ` : ""}매일 아침 직접 만든 재료로 정성껏 준비합니다. 오늘도 찾아 주셔서 고맙습니다.`,
     digits: DIGITS_TEXT,
   };
   const [tab, setTab] = useState<TabKey>("name");
@@ -284,7 +285,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
           </div>
           {view.desiredFeel && (
             <div className="flex flex-wrap items-center gap-2 text-15">
-              <span>{view.desiredFeel}</span>
+              <span className="line-clamp-2 max-w-[60ch]">{view.desiredFeel}</span>
               <button
                 type="button"
                 onClick={() => void copy("feel", view.desiredFeel)}

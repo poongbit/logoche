@@ -15,10 +15,10 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { AXES, BRAND_TONES, REFERENCE_CHARS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, REFERENCE_CHARS, STYLE_FAMILIES, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL, decompose } from "@/lib/hangul";
 import { industryText, isImitationRequest } from "@/lib/rules";
-import type { AxisKey, GlyphItem, GlyphJob, StartGlyphJobRequest, StyleSampleRequest } from "@/lib/types";
+import type { AxisKey, GlyphItem, GlyphJob, StartGlyphJobRequest, StyleFamily, StyleSampleRequest } from "@/lib/types";
 import { listEdits } from "./edits";
 import { engine, type EngineGlyphSheet, type EngineRef } from "./engine";
 import { DRAW_QUALITY, MODELS, RouteError, SAMPLE_QUALITY, modelLabel, type ImageQuality } from "./env";
@@ -236,6 +236,8 @@ export interface Context {
   purpose: string;
   weight: number;
   expression: string;
+  family: StyleFamily | null; // 서체 계열(11/4). 이전에 만든 작업에는 없다
+  brief: string | null; // 서체 설계 지시문(11/4). 모든 글자표에 같은 글을 쓴다
   direction: string[]; // AI 제안에서 바뀐 그리기 방향(둥글기·대비·흔들림)
   quality: ImageQuality; // 그리기 수준(11/2: 만들 때 고른다)
 }
@@ -256,6 +258,8 @@ function makeContext(req: StartGlyphJobRequest, sample: string | null = null): C
     purpose: `쓰임: ${industry} ${usage}. 분위기: ${tones}${u.desiredFeel && !isImitationRequest(u.desiredFeel) ? `, ${u.desiredFeel}` : ""}.`,
     weight: axisValue(req, "weight"),
     expression: req.style.expression?.trim() && !isImitationRequest(req.style.expression) ? req.style.expression.trim() : DEFAULT_EXPRESSION,
+    family: req.style.family ?? null,
+    brief: req.style.designBrief?.trim() && !isImitationRequest(req.style.designBrief) ? req.style.designBrief.trim() : null,
     direction: directionLines(req),
     quality: DRAW_QUALITY[req.quality ?? "fine"],
   };
@@ -290,10 +294,14 @@ function directionLines(req: StartGlyphJobRequest): string[] {
 
 // 10/30: 지시문을 정리했다(같은 말 되풀이 합치기, 짜임 설명 줄이기). 글자표 1,534자 → 1,066자, 한 자 다시 그리기 약 900자 → 약 700자.
 function styleLines(ctx: Context): string[] {
+  const family = STYLE_FAMILIES.find((f) => f.value === ctx.family);
   return [
     ctx.purpose,
+    // 11/4: 계열·설계 지시문은 없는 작업(이전에 만든 것)이면 줄을 넣지 않아 지시문이 예전과 똑같다.
+    family ? `서체 계열: ${family.text}.` : "",
     `표현 방식: ${ctx.expression}. 모든 글자에 과감하게 적용하세요.`,
-    `기본 굵기: ${weightWord(ctx.weight)}. 표현 방식에 맞게 획마다 굵기를 바꿔도 됩니다.`,
+    ctx.brief ? `서체 설계 지시(모든 글자에 똑같이 적용): ${ctx.brief}` : "",
+    `기본 굵기: ${weightWord(ctx.weight)}. 표현 방식에 맞게 획마다 굵기를 바꿔도 됩니다.${ctx.brief ? " 가로·세로획의 굵기 차이는 서체 설계 지시를 따르세요." : ""}`,
     ctx.direction.length ? `사용자가 요청한 방향도 모든 글자에 분명히 반영하세요: ${ctx.direction.join(" / ")}.` : "",
     "획 안을 검게 채우고(속이 빈 외곽선 금지), 글자를 기울이지 말고 똑바로 세우세요.",
     // 10/30 시험: 획 끝 물결 표현에서 ㅏ의 짧은 획 끝 말림이 획 하나처럼 보여 가→갸, 서→샤로 그렸다.
@@ -434,7 +442,8 @@ function sampleParts(ctx: Context, sheet: EngineGlyphSheet, others: string[]): P
     `한글 서체의 글씨 견본으로 '${chars.join("")}'를 그립니다. 가게 주인이 후보 견본 몇 장을 나란히 보고 서체 방향을 고릅니다.`,
     ...styleLines(ctx),
     // 10/29: 같은 지시문으로는 세 견본이 모두 평범한 둥근 고딕에 가까워 고를 수가 없었다. 방향을 과장하고 다른 후보와 다르게 그리게 한다.
-    `견본만 보고도 '${ctx.expression}'이(가) 한눈에 보이도록 획 모양을 과감하게 과장하세요. 평범한 고딕이나 둥근 고딕처럼 보이면 실패입니다.`,
+    // 11/4: 고딕·둥근 고딕을 고른 안에 '고딕처럼 보이면 실패'라고 하면 계열 지시와 부딪힌다.
+    `견본만 보고도 '${ctx.expression}'이(가) 한눈에 보이도록 획 모양을 과감하게 과장하세요.${ctx.family === "gothic" || ctx.family === "rounded" ? "" : " 평범한 고딕이나 둥근 고딕처럼 보이면 실패입니다."}`,
     others.length ? `다른 후보(${others.map((o) => `'${o}'`).join(", ")})와 나란히 놓았을 때 확실히 다른 서체로 보여야 합니다.` : "",
     ...refs.lines,
     `기준 글자표와 똑같은 ${sheet.cols}열×${sheet.rows}행 칸, 같은 순서로 칸마다 글자 하나씩 그리세요(왼쪽 위부터 줄 순서): ${chars.join(" ")}. 칸 선은 그리지 마세요.`,

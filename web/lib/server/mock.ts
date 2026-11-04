@@ -38,7 +38,12 @@ export function mockStyleCard({ upload }: AnalyzeStyleRequest): StyleCard {
       strokeEnd: "획 끝을 둥글게 맺음 (예시)",
       signature: "심볼의 둥근 얼굴 → ㅇ 자리 (예시)",
       toneMismatch: tones.includes("premium") ? "로고는 '따뜻한' 느낌으로도 읽혀요. (예시)" : null,
-      expressions: ["풍선처럼 부풀린 획 (예시)", "녹아 흐르는 획 (예시)", "물결치는 획 (예시)"],
+      directions: [
+        { family: "rounded", expression: "풍선처럼 부풀린 획 (예시)", brief: null },
+        { family: "myeongjo", expression: "녹아 흐르는 획 (예시)", brief: null },
+        { family: "brush", expression: "물결치는 획 (예시)", brief: null },
+      ],
+      slogans: ["오늘도 맛있는 하루 (예시)"],
     },
     ["#F26B3A", "#3B2A1E", "#FFF5E8"],
     MOCK_MODELS,

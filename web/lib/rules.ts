@@ -2,6 +2,7 @@ import { INDUSTRIES } from "./constants";
 import type { UploadInput } from "./types";
 
 export const INDUSTRY_OTHER_MAX = 20;
+export const DESIRED_FEEL_MAX = 400; // 사업 내용과 추구하는 가치(11/4: 한 줄에서 여러 문장으로)
 
 /** 업종 한 줄. '기타'면 직접 적은 말을 붙인다. 지시문·제작 기록에 쓴다. */
 export function industryText(u: Pick<UploadInput, "industry" | "industryOther">): string {

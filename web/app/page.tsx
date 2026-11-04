@@ -13,7 +13,7 @@ import { KSX1001_HANGUL } from "@/lib/hangul";
 const HANGUL = KSX1001_HANGUL.size.toLocaleString();
 
 const STEPS: { title: string; body: string; icon: ReactNode }[] = [
-  { title: "로고 올리기", body: "로고 이미지와 가게 이름, 원하는 느낌을 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요.", icon: <UploadIcon /> },
+  { title: "로고 올리기", body: "로고 이미지와 가게 이름, 사업 내용과 추구하는 가치를 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요.", icon: <UploadIcon /> },
   { title: "참고 글자 확인", body: "AI가 먼저 30자를 그려 보여 드려요. 마음에 안 드는 글자는 눌러서 다시 그려요.", icon: <GridIcon /> },
   {
     title: "나머지 글자 그리기",
