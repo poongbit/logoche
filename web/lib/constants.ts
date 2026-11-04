@@ -395,3 +395,6 @@ export const STYLE_FAMILIES: { value: StyleFamily; label: string; hint: string; 
   { value: "display", label: "디스플레이", hint: "개성 있게 과장된 장식 글씨예요", text: "디스플레이 계열: 제목용으로 획 모양을 개성 있게 과장한 장식 글씨" },
 ];
 export const FAMILY_LABEL: Record<StyleFamily, string> = Object.fromEntries(STYLE_FAMILIES.map((f) => [f.value, f.label])) as Record<StyleFamily, string>;
+
+/** 굵기 축 값을 말로(화면 표시). 이미지 모델 지시문의 굵기 말은 glyphs.ts weightWord가 같은 경계(350·550·750)를 쓴다. */
+export const weightLabel = (v: number) => (v < 350 ? "가는" : v < 550 ? "보통" : v < 750 ? "굵은" : "아주 굵은");

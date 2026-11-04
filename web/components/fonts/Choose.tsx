@@ -17,6 +17,7 @@ function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; b
     <li className={`flex min-w-0 flex-col gap-3 rounded-[1.25rem] border-[1.5px] bg-bg p-4 ${d.recommended ? "border-ink" : "border-line"}`}>
       <div className="flex items-center gap-2">
         <span className="text-17 font-extrabold">{d.familyLabel}</span>
+        {d.weightLabel && <span className="text-13 font-bold text-muted">굵기 {d.weightLabel}</span>}
         {d.recommended && <span className="rounded-full bg-ink px-2 py-0.5 text-12 font-extrabold text-bg">AI 추천</span>}
       </div>
       <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-stage">

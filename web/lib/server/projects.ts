@@ -13,7 +13,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, FAMILY_LABEL, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, CHECKS, EXTRA_CHARS, FAMILY_LABEL, weightLabel, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { DESIRED_FEEL_MAX, industryText, isImitationRequest } from "@/lib/rules";
 import type {
@@ -43,7 +43,7 @@ import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
 import { chooseMail, doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
-import { analyzeStyle, cleanSlogans } from "./style";
+import { analyzeStyle, applyDirection, cleanSlogans } from "./style";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
@@ -238,7 +238,7 @@ async function analyze(p: Stored) {
     for (const m of style.models) q.record.push(event("ai_model", `스타일 분석: ${m}`));
     q.record.push(event("selection", `AI가 정한 조절값: ${style.axes.map((a) => `${AXES[a.key].label} ${a.value}`).join(" · ")}`));
     if (choosing) {
-      q.record.push(event("creative_intent", `AI가 낸 서체 방향 ${style.directions!.length}개: ${style.directions!.map((d) => `${FAMILY_LABEL[d.family]} '${d.expression}'`).join(" / ")}${q.upload.desiredFeel.trim() ? " (사업 내용·가치 반영)" : ""}`));
+      q.record.push(event("creative_intent", `AI가 낸 서체 방향 ${style.directions!.length}개: ${style.directions!.map((d) => `${FAMILY_LABEL[d.family]} '${d.expression}'${d.weight ? ` 굵기 ${d.weight}` : ""}`).join(" / ")}${q.upload.desiredFeel.trim() ? " (사업 내용·가치 반영)" : ""}`));
     } else {
       q.record.push(event("creative_intent", `표현 방식: ${style.expression} (AI 제안${q.upload.desiredFeel.trim() ? ", 사업 내용·가치 반영" : ""})`));
     }
@@ -260,7 +260,7 @@ function drawSample(id: string, index: number) {
       const p = await read(id);
       const d = p.style?.directions?.[index];
       if (!p.style || !d) return;
-      const style = { ...p.style, expression: d.expression, family: d.family, designBrief: d.brief };
+      const style = applyDirection(p.style, d); // 방향의 굵기까지 적용해 견본을 그린다
       sampleId = (await createSample({ upload: { ...p.upload, logoImage: await logoOf(id) }, style, expression: d.expression })).sampleId;
     } catch (err) {
       console.error("[logoche] 느낌 견본 실패", id, index, err);
@@ -299,7 +299,7 @@ async function waitChoice(p: Stored): Promise<boolean | void> {
   const q = await read(p.id);
   const d = q.style!.directions![idx] ?? q.style!.directions![0];
   const sample = q.choose!.samples[idx];
-  const style = { ...q.style!, expression: d.expression, family: d.family, designBrief: d.brief };
+  const style = applyDirection(q.style!, d);
   const glyphJobId = startGlyphJob(await glyphRequest({ ...q, style }, sample?.status === "ready" ? sample.sampleId : null));
   await update(p.id, (r) => {
     r.style = style;
@@ -307,7 +307,7 @@ async function waitChoice(p: Stored): Promise<boolean | void> {
     r.phase = "drawing";
     if (r.choose) r.choose.picked = idx;
     r.record.push(event("selection", "서체 방향을 직접 고름"));
-    r.record.push(event("creative_intent", `고른 서체 방향: ${FAMILY_LABEL[d.family]} · ${d.expression}${sample?.status === "ready" ? " (견본 그림을 참고 이미지로 사용)" : ""}`));
+    r.record.push(event("creative_intent", `고른 서체 방향: ${FAMILY_LABEL[d.family]} · ${d.expression}${d.weight ? ` · 굵기 ${d.weight}` : ""}${sample?.status === "ready" ? " (견본 그림을 참고 이미지로 사용)" : ""}`));
     if (d.brief) r.record.push(event("creative_intent", `서체 설계 지시: ${d.brief}`));
   });
 }
@@ -552,6 +552,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
         family: d.family,
         familyLabel: FAMILY_LABEL[d.family],
         expression: d.expression,
+        weightLabel: d.weight ? weightLabel(d.weight) : null,
         summary: d.brief ? (d.brief.split(/(?<=[.!?。])\s+/)[0] ?? null) : null,
         imageUrl: c.samples[i]?.status === "ready" && c.samples[i].sampleId ? `/api/style/samples/${c.samples[i].sampleId}` : null,
         status: c.samples[i]?.status ?? "failed",

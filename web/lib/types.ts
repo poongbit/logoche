@@ -101,6 +101,7 @@ export interface StyleDirection {
   family: StyleFamily;
   expression: string;
   brief: string | null; // 설계 지시문. 색·기울기·위치 같은 금지 내용이 든 문장은 걸러 낸다(server/style.ts)
+  weight?: number; // 이 방향의 기본 굵기(굵기 축 값). 방향을 고르면 폰트 전체 굵기가 된다. 없으면(이전 작업) 조절값 그대로(11/4)
 }
 
 /** 브랜드 가치 → 반영한 조형 요소 → 근거. 제작 기록(창작 의도)에 남는다. */
@@ -425,6 +426,7 @@ export interface ChooseDirection {
   family: StyleFamily;
   familyLabel: string;
   expression: string;
+  weightLabel: string | null; // 이 방향의 굵기를 말로(가는·보통·굵은·아주 굵은)
   summary: string | null; // 설계 지시문 첫 문장
   imageUrl: string | null; // 견본 그림(그리는 중·실패면 null)
   status: "drawing" | "ready" | "failed";

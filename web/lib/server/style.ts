@@ -1,7 +1,7 @@
 // 화면 2 스타일 카드: 로고 측정(엔진) + 분위기 해석(Claude) + 분위기 사전 규칙으로 7축을 정한다.
 
 import { z } from "zod";
-import { AXES, AXIS_ORDER, BRAND_TONES, STYLE_FAMILIES, USAGE_CONTEXTS, WEIGHT_CAP } from "@/lib/constants";
+import { AXES, AXIS_ORDER, BRAND_TONES, STYLE_FAMILIES, USAGE_CONTEXTS, WEIGHT_CAP, weightLabel } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { industryText, isImitationRequest } from "@/lib/rules";
 import type { AxisKey, BrandTone, StyleAxis, StyleCard, StyleConflict, StyleDirection, StyleFamily, UploadInput, UsageContext, ValueMapping } from "@/lib/types";
@@ -104,6 +104,11 @@ export function buildStyleCard(
     return { key, value, suggested: value, range: [lo, hi], basis, reason };
   });
 
+  // 11/4: 기본으로 쓰는 첫 방향의 굵기를 조절값에 넣는다(방향을 고르면 applyDirection이 그 방향 굵기로 바꾼다)
+  const first = interpretation.directions[0]?.weight;
+  const weightAxis = axes.find((a) => a.key === "weight");
+  if (first && weightAxis) Object.assign(weightAxis, { value: first, suggested: first, basis: "selection" as const, reason: `서체 방향에 맞춘 굵기(${weightLabel(first)})` });
+
   return {
     axes,
     strokeEnd: interpretation.strokeEnd,
@@ -139,6 +144,9 @@ const InterpretationSchema = z.object({
         family: z.enum(FAMILY_VALUES).describe("서체 계열"),
         expression: z.string().describe("이 방향의 획 표현 방식. 한국어 15자 안의 짧은 구. 예: 고양이 등허리처럼 휜 획"),
         brief: z.string().describe("이 방향의 서체 설계 지시문. 한국어 4~6문장(아래 조건)"),
+        weight: z
+          .number()
+          .describe("이 방향의 기본 굵기(굵기 축 값, 150~850의 정수). 말로 옮기면 350 미만 가늘게, 350~549 보통, 550~749 굵게, 750 이상 아주 굵게"),
       }),
     )
     .describe("서체 방향 3개. 첫 안이 가장 추천하는 안. 3개 중 적어도 2개는 계열이 달라야 하고, 표현 방식도 서로 뚜렷이 달라야 한다."),
@@ -172,6 +180,17 @@ export function cleanSlogans(list: string[] | undefined): string[] {
     .slice(0, 3);
 }
 
+/** 굵기 안내 한 줄: 고른 톤이 권하는 굵기 범위를 기준으로 삼되 계열에 맞게 조정하게 한다 */
+function weightHint(upload: UploadInput): string {
+  const tones = upload.brandTones;
+  const floor = Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0));
+  const floorText = floor ? ` 주 사용처 때문에 ${floor} 아래로는 내리지 마세요.` : "";
+  if (tones.length === 0) return `톤이 정해지지 않았으니 가게 이야기와 로고에 맞게 굵기를 정하되, 한 가지 굵기에 쏠리지 않게 하세요.${floorText}`;
+  const lo = Math.round(tones.reduce((a, t) => a + TONE_RANGES[t].weight[0], 0) / tones.length);
+  const hi = Math.round(tones.reduce((a, t) => a + TONE_RANGES[t].weight[1], 0) / tones.length);
+  return `고른 톤(${toneNames(tones)})이 권하는 굵기는 ${lo}~${hi}입니다. 이 범위를 기준으로 삼되, 가는 명조는 더 가늘게, 둥근 고딕은 더 굵게처럼 계열에 맞게 ±150까지 조정할 수 있습니다.${floorText}`;
+}
+
 function interpretPrompt(upload: UploadInput): string {
   const industry = industryText(upload) || "미정";
   const usage = upload.usageContexts.map((u) => USAGE_CONTEXTS.find((x) => x.value === u)?.label).join("·");
@@ -192,20 +211,23 @@ function interpretPrompt(upload: UploadInput): string {
     "- brief는 서체 전체에 적용되는 설계를 말합니다. 가게 이름이나 특정 글자, 로고를 언급하지 마세요.",
     "- brief에 색, 배경, 기울기, 글자 크기·위치·높이 변화, 네모 틀을 벗어나는 것은 쓰지 마세요. 글자는 검은 단색으로 똑바로 서 있고 모든 글자가 같은 크기 틀에 들어갑니다.",
     "- 특정 서체 이름은 쓰지 말고, 속이 빈 외곽선은 시키지 마세요.",
+    "- weight(기본 굵기)는 방향마다 따로 정합니다. 그 방향의 계열과 설계 지시문에 맞는 굵기여야 하고, 같은 값을 세 방향에 되풀이하지 마세요. 서로 100 이상 차이 나게 정하세요.",
+    `- ${weightHint(upload)}`,
   ]
     .filter((x, i, a) => x !== "" || a[i - 1] !== "")
     .join("\n");
 }
 
 /** 방향 3개를 다듬는다: 빈 표현 방식과 같은 표현 방식은 빼고, 설계 지시문은 금지된 문장을 걷어 낸다. */
-function cleanDirections(directions: StyleDirection[], storeName: string): StyleDirection[] {
+function cleanDirections(directions: StyleDirection[], storeName: string, weightFloor: number): StyleDirection[] {
   const seen = new Set<string>();
   const out: StyleDirection[] = [];
   for (const d of directions) {
     const expression = d.expression.trim();
     if (!expression || seen.has(expression)) continue;
     seen.add(expression);
-    out.push({ family: d.family, expression, brief: d.brief ? sanitizeBrief(d.brief, storeName) : null });
+    const w = typeof d.weight === "number" && Number.isFinite(d.weight) ? Math.round(Math.min(WEIGHT_CAP, Math.max(150, weightFloor, d.weight))) : undefined; // 범위와 주 사용처의 하한에 맞춘다
+    out.push({ family: d.family, expression, brief: d.brief ? sanitizeBrief(d.brief, storeName) : null, weight: w });
   }
   return out.slice(0, 3);
 }
@@ -233,11 +255,19 @@ export async function analyzeStyle(upload: UploadInput): Promise<StyleCard> {
       strokeEnd: interpretation.strokeEnd,
       signature: interpretation.signature,
       toneMismatch,
-      directions: cleanDirections(interpretation.directions, upload.storeName ?? ""),
+      directions: cleanDirections(interpretation.directions, upload.storeName ?? "", Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0))),
       slogans: cleanSlogans(interpretation.slogans),
       valueMappings: interpretation.valueMappings.slice(0, 4),
     },
     measure.colors,
     [modelLabel("interpret", model)],
   );
+}
+
+/** 서체 방향 하나를 조절값에 적용한다(11/4): 표현 방식·계열·설계 지시문과, 방향에 정한 굵기. 굵기가 없는 방향(이전 작업)은 조절값 그대로. */
+export function applyDirection(style: StyleCard, d: StyleDirection): StyleCard {
+  const axes = d.weight
+    ? style.axes.map((a) => (a.key === "weight" ? { ...a, value: d.weight!, suggested: d.weight!, basis: "selection" as const, reason: `서체 방향 '${d.expression}'에 맞춘 굵기(${weightLabel(d.weight!)})` } : a))
+    : style.axes;
+  return { ...style, axes, expression: d.expression, family: d.family, designBrief: d.brief };
 }
