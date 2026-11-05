@@ -238,6 +238,8 @@ export interface Context {
   expression: string;
   family: StyleFamily | null; // 서체 계열(11/4). 이전에 만든 작업에는 없다
   brief: string | null; // 서체 설계 지시문(11/4). 모든 글자표에 같은 글을 쓴다
+  guide: "full" | "light" | "none"; // 기준 글자표 강도(11/5). 없는 이전 작업은 full
+  guideFont: { name: string; warp: number; seed: string; strong: boolean } | null; // 구조 참고 폰트(11/5)
   mark: string | null; // 로고 고유 조형(11/5). 모든 글자에 같은 모양으로 넣는다. 이전 작업에는 없다
   direction: string[]; // AI 제안에서 바뀐 그리기 방향(둥글기·대비·흔들림)
   quality: ImageQuality; // 그리기 수준(11/2: 만들 때 고른다)
@@ -268,6 +270,8 @@ function makeContext(req: StartGlyphJobRequest, sample: string | null = null): C
     expression: req.style.expression?.trim() && !isImitationRequest(req.style.expression) ? req.style.expression.trim() : DEFAULT_EXPRESSION,
     family: req.style.family ?? null,
     brief: req.style.designBrief?.trim() && !isImitationRequest(req.style.designBrief) ? req.style.designBrief.trim() : null,
+    guide: req.style.guideFont ? "light" : (req.style.guide ?? "full"),
+    guideFont: req.style.guideFont ? { name: req.style.guideFont, warp: req.style.guideWarp ?? 1, seed: u.storeName ?? "", strong: !!req.style.guideStrong } : null,
     mark: req.style.signatureDraw?.trim() || null,
     direction: directionLines(req),
     quality: DRAW_QUALITY[req.quality ?? "fine"],
@@ -341,6 +345,8 @@ function styleLines(ctx: Context): string[] {
 
 const ORDINALS = ["첫 번째", "두 번째", "세 번째", "네 번째", "다섯 번째"];
 const SAMPLE_TEXT = "사용자가 고른 글씨 견본(가게 이름)입니다. 획 굵기·획 끝·모서리·곡선·질감·비례를 이 견본과 똑같이 맞추세요.";
+// 11/5: 구조 참고 없이 견본만 줄 때(guide none). 견본의 필체 그대로 자모의 크기·위치·획의 흐름까지 따라 쓰게 한다.
+const SAMPLE_TEXT_FREE = "글씨 견본입니다. 반드시 이 견본과 같은 필체와 질감으로 쓰세요. 획 굵기·획 끝·질감뿐 아니라 자모의 크기와 위치, 획의 길이와 흐름, 글자의 짜임도 이 견본의 손맛을 따르세요.";
 const EXTRAS = "격자선, 번호, 설명 글씨, 색, 그림자, 글자와 떨어진 장식은 넣지 마세요.";
 const NO_EXTRAS = `흰 바탕에 검은색 글자만 그리세요. ${EXTRAS}`;
 
@@ -350,7 +356,7 @@ function references(ctx: Context, structure: { image: string; text: string }, st
     { part: ctx.logo, text: "로고입니다. 획 끝과 질감만 가볍게 참고하고, 로고 글자 모양은 옮기지 마세요." },
     { part: imagePart(structure.image), text: structure.text },
   ];
-  if (ctx.sample) refs.push({ part: ctx.sample, text: SAMPLE_TEXT });
+  if (ctx.sample) refs.push({ part: ctx.sample, text: ctx.guide === "none" ? SAMPLE_TEXT_FREE : SAMPLE_TEXT });
   if (styleRef) refs.push({ part: imagePart(styleRef.image), text: styleRef.text });
   return { parts: refs.map((r) => r.part), lines: refs.map((r, i) => `${ORDINALS[i]} 이미지는 ${r.text}`) };
 }
@@ -411,13 +417,21 @@ function switchIfStuck(job: JobState, item: ItemState) {
   item.problem = null; // 앞 글자의 떨어진 이유는 새 글자 지시문에 넣지 않는다
 }
 
+/** 기준 글자표 설명(guide별). light·none은 글자 모양을 자유롭게 쓰게 하려고 짜임을 덜 알려 준다. */
+const guideText = (guide: Context["guide"], font: Context["guideFont"] = null) =>
+  font?.strong
+    ? "기준 글자표입니다. 선은 다른 서체의 뼈대를 휘어 만든 구조 참고입니다. 자모의 위치·크기·비례·획의 길이와 방향은 이 선을 따르고, 획의 굵기·모서리·끝 모양만 이 서체에 맞게 바꾸세요. 선 자체를 그리지는 마세요."
+    : font
+    ? "기준 글자표입니다. 옅은 선은 다른 서체의 뼈대를 휘어 만든 참고일 뿐이고, 어떤 글자인지와 자모의 대략적인 배치만 알려 줍니다. 선을 따라 그리지 말고 자모의 크기·길이·위치·획 모양을 자유롭게 새로 쓰세요."
+    : guide === "light"
+    ? "기준 글자표입니다. 옅은 중심선은 어떤 글자인지와 대략의 위치만 알려 줍니다. 선을 따라 그리지 말고 획의 길이·굴림·크기·글자 안 자리를 자유롭게 쓰세요."
+    : guide === "none"
+      ? "칸 번호만 있는 표입니다. 아래 목록의 번호 순서대로 칸마다 글자 하나씩 그리고, 글자 모양은 자유롭게 쓰세요."
+      : "기준 글자표입니다. 칸 배치, 어떤 글자인지, 획이 어디서 이어지고 떨어지는지만 따르고 굵기·곡선·비례·획 끝은 따르지 마세요.";
+
 function sheetParts(ctx: Context, sheet: EngineGlyphSheet): Part[] {
   const chars = [...sheet.chars];
-  const refs = references(
-    ctx,
-    { image: sheet.image, text: "기준 글자표입니다. 칸 배치, 어떤 글자인지, 획이 어디서 이어지고 떨어지는지만 따르고 굵기·곡선·비례·획 끝은 따르지 마세요." },
-    null,
-  );
+  const refs = references(ctx, { image: sheet.image, text: guideText(ctx.guide, ctx.guideFont) }, null);
   const text = [
     `한글 서체 하나의 참고 글자 ${chars.length}자를 한 장에 그립니다. 모든 글자의 굵기·획 끝·모서리·질감이 같아야 합니다.`,
     ...styleLines(ctx),
@@ -439,14 +453,14 @@ export function restSheetParts(ctx: Context, sheet: EngineGlyphSheet, approved: 
   const symbols = isSymbolSheet(chars);
   const refs = references(
     ctx,
-    { image: sheet.image, text: "기준 글자표입니다. 칸 배치, 어떤 글자인지, 획이 어디서 이어지고 떨어지는지만 따르고 굵기·곡선·비례·획 끝은 따르지 마세요." },
+    { image: sheet.image, text: guideText(ctx.guide, ctx.guideFont) },
     approved
       ? { image: approved, text: "이 서체에서 이미 확정한 참고 글자들입니다. 굵기·획 끝·모서리·곡선·질감·비례·글자 크기를 이 글자들과 똑같이 맞추세요." }
       : null,
   );
   const text = [
     symbols
-      ? `같은 한글 서체의 숫자와 문장부호 ${chars.length}자를 한 장에 그립니다. 이미 확정한 한글 참고 글자와 같은 서체로 보여야 합니다.`
+      ? `같은 한글 서체의 숫자·문장부호·영문 ${chars.length}자를 한 장에 그립니다. 영문은 이 서체의 느낌 그대로 쓴 알파벳이어야 합니다. 이미 확정한 한글 참고 글자와 같은 서체로 보여야 합니다.`
       : `한글 서체 하나의 나머지 글자 ${chars.length}자를 한 장에 그립니다. 이미 확정한 참고 글자와 같은 서체로 보여야 합니다.`,
     ...styleLines(ctx),
     ...refs.lines,
@@ -454,7 +468,7 @@ export function restSheetParts(ctx: Context, sheet: EngineGlyphSheet, approved: 
     // 11/3: '1.0 2.1 3.2'처럼 쓰면 이미지 모델이 소수·분수로 읽어 숫자 칸에 1, 점, 2/3, 1/4를 그렸다(0~8 전부 떨어짐). 칸 번호와 기호를 말로 갈라 쓴다.
     symbols ? "칸 번호(1번, 2번…)는 순서를 알려 줄 뿐입니다. 번호나 소수·분수를 그리지 말고, 따옴표 안의 기호 한 자만 칸마다 그리세요." : "",
     symbols
-      ? "각 칸은 그 숫자나 기호로 읽혀야 합니다. 크기는 기준 글자표를 따르세요(숫자는 크게, 마침표·쉼표·따옴표·가운뎃점은 작게). 이웃 칸에 닿지 않게 띄우세요."
+      ? "각 칸은 그 숫자·기호·알파벳으로 읽혀야 합니다. 크기와 높이는 기준 글자표를 따르세요(숫자와 대문자는 크게, 소문자는 대문자보다 작게, g·j·p·q·y는 아래로 내려오게, 마침표·쉼표·따옴표·가운뎃점은 작게). 이웃 칸에 닿지 않게 띄우세요."
       : "각 글자는 그 글자로 읽혀야 합니다. 칸 안에 크게 그리되 이웃 글자와 닿지 않게 띄우세요.",
     ...structureHints(chars),
     NO_EXTRAS,
@@ -546,12 +560,12 @@ export async function checkSheet(job: JobState, contactSheet: string, chars: str
   const symbols = isSymbolSheet(chars);
   const prompt = [
     symbols
-      ? "한글 서체에 딸린 숫자·문장부호 검사입니다. 칸 아래의 #번호는 칸의 위치를 나타낼 뿐 글자가 아닙니다. 칸 안의 그림만 보고, 칸마다 다음 기호가 있어야 합니다."
+      ? "한글 서체에 딸린 숫자·문장부호·영문 검사입니다. 칸 아래의 #번호는 칸의 위치를 나타낼 뿐 글자가 아닙니다. 칸 안의 그림만 보고, 칸마다 다음 기호가 있어야 합니다."
       : "한글 서체의 참고 글자 검사입니다. 칸 아래에 번호가 있고, 칸마다 다음 글자가 있어야 합니다.",
     chars.map((c, i) => `${symbols ? "#" : ""}${i + 1}: ${c}`).join(", "),
     CHECK_RULES,
     symbols
-      ? "마침표·쉼표·따옴표·가운뎃점은 칸 안에서 작게 보이는 것이 맞습니다. 마침표(.)와 가운뎃점(·), 작은따옴표(')와 쉼표(,)는 모양이 같아도 됩니다."
+      ? "마침표·쉼표·따옴표·가운뎃점은 칸 안에서 작게 보이는 것이 맞습니다. 마침표(.)와 가운뎃점(·), 작은따옴표(')와 쉼표(,)는 모양이 같아도 됩니다. 소문자 l과 대문자 I, 숫자 0과 대문자 O, 숫자 1과 소문자 l은 서체에 따라 모양이 같을 수 있으니 같아 보여도 통과시키세요. 대문자와 소문자(C·c, O·o, S·s, V·v, W·w, X·x, Z·z)는 크기만 다르게 보여도 됩니다."
       : "",
     "다른 칸들과 굵기·획 끝·질감이 눈에 띄게 다른 칸도 ok=false(이유 '스타일 다름')입니다. 작은 차이는 통과시키세요.",
     "X 표시가 있는 빈 칸은 ok=false, 이유 '빈 칸'입니다. 모든 번호에 대해 답하세요.",
@@ -596,7 +610,7 @@ function fail(job: JobState, item: ItemState, stage: Problem["stage"], problem: 
 async function drawSheet(job: JobState, ctx: Context): Promise<string | null> {
   const chars = job.items.map((i) => i.char);
   try {
-    const sheet = await engine.glyphSheet(chars.join(""));
+    const sheet = await engine.glyphSheet(chars.join(""), ctx.guide, ctx.guideFont);
     const image = await draw(job, ctx, sheetParts(ctx, sheet), sheet.aspectRatio);
     await saveFile(job.id, "sheet.png", image);
     const split = await engine.splitGlyphs(sheet.chars, image);

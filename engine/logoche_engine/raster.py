@@ -158,3 +158,23 @@ def solid_thickness(mask: np.ndarray) -> float:
 
 def pad(mask: np.ndarray, amount: int) -> np.ndarray:
     return np.pad(mask, amount, constant_values=False)
+
+
+def thin(mask: np.ndarray) -> np.ndarray:
+    """Zhang-Suen 세선화: 잉크를 중심선 한 픽셀로 줄인다(새 의존성 없이 numpy). 기준 글자표를 옅은 중심선으로 줄 때 쓴다(11/5)."""
+    img = mask.astype(np.uint8).copy()
+    while True:
+        changed = False
+        for step in (0, 1):
+            p = np.pad(img, 1)
+            P2, P3, P4, P5, P6, P7, P8, P9 = (p[:-2, 1:-1], p[:-2, 2:], p[1:-1, 2:], p[2:, 2:], p[2:, 1:-1], p[2:, :-2], p[1:-1, :-2], p[:-2, :-2])
+            n = P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9
+            seq = [P2, P3, P4, P5, P6, P7, P8, P9, P2]
+            a = sum(((seq[i] == 0) & (seq[i + 1] == 1)).astype(np.uint8) for i in range(8))
+            c = ((P2 * P4 * P6 == 0) & (P4 * P6 * P8 == 0)) if step == 0 else ((P2 * P4 * P8 == 0) & (P2 * P6 * P8 == 0))
+            rm = (img == 1) & (n >= 2) & (n <= 6) & (a == 1) & c
+            if rm.any():
+                img[rm] = 0
+                changed = True
+        if not changed:
+            return img > 0

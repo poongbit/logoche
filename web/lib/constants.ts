@@ -203,8 +203,8 @@ export function formatAxis(key: AxisKey, v: number): string {
 export const REFERENCE_CHARS = "가다타파서이에내고무의쥐퀴한헌람것있밥면빵쳇없는를국꽃흙왕원";
 /** 폰트를 만들려면 검사를 통과한 참고 글자가 이만큼은 있어야 한다(떨어진 글자는 빼고 만든다). 임시 값. */
 export const MIN_REFERENCE_READY = 20;
-/** 숫자·문장부호 30자(11/2 사용자 결정: 그리기에 넣는다). 나머지 글자와 따로 한 장에 그린다. 엔진(engine/logoche_engine/hangul.py EXTRA_CHARS)과 같은 순서. */
-export const EXTRA_CHARS = "0123456789.,!?:;'\"()-~/%&+·*#₩";
+/** 숫자·문장부호 30자(11/2 사용자 결정)와 영문 대소문자 52자(11/5, 영문 로고·가게 이름용). 한글과 섞지 않고 따로 30자씩 한 장에 그린다. 엔진(engine/logoche_engine/hangul.py EXTRA_CHARS)과 같은 순서. */
+export const EXTRA_CHARS = "0123456789.,!?:;'\"()-~/%&+·*#₩ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 // ---------- 화면 4 ----------
 

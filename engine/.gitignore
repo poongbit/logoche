@@ -12,3 +12,5 @@ compare/specimen/*/*.png
 compare/specimen/*/*.jpg
 compare/specimen/*/*.jpeg
 compare/specimen/*/*.webp
+compare/nanum-hand/*.ttf
+compare/maru/*.ttf

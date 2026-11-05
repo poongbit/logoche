@@ -1,0 +1,15 @@
+{"t":1793874898761,"kind":"claude","model":"claude-opus-5-5","input":6259,"output":1492,"cacheRead":0,"cacheWrite":0,"ms":17043}
+{"t":1793874913574,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":3175,"output":556,"ms":14702,"estUsd":0.0410324,"totalEstUsd":0.0410324}
+{"t":1793874926330,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":1288,"cacheRead":0,"cacheWrite":0,"ms":12396}
+{"t":1793874941418,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"1776x1776","input":3783,"output":743,"ms":15045,"estUsd":0.051338,"totalEstUsd":0.09237039999999999}
+{"t":1793874946510,"kind":"claude","model":"claude-opus-5-5","input":1021,"output":270,"cacheRead":0,"cacheWrite":0,"ms":4939}
+{"t":1793874966354,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":3210,"output":556,"ms":17958,"estUsd":0.0412984,"totalEstUsd":0.13366879999999998}
+{"t":1793874976017,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":1000,"cacheRead":0,"cacheWrite":0,"ms":9307}
+{"t":1793874991451,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":2916,"output":556,"ms":12380,"estUsd":0.039064,"totalEstUsd":0.17273279999999996}
+{"t":1793875001094,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":982,"cacheRead":0,"cacheWrite":0,"ms":9317}
+{"t":1793875017156,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":4273,"output":556,"ms":12983,"estUsd":0.049377199999999996,"totalEstUsd":0.22210999999999997}
+{"t":1793875035257,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":1719,"cacheRead":0,"cacheWrite":0,"ms":17840}
+{"t":1793875049115,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"1776x1776","input":4916,"output":743,"ms":13819,"estUsd":0.059948800000000003,"totalEstUsd":0.2820588}
+{"t":1793875053545,"kind":"claude","model":"claude-opus-5-5","input":997,"output":288,"cacheRead":0,"cacheWrite":0,"ms":4307}
+{"t":1793875068233,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":4273,"output":556,"ms":12924,"estUsd":0.049377199999999996,"totalEstUsd":0.331436}
+{"t":1793875077981,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":1017,"cacheRead":0,"cacheWrite":0,"ms":9503}

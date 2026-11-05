@@ -1,0 +1,341 @@
+[
+ {
+  "cluster": 6,
+  "stem": "Pretendard-Regular",
+  "dir": "free",
+  "weight": "보통",
+  "loose": "정형",
+  "read": 3,
+  "tones": [
+   "단정",
+   "신뢰",
+   "현대적"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 6,
+  "stem": "NanumMyeongjo-Regular",
+  "dir": "free",
+  "weight": "가는",
+  "loose": "정형",
+  "read": 3,
+  "tones": [
+   "고급스러운",
+   "전통적인",
+   "우아한",
+   "신뢰"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 6,
+  "stem": "Jua-Regular",
+  "dir": "free",
+  "weight": "굵은",
+  "loose": "정형",
+  "read": 3,
+  "tones": [
+   "귀여운",
+   "친근한",
+   "장난스러운"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 7,
+  "stem": "BlackHanSans-Regular",
+  "dir": "free",
+  "weight": "굵은",
+  "loose": "정형",
+  "read": 3,
+  "tones": [
+   "힘있는",
+   "강렬한",
+   "개성있는"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 3,
+  "stem": "BagelFatOne-Regular",
+  "dir": "free",
+  "weight": "굵은",
+  "loose": "구조다름",
+  "read": 2,
+  "tones": [
+   "귀여운",
+   "장난스러운",
+   "개성있는"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 2,
+  "stem": "Dokdo-Regular",
+  "dir": "free",
+  "weight": "굵은",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "개성있는",
+   "힘있는",
+   "자유로운"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 2,
+  "stem": "NanumMiNiSonGeurSsi",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "친근한",
+   "따뜻한",
+   "편안한"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 1,
+  "stem": "NanumGangBuJangNimCe",
+  "dir": "nanum-hand",
+  "weight": "보통",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "개성있는",
+   "자유로운",
+   "빈티지"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 1,
+  "stem": "NanumBrushScript-Regular",
+  "dir": "free",
+  "weight": "보통",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "전통적인",
+   "힘있는",
+   "붓맛(붓 느낌 원할 때만)"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 4,
+  "stem": "NanumMasIssNeunCe",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "단정",
+   "친근한",
+   "따뜻한"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 5,
+  "stem": "NanumJarHaGoIssEo",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "단정",
+   "섬세한",
+   "편안한"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 5,
+  "stem": "NanumMaGoCe",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "섬세한",
+   "자유로운",
+   "따뜻한"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 8,
+  "stem": "NanumMuGungHwa",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "우아한",
+   "섬세한",
+   "고급스러운"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 9,
+  "stem": "NanumSeongSirCe",
+  "dir": "nanum-hand",
+  "weight": "보통",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "단정",
+   "신뢰",
+   "친근한"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 9,
+  "stem": "NanumSonPyeonJiCe",
+  "dir": "nanum-hand",
+  "weight": "보통",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "따뜻한",
+   "빈티지",
+   "감성"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 10,
+  "stem": "NanumYaGeunHaNeunGimJuIm",
+  "dir": "nanum-hand",
+  "weight": "보통",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "단정",
+   "친근한",
+   "현대적"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 12,
+  "stem": "NanumOgBiCe",
+  "dir": "nanum-hand",
+  "weight": "보통",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "친근한",
+   "편안한",
+   "현대적"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 13,
+  "stem": "Stylish-Regular",
+  "dir": "free",
+  "weight": "굵은",
+  "loose": "느슨",
+  "read": 3,
+  "tones": [
+   "개성있는",
+   "트렌디",
+   "힘있는"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 13,
+  "stem": "NanumGgeuTeuMeoRiCe",
+  "dir": "nanum-hand",
+  "weight": "굵은",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "귀여운",
+   "장난스러운",
+   "개성있는"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 14,
+  "stem": "NanumKarGugSu",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "단정",
+   "편안한",
+   "섬세한"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 14,
+  "stem": "NanumGangInHanWiRo",
+  "dir": "nanum-hand",
+  "weight": "가는",
+  "loose": "느슨",
+  "read": 2,
+  "tones": [
+   "감성",
+   "따뜻한",
+   "빈티지"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 6,
+  "stem": "MaruBuri-Regular",
+  "dir": "maru",
+  "weight": "가는",
+  "loose": "정형",
+  "read": 3,
+  "tones": [
+   "전통적인",
+   "고급스러운",
+   "우아한",
+   "신뢰"
+  ],
+  "license": "네이버 오픈 라이선스"
+ },
+ {
+  "cluster": 6,
+  "stem": "GowunBatang-Regular",
+  "dir": "free",
+  "weight": "보통",
+  "loose": "정형",
+  "read": 3,
+  "tones": [
+   "전통적인",
+   "따뜻한",
+   "편안한",
+   "신뢰"
+  ],
+  "license": "OFL(구글폰트)"
+ },
+ {
+  "cluster": 10,
+  "stem": "SongMyung-Regular",
+  "dir": "free",
+  "weight": "보통",
+  "loose": "보통",
+  "read": 3,
+  "tones": [
+   "전통적인",
+   "빈티지",
+   "개성있는"
+  ],
+  "license": "OFL(구글폰트)"
+ }
+]

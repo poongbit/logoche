@@ -116,7 +116,8 @@ async function json<T>(path: string, body?: unknown): Promise<T> {
 
 export const engine = {
   measure: (image: string, storeName: string) => json<EngineMeasure>("/measure", { image, storeName }),
-  glyphSheet: (chars: string) => json<EngineGlyphSheet>("/sheets/glyphs", { chars }),
+  glyphSheet: (chars: string, guide: "full" | "light" | "none" = "full", font: { name: string; warp: number; seed: string; strong: boolean } | null = null) =>
+    json<EngineGlyphSheet>("/sheets/glyphs", { chars, guide, ...(font ? { guideFont: font.name, guideWarp: font.warp, guideSeed: font.seed, guideStrong: font.strong } : {}) }),
   /** 가게 이름 견본의 기준 그림(2·3자는 한 줄) */
   wordSheet: (chars: string) => json<EngineGlyphSheet>("/sheets/word", { chars }),
   splitGlyphs: (chars: string, image: string) => json<EngineGlyphSplit>("/sheets/glyphs/split", { chars, image }),

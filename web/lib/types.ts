@@ -127,6 +127,10 @@ export interface StyleCard {
   axes: StyleAxis[];
   strokeEnd: string; // 획 끝 묘사
   signature: string | null; // 시그니처 요소와 들어갈 자리
+  guideFont?: string; // 구조 참고용 무료 폰트 이름(엔진 compare/free 안). 있으면 guide 대신 그 서체의 뼈대를 휘어 옅은 선으로 준다(11/5)
+  guideStrong?: boolean; // 구조 참고 뼈대를 굵고 진하게(11/5)
+  guideWarp?: number; // 뼈대를 휘는 정도 0~2(참고만 하고 그대로 따르지 않게)
+  guide?: "light" | "none"; // 기준 글자표 강도(11/5, 캘리그래피처럼 글자 모양을 자유롭게 그릴 때): light 옅은 중심선만 · none 칸 번호만. 없으면 기준 서체 글자 그대로
   signatureDraw?: string | null; // 글자 그리기에 넘기는 로고 고유 조형(구체적 조형 + 들어갈 자리). 없으면(이전 작업) 그리기 지시는 예전과 같다(11/5 시그니처 시험)
   toneMismatch: string | null; // AI 해석이 고른 톤과 다를 때 알림
   expression: string; // 참고 글자 초안의 표현 방식. 사용자가 AI 제안에서 고르거나 직접 쓴다

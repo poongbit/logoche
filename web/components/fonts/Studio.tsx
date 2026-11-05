@@ -998,7 +998,7 @@ export function Studio({
                 />
               </div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-15">
-                <dt className="text-text-secondary">숫자·문장부호</dt>
+                <dt className="text-text-secondary">숫자·부호·영문</dt>
                 <dd className="text-right font-semibold">
                   {view.extras.length} / {EXTRA_CHARS.length}자
                 </dd>

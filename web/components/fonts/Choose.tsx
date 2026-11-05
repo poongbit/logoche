@@ -20,10 +20,10 @@ function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; b
         {d.weightLabel && <span className="text-13 font-bold text-text-secondary">굵기 {d.weightLabel}</span>}
         {d.recommended && <span className="rounded-full bg-bg-inverse px-2 py-0.5 text-12 font-extrabold text-text-inverse">AI 추천</span>}
       </div>
-      <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-[1.25rem] bg-bg-surface-strong">
+      <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-[1.25rem] bg-bg-surface-strong">
         {d.status === "ready" && d.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 견본 그림
-          <img src={d.imageUrl} alt={`${d.familyLabel} 느낌으로 그린 가게 이름 견본`} className="h-full w-full object-contain mix-blend-multiply" />
+          <img src={d.imageUrl} alt={`${d.familyLabel} 느낌으로 그린 가게 이름 견본`} className="absolute inset-0 h-full w-full object-contain mix-blend-multiply" />
         ) : d.status === "drawing" ? (
           <span role="status" className="flex flex-col items-center gap-2 text-15 font-bold text-text-secondary">
             <span aria-hidden className="h-6 w-6 animate-spin rounded-full border-[3px] border-border-default border-t-border-active" />

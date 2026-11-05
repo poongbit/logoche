@@ -164,7 +164,7 @@ async function drawSheet(
   // 실패 원인별 글자 수(11/3 추가): 글자표 그리기 실패(429 등) / 엔진이 칸을 못 씀 / 검사 탈락 / 스타일 재그리기
   const cause = { draw: 0, engine: 0, check: 0, style: 0 };
   try {
-    const sheet = await engine.glyphSheet(chars.join(""));
+    const sheet = await engine.glyphSheet(chars.join(""), ctx.guide, ctx.guideFont);
     const { value: image, model } = await sheetLimit(() => {
       if (run.aborted) throw new Aborted(); // 순서를 기다리는 동안 중단됐으면 이미지를 부르지 않는다
       return generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, ctx.quality);

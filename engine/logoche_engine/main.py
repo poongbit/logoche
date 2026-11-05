@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+from typing import Literal
 from contextlib import asynccontextmanager
 
 import numpy as np
@@ -18,7 +19,7 @@ from fastapi.responses import FileResponse, Response
 from fontTools.ttLib import TTFont
 from pydantic import BaseModel, Field
 
-from . import drawn, raster
+from . import checks, drawn, raster
 from .build import FORMATS, FontMeta, GlyphRejected, bundle, export_font, export_later, patch_glyph
 from .checks import warm_comparison
 from .contour import ALL_GLYPHS, Axes, Tweak
@@ -26,7 +27,7 @@ from .hangul import DRAWN_CHARS, KSX1001_HANGUL
 from .jobs import BuildManager, new_build_id, ocr_sheet
 from .layout import get_layout
 from .measure import measure_logo
-from .paths import ASSETS_DIR
+from .paths import ASSETS_DIR, COMPARE_DIR
 from .preview import render_preview
 from .reference import REFERENCE_NAME, reference_available
 from .sheets import contact_sheet, is_symbol_sheet, glyph_grid, glyph_sheet, glyph_single, normalize_single, split_glyphs, word_grid, word_sheet
@@ -80,6 +81,21 @@ def _chars(chars: str) -> str:
 
 class GlyphSheetRequest(BaseModel):
     chars: str
+    guide: Literal["full", "light", "none"] = "full"  # 기준 글자표 강도(11/5): 그대로 · 옅은 중심선 · 칸 번호만
+    guideFont: str | None = None  # 구조 참고용 무료 폰트의 파일 이름(compare/free 안, 확장자 뺀 이름). 있으면 그 서체의 뼈대를 옅은 중심선으로 준다
+    guideWarp: float = Field(0, ge=0, le=2)  # 뼈대를 휘는 정도(0=그대로). 참고만 하고 그대로 따르지 않게 한다
+    guideSeed: str = Field("", max_length=64)  # 휘는 방향을 정하는 값(프로젝트마다 다르게)
+    guideStrong: bool = False  # 구조 참고 뼈대를 굵고 진하게 준다(옅은 선은 무시됐다)
+
+
+def _guide_font(name: str | None) -> str:
+    """구조 참고용 무료 폰트 이름 → 파일 경로. compare의 free·nanum-hand·maru 폴더 안에서만 찾는다(경로를 받지 않는다)."""
+    if not name:
+        return ""
+    found = [p for d in ("free", "nanum-hand", "maru") for p in checks._font_files(COMPARE_DIR / d) if p.stem == name]
+    if not found:
+        raise HTTPException(400, f"구조 참고 폰트를 찾을 수 없어요: {name}")
+    return str(found[0])
 
 
 @app.post("/sheets/glyphs")
@@ -92,7 +108,7 @@ def glyph_sheet_route(req: GlyphSheetRequest) -> dict:
         "rows": grid.rows,
         "aspectRatio": grid.aspect_ratio,
         "chars": chars,
-        "image": raster.png_data_url(glyph_sheet(chars)),
+        "image": raster.png_data_url(glyph_sheet(chars, req.guide, _guide_font(req.guideFont), req.guideWarp, req.guideSeed, req.guideStrong)),
     }
 
 

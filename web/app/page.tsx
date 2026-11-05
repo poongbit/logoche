@@ -100,7 +100,7 @@ const FAQ: { q: string; a: ReactNode }[] = [
     q: "어떤 글자가 들어가나요?",
     a: (
       <p>
-        자주 쓰는 한글 {HANGUL}자와 숫자·문장부호 {EXTRA_CHARS.length}자예요.
+        자주 쓰는 한글 {HANGUL}자와 숫자·문장부호·영문 {EXTRA_CHARS.length}자예요.
         영문 알파벳은 아직 들어가지 않아요. 그리지 못한 글자가 있으면 폰트
         화면에서 알려 드리고, 다시 그릴 수 있어요.
       </p>

@@ -8,12 +8,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cache
 
+import hashlib
+from pathlib import Path
+
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from . import raster
-from .reference import glyph_bounds, load_font, render_glyph
+from fontTools.ttLib import TTFont
+from .reference import REFERENCE_FONTS, glyph_bounds, load_font, render_glyph
 
 
 @dataclass(frozen=True)
@@ -55,8 +59,48 @@ class Placement:
     box: tuple[float, float, float, float]  # 글리프 상자(폰트 단위, y 위쪽)
 
 
-def _sheet(glyphs: list[tuple[str, tuple[float, float, float, float]]], grid: Grid) -> tuple[Image.Image, tuple[Placement, ...]]:
-    """글리프를 칸마다 하나씩 가운데 놓은 기준 그림. 흰 바탕에 검은 글씨, 옅은 회색 칸 선."""
+def _font_guide(path: Path, ch: str, w: int, h: int, warp: float, seed: str, strong: bool = False) -> np.ndarray | None:
+    """다른 서체(무료 폰트)로 쓴 글자의 뼈대를 칸(w×h)에 맞춰 옅은 중심선으로 그린 커버리지(0~1). 그 서체에 글자가 없으면 None.
+    warp>0이면 매끄러운 무작위 변위장으로 뼈대를 휘어 그 서체의 짜임을 그대로 따르지 않게 한다(글자 이름·seed로 정한 난수라 같은 입력은 늘 같다)."""
+    font = TTFont(path, lazy=True)
+    if ord(ch) not in font.getBestCmap():
+        return None
+    img = Image.new("L", (w, h), 0)
+    pil = ImageFont.truetype(str(path), int(min(w, h) * 0.9))
+    d = ImageDraw.Draw(img)
+    b = d.textbbox((0, 0), ch, font=pil)
+    d.text(((w - (b[2] - b[0])) / 2 - b[0], (h - (b[3] - b[1])) / 2 - b[1]), ch, font=pil, fill=255)
+    mask = np.asarray(img) > 127
+    box = raster.bbox(mask)
+    if box is None:
+        return None
+    x0, y0, x1, y1 = box
+    crop = mask[y0:y1, x0:x1].astype(np.uint8) * 255
+    k = min(w * GLYPH_FILL / crop.shape[1], h * GLYPH_FILL / crop.shape[0])
+    crop = cv2.resize(crop, (max(1, round(crop.shape[1] * k)), max(1, round(crop.shape[0] * k))), interpolation=cv2.INTER_AREA)
+    canvas = np.zeros((h, w), np.uint8)
+    oy, ox = (h - crop.shape[0]) // 2, (w - crop.shape[1]) // 2
+    canvas[oy : oy + crop.shape[0], ox : ox + crop.shape[1]] = crop
+    if warp > 0:
+        rng = np.random.default_rng(int(hashlib.sha256((seed + ch).encode()).hexdigest()[:12], 16))
+        sigma = min(w, h) * 0.12
+        amp = warp * min(w, h) * 0.06
+        field = []
+        for _ in range(2):
+            f = cv2.GaussianBlur(rng.uniform(-1, 1, (h, w)).astype(np.float32), (0, 0), sigma)
+            field.append(f / max(1e-6, float(np.abs(f).max())) * amp)
+        gx, gy = np.meshgrid(np.arange(w, dtype=np.float32), np.arange(h, dtype=np.float32))
+        canvas = cv2.remap(canvas, gx + field[0], gy + field[1], cv2.INTER_LINEAR, borderValue=0)
+    k = 7 if strong else 3  # strong: 굵은 진한 선(옅은 선은 모델이 무시했다, 11/5 시험)
+    line = cv2.dilate(raster.thin(canvas > 127).astype(np.uint8), np.ones((k, k), np.uint8)).astype(np.float32)
+    return line * (0.85 if strong else 0.35)
+
+
+def _sheet(
+    glyphs: list[tuple[str, tuple[float, float, float, float]]], grid: Grid, guide: str = "full", chars: str = "", guide_font: Path | None = None, warp: float = 0.0, seed: str = "", strong: bool = False
+) -> tuple[Image.Image, tuple[Placement, ...]]:
+    """글리프를 칸마다 하나씩 가운데 놓은 기준 그림. 흰 바탕에 검은 글씨, 옅은 회색 칸 선.
+    guide(11/5, 캘리그래피처럼 글자 모양을 자유롭게 그릴 때): full 그대로 · light 옅은 중심선만 · none 글자 없이 칸 번호만."""
     width, height = grid.size
     font = load_font("regular")
     cw, ch = width / grid.cols, height / grid.rows
@@ -71,6 +115,19 @@ def _sheet(glyphs: list[tuple[str, tuple[float, float, float, float]]], grid: Gr
         x0, y0, x1, y1 = _cell_rect(grid, i, width, height)
         gh, gw = coverage.shape
         ox, oy = x0 + (x1 - x0 - gw) // 2, y0 + (y1 - y0 - gh) // 2
+        if guide_font is not None and i < len(chars):
+            own = _font_guide(guide_font, chars[i], x1 - x0, y1 - y0, warp, seed, strong)
+            if own is not None:
+                oh, ow = own.shape
+                region = sheet[y0 : y0 + oh, x0 : x0 + ow]
+                region[:] = np.minimum(region, (255 * (1 - own)).astype(np.uint8))
+                placements.append(Placement(x0, y0, scale, b))
+                continue
+        if guide == "light":
+            line = cv2.dilate(raster.thin(coverage > 0.5).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(np.float32)
+            coverage = line * 0.35  # 옅은 회색 중심선
+        elif guide == "none":
+            coverage = np.zeros_like(coverage)
         region = sheet[oy : oy + gh, ox : ox + gw]
         region[:] = np.minimum(region, (255 * (1 - coverage)).astype(np.uint8))
         placements.append(Placement(ox, oy, scale, b))
@@ -80,6 +137,11 @@ def _sheet(glyphs: list[tuple[str, tuple[float, float, float, float]]], grid: Gr
         draw.line([(round(c * cw), 0), (round(c * cw), height)], fill=222, width=2)
     for r in range(1, grid.rows):
         draw.line([(0, round(r * ch)), (width, round(r * ch))], fill=222, width=2)
+    if guide == "none":  # 글자 모양은 없고 순서만 알리는 칸 번호
+        label = ImageFont.truetype(str(REFERENCE_FONTS["regular"]), max(20, round(ch * 0.12)))
+        for i in range(len(glyphs)):
+            x0, y0, _, _ = _cell_rect(grid, i, width, height)
+            draw.text((x0 + 10, y0 + 6), str(i + 1), font=label, fill=150)
     return image, tuple(placements)
 
 
@@ -229,9 +291,9 @@ def _syllable_glyph(ch: str) -> tuple[str, tuple[float, float, float, float]]:
 
 
 @cache
-def glyph_sheet(chars: str) -> Image.Image:
-    """기준 글자표: 참고 음절을 칸마다 하나씩 기준 서체로 놓은 그림. 이미지 API에 철자와 칸을 알려 준다."""
-    return _sheet([_syllable_glyph(ch) for ch in chars], glyph_grid(len(chars)))[0]
+def glyph_sheet(chars: str, guide: str = "full", guide_font: str = "", warp: float = 0.0, seed: str = "", strong: bool = False) -> Image.Image:
+    """기준 글자표: 참고 음절을 칸마다 하나씩 기준 서체로 놓은 그림. 이미지 API에 철자와 칸을 알려 준다. guide는 _sheet 참고."""
+    return _sheet([_syllable_glyph(ch) for ch in chars], glyph_grid(len(chars)), guide, chars, Path(guide_font) if guide_font else None, warp, seed, strong)[0]
 
 
 @cache
