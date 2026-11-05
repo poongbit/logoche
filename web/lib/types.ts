@@ -464,7 +464,7 @@ export interface ProjectChoose {
 }
 
 // 11/4 사용자 결정: 느낌은 저절로 고르지 않는다. 고를 때까지 서버가 기다린다.
-export type ChooseAction = { action: "pick"; index: number };
+export type ChooseAction = { action: "pick"; index: number } | { action: "redraw"; index: number };
 
 export interface ProjectView extends ProjectSummary {
   upload: Omit<UploadInput, "logoImage">;

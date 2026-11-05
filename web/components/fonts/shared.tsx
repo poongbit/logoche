@@ -41,7 +41,7 @@ export function remainingLabel(seconds: number | null): string {
 }
 
 export function StatusPill({ phase }: { phase: ProjectPhase }) {
-  const base = "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-13 font-bold";
+  const base = "inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-13 font-bold";
   if (phase === "done") return <span className={`${base} border-[1.5px] border-border-success text-text-success`}>{PHASE_LABELS.done}</span>;
   if (phase === "failed") return <span className={`${base} border-[1.5px] border-border-error text-text-error`}>{PHASE_LABELS.failed}</span>;
   if (phase === "reviewing" || phase === "choosing") return <span className={`${base} border-[1.5px] border-border-active`}>{PHASE_LABELS[phase]}</span>;

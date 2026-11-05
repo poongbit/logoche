@@ -315,6 +315,8 @@ async function analyze(p: Stored) {
 }
 
 // 견본을 그리는 일꾼. 서버를 다시 켜면 사라지므로, 파일에 'drawing'으로 남은 견본은 waitChoice가 다시 그린다.
+const SAMPLE_ATTEMPTS = Number(process.env.SAMPLE_ATTEMPTS ?? 3);
+const SAMPLE_RETRY_MS = Number(process.env.SAMPLE_RETRY_MS ?? 4000);
 const sampleWorkers: Set<string> = (store.__logocheSampleWorkers ??= new Set());
 
 /** 방향 하나의 견본 그림을 그려 파일에 적는다. 실패해도 작업은 계속된다(그 방향은 그림 없이 고를 수 있다). */
@@ -324,12 +326,27 @@ function drawSample(id: string, index: number) {
   sampleWorkers.add(key);
   void (async () => {
     let sampleId: string | null = null;
+    let lastError = "";
     try {
       const p = await read(id);
       const d = p.style?.directions?.[index];
       if (!p.style || !d) return;
       const style = applyDirection(p.style, d); // 방향의 굵기까지 적용해 견본을 그린다
-      sampleId = (await createSample({ upload: { ...p.upload, logoImage: await logoOf(id) }, style, expression: d.expression })).sampleId;
+      const logoImage = await logoOf(id);
+      // 11/6: 한 번 실패하면 영영 '그리지 못함'으로 남던 것을 고쳐, 쉬었다가 최대 SAMPLE_ATTEMPTS번 다시 그린다. 사유는 기록에 남긴다.
+      for (let attempt = 1; attempt <= SAMPLE_ATTEMPTS && !sampleId; attempt++) {
+        try {
+          sampleId = (await createSample({ upload: { ...p.upload, logoImage }, style, expression: d.expression })).sampleId;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : String(err);
+          console.error(`[logoche] 느낌 견본 실패 (${attempt}/${SAMPLE_ATTEMPTS})`, id, index, err);
+          if (err instanceof RouteError && (err.status === 400 || err.status === 402)) break; // 다시 해도 같은 결과(문구·비용 상한)
+          if (attempt < SAMPLE_ATTEMPTS) await sleep(SAMPLE_RETRY_MS * attempt);
+        }
+      }
+      if (!sampleId) {
+        await update(id, (q) => void q.record.push(event("ai_model", `느낌 견본 ${index + 1}번을 그리지 못함: ${lastError.slice(0, 160)}`))).catch(() => {});
+      }
     } catch (err) {
       console.error("[logoche] 느낌 견본 실패", id, index, err);
     } finally {
@@ -829,6 +846,20 @@ export async function chooseProject(owner: string, id: string, action: ChooseAct
   const p = await readOwned(owner, id);
   if (p.phase !== "choosing" || !p.choose) throw new RouteError(409, "느낌을 고르는 단계가 아니에요");
   const count = p.style?.directions?.length ?? 0;
+  if (action.action === "redraw") {
+    // 11/6: 그리지 못한 견본만 다시 그린다. 이미 그려진 견본·그리는 중인 견본은 그대로 둔다.
+    const s = p.choose.samples[action.index];
+    if (!s || s.status !== "failed") throw new RouteError(409, "다시 그릴 견본이 아니에요");
+    await update(id, (q) => {
+      const t = q.choose?.samples[action.index];
+      if (t) {
+        t.status = "drawing";
+        t.sampleId = null;
+      }
+    });
+    drawSample(id, action.index);
+    return;
+  }
   if (action.action !== "pick" || !(Number.isInteger(action.index) && action.index >= 0 && action.index < count)) throw new RouteError(400, "고를 수 있는 안이 아니에요");
   await update(id, (q) => void (q.choose && (q.choose.picked = action.index)));
   drive(id);

@@ -14,7 +14,7 @@ import { Button, Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import type { ChooseDirection, ProjectView } from "@/lib/types";
 
-function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; busy: boolean; onPick: (index: number) => void }) {
+function Card({ d, index, busy, onPick, onRedraw }: { d: ChooseDirection; index: number; busy: boolean; onPick: (index: number) => void; onRedraw: (index: number) => void }) {
   return (
     <li className={`flex min-w-0 flex-col gap-3 rounded-[1.25rem] border-[1.5px] bg-bg-canvas p-4 ${d.recommended ? "border-border-active" : "border-border-default"}`}>
       <div className="flex items-center gap-2">
@@ -32,7 +32,17 @@ function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; b
             그리는 중
           </span>
         ) : (
-          <span className="px-4 text-center text-15 font-medium text-text-secondary">견본을 그리지 못했어요. 이 느낌으로 만들 수는 있어요.</span>
+          <span className="flex flex-col items-center gap-3 px-4 text-center text-15 font-medium text-text-secondary">
+            견본을 그리지 못했어요. 다시 그려 볼까요?
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onRedraw(index)}
+              className="h-10 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-4 text-15 font-bold text-text-primary hover:border-border-active hover:bg-bg-surface disabled:cursor-not-allowed disabled:text-text-disabled"
+            >
+              견본 다시 그리기
+            </button>
+          </span>
         )}
       </div>
       <p className="text-15 font-bold">{d.expression}</p>
@@ -129,6 +139,16 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
     }
   }
 
+  async function redraw(index: number) {
+    setError(null);
+    try {
+      await api.chooseProject(view.id, { action: "redraw", index });
+      onChanged();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   const status = settled ? "마음에 드는 느낌을 골라 주세요. 고를 때까지 기다려요." : "가게 이름을 세 가지 느낌으로 그리고 있어요";
 
   return (
@@ -146,7 +166,7 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
 
       <ul aria-label="서체 느낌" className="grid gap-4 sm:grid-cols-3">
         {directions.map((d, i) => (
-          <Card key={`${d.family}-${i}`} d={d} index={i} busy={sending} onPick={(index) => setConfirming(index)} />
+          <Card key={`${d.family}-${i}`} d={d} index={i} busy={sending} onPick={(index) => setConfirming(index)} onRedraw={(i) => void redraw(i)} />
         ))}
       </ul>
 
