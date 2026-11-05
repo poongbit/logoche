@@ -8,8 +8,8 @@ import type { BrandTone, StyleAttributes, UploadInput, UsageContext } from "@/li
 type Entry = { cluster: number; stem: string; weight: string; loose: string; read: number; tones: string[]; license: string };
 const POOL = pool as Entry[];
 
-/** 켜는 스위치. 나눔·마루부리 폰트 약관 확인과 서버에 폰트 파일을 올리기 전까지 기본은 꺼 둔다. */
-export const guideFontEnabled = () => process.env.LOGOCHE_GUIDE_FONT === "1";
+/** 11/5 사용자 결정으로 기본은 켜 둔다. LOGOCHE_GUIDE_FONT=0으로 끈다. 엔진에 폰트 파일이 없으면 후보에서 빠지고, 후보가 없으면 구조 참고 없이 그린다. */
+export const guideFontEnabled = () => process.env.LOGOCHE_GUIDE_FONT !== "0";
 
 const has = (f: Entry, ...tags: string[]) => tags.filter((t) => f.tones.includes(t)).length;
 const looseFree = (f: Entry) => f.loose === "느슨" || f.loose === "구조다름";
@@ -60,9 +60,10 @@ function handAdjust(f: Entry, hand: StyleAttributes["hand"] | undefined): number
 export type GuideChoice = { stem: string; cluster: number; top: string[]; license: string };
 
 /** 입력으로 점수를 매겨(묶음마다 2개까지) 상위 5개를 만들고, seed로 한 가지를 정한다. 후보가 없으면 null. */
-export function chooseGuideFont(u: Pick<UploadInput, "brandTones" | "usageContexts" | "attributes">, seed: string, exclude: string[] = []): GuideChoice | null {
+export function chooseGuideFont(u: Pick<UploadInput, "brandTones" | "usageContexts" | "attributes">, seed: string, exclude: string[] = [], available?: Set<string>): GuideChoice | null {
   const scored: { s: number; f: Entry }[] = [];
   for (const f of POOL) {
+    if (available && !available.has(f.stem)) continue; // 이 서버에 폰트 파일이 없다
     if (exclude.includes(f.stem)) continue; // 닮음 가드가 다시 그릴 때 이미 쓴 폰트는 뺀다
     const uses = u.usageContexts.map((c) => usageAdjust(f, c));
     if (uses.some((x) => x === null)) continue;

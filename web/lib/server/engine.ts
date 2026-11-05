@@ -118,6 +118,8 @@ export const engine = {
   measure: (image: string, storeName: string) => json<EngineMeasure>("/measure", { image, storeName }),
   glyphSheet: (chars: string, guide: "full" | "light" | "none" = "full", font: { name: string; warp: number; seed: string; strong: boolean } | null = null) =>
     json<EngineGlyphSheet>("/sheets/glyphs", { chars, guide, ...(font ? { guideFont: font.name, guideWarp: font.warp, guideSeed: font.seed, guideStrong: font.strong } : {}) }),
+  /** 구조 참고로 쓸 수 있는 폰트 이름(서버에 파일이 있는 것) */
+  guideFonts: async (): Promise<string[]> => ((await (await call("/guide-fonts")).json()) as { fonts: string[] }).fonts,
   /** 닮음 가드(11/5): 참고 글자 그림이 무료 폰트와 얼마나 닮았는지. 서체를 만들기 전 30자 단계에서 잰다 */
   refsSimilarity: (refs: EngineRef[]) => json<{ score: number; name: string; threshold: number; chars: number }>("/refs/similarity", { refs }),
   /** 가게 이름 견본의 기준 그림(2·3자는 한 줄) */

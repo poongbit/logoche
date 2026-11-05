@@ -29,6 +29,16 @@ bash ~/logoche/deploy/setup.sh logoche.my 13-125-103-118.sslip.io
 
 main에 푸시하고 서버에서 `bash ~/logoche/deploy/update.sh`. 다시 켜면 만들던 폰트가 끊기니 아무도 만들지 않을 때 돌린다.
 
+## 구조 참고 폰트 (11/5)
+
+서체를 그릴 때 무료 폰트 하나의 뼈대 위치를 참고한다(선택 규칙은 `web/lib/server/guidefont.ts`, 후보 풀은 `engine/compare/guide_pool.json`). 기본으로 켜져 있고 `web/.env.local`에 `LOGOCHE_GUIDE_FONT=0`을 주면 끈다.
+폰트 파일은 깃에 없다. 서버에서 한 번 받는다:
+
+```bash
+cd ~/logoche/engine && uv run python scripts/fetch_guide_fonts.py   # 나눔손글씨·마루부리(네이버)
+```
+엔진에 파일이 없는 폰트는 후보에서 빠지고, 후보가 하나도 없으면 구조 참고 없이 그린다. 닮음 가드(`GUARD_REF_THRESHOLD` 기본 0.78, `GUARD_REF_ROUNDS` 기본 2)도 같이 켜져 있다.
+
 ## 살펴보기
 
 ```bash

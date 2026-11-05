@@ -98,6 +98,12 @@ def _guide_font(name: str | None) -> str:
     return str(found[0])
 
 
+@app.get("/guide-fonts")
+def guide_fonts() -> dict:
+    """구조 참고로 쓸 수 있는 폰트 이름(이 서버 compare 폴더에 실제로 있는 것). 웹이 후보 풀에서 없는 폰트를 거른다."""
+    return {"fonts": sorted({p.stem for d in ("free", "nanum-hand", "maru") for p in checks._font_files(COMPARE_DIR / d)})}
+
+
 @app.post("/sheets/glyphs")
 def glyph_sheet_route(req: GlyphSheetRequest) -> dict:
     """참고 음절을 칸마다 하나씩 기준 서체로 놓은 기준 글자표. 이미지 API에 구조와 칸을 알려 준다."""

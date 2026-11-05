@@ -159,14 +159,24 @@ export async function ownsGlyphJob(owner: string, jobId: string): Promise<boolea
 
 export async function glyphRequest(p: Stored, sampleId: string | null = null, guard?: { round: number; exclude: string[] }): Promise<StartGlyphJobRequest> {
   if (!p.style) throw new RouteError(409, "로고를 아직 읽는 중이에요");
-  return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: withGuideFont(p, p.style, guard), sampleId, quality: p.quality };
+  return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: withGuideFont(p, p.style, guard, await availableGuideFonts()), sampleId, quality: p.quality };
 }
 
 /** 구조 참고 폰트를 모든 입력에 켠다(11/5 선택 규칙). 켜진 경우 11/5 시험에서 구조 참고가 따라온 조건으로 맞춘다:
  * 방향 설계 지시문과 사용자 조절 표시를 빼 속성이 모양을 덮지 않게 한다. 선택은 프로젝트 번호로 고정되어 같은 프로젝트는 같은 폰트다. */
-function withGuideFont(p: Stored, style: StyleCard, guard?: { round: number; exclude: string[] }): StyleCard {
-  if (!guideFontEnabled() || (style.guideFont && !guard)) return style;
-  const choice = chooseGuideFont(p.upload, guard ? `${p.id}#${guard.round}` : p.id, guard?.exclude ?? []);
+let fontsCache: { at: number; fonts: Set<string> | null } | null = null;
+/** 엔진에 실제로 있는 구조 참고 폰트. 5분 캐시. 못 가져오면 null(구조 참고를 쓰지 않는다). */
+async function availableGuideFonts(): Promise<Set<string> | null> {
+  if (!guideFontEnabled()) return null;
+  if (fontsCache && Date.now() - fontsCache.at < 300_000) return fontsCache.fonts;
+  const fonts = await engine.guideFonts().then((l) => new Set(l)).catch(() => null);
+  fontsCache = { at: Date.now(), fonts };
+  return fonts;
+}
+
+function withGuideFont(p: Stored, style: StyleCard, guard: { round: number; exclude: string[] } | undefined, available: Set<string> | null): StyleCard {
+  if (!guideFontEnabled() || !available || (style.guideFont && !guard)) return style;
+  const choice = chooseGuideFont(p.upload, guard ? `${p.id}#${guard.round}` : p.id, guard?.exclude ?? [], available);
   if (!choice) return style;
   return {
     ...style,
