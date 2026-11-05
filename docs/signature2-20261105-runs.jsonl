@@ -1,0 +1,5 @@
+{"logoId":"sodam","error":"Error: 시그니처가 없어 건너뜀"}
+{"logoId":"geo","signature":"작은 정삼각형을(를) ㅇ 안쪽 속공간 가운데에 작게","family":"gothic","expression":"자와 컴퍼스로 짠 기하 골격","buildId":"5cf78cdf28c7428f8a42b07fb610ebcb","jobId":"e09736eb-0b87-4a48-8a95-b5ae22e776a9","ready":30,"phase":"done","seconds":55}
+{"logoId":"leaf","signature":"끝이 둥근 타원형 잎사귀을(를) ㅇ 안쪽 속공간 가운데에 작게","family":"rounded","expression":"통통한 잎처럼 부푼 둥근 획","buildId":"010bf8f0e65e43568ba9913ceae2f5c0","jobId":"1be7ad6e-3dae-4ff9-8483-47a2fc9b6039","ready":30,"phase":"done","seconds":42}
+{"logoId":"cup","error":"Error: 참고 글자를 하나도 그리지 못했어요"}
+{"logoId":"badge","signature":"다섯 꼭짓점 별을(를) ㅇ 안쪽 속공간 가운데에 작게","family":"gothic","expression":"반듯한 골격에 끝만 살짝 굴린 획","buildId":"2723c40a25fe4e46afeac6408602201f","jobId":"654ff951-d37d-411f-bb32-95dedb39ba33","ready":29,"phase":"done","seconds":89}
