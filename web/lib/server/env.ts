@@ -32,8 +32,11 @@ const VISION = process.env.CLAUDE_VISION_MODEL || "claude-opus-5-5";
 export const MODELS = {
   interpret: VISION, // 로고 해석
   check: VISION, // 참고 글자 검사
-  // 참고 글자 그리기. 앞 모델이 붐비면 다음 모델로 넘어간다(쉼표로 여러 개). 편집 정밀도를 더 보려면 gpt-image-2.5-sunburst(더 느림).
+  // 이미지 그리기. 앞 모델이 붐비면 다음 모델로 넘어간다(쉼표로 여러 개). 나머지 글자(rest.ts)가 쓴다.
   image: chain(process.env.OPENAI_IMAGE_MODEL, ["gpt-image-2.5-flare"]),
+  // 11/5: 가게 이름 견본과 참고 글자 30자는 sunburst를 먼저 쓴다. 같은 입력 3가지 시험에서 flare가 못 낸 가로세로 대비·획 끝 변화가 나왔고
+  // medium 품질 한 번 비용은 비슷했다(약 $0.04~0.06). 나머지 글자(2,300자)에서는 시험하지 않아 flare 그대로다. 붐비면 flare로 넘어간다.
+  refImage: chain(process.env.OPENAI_REF_IMAGE_MODEL, ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare"]),
   ocr: VISION, // 조합 결과 판독
 };
 

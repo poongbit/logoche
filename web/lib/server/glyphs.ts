@@ -515,7 +515,7 @@ export async function drawStyleSample(req: StyleSampleRequest): Promise<{ image:
   if (isImitationRequest(expression)) throw new RouteError(400, "특정 서체는 따라 하지 않아요. 원하는 획 모양을 말로 적어 주세요.");
   const ctx = makeContext({ upload: req.upload, style: { ...req.style, expression } });
   const sheet = await engine.wordSheet(sampleChars(req.upload.storeName));
-  const { value, model } = await imageLimit(() => generateImage(MODELS.image, sampleParts(ctx, sheet, others), sheet.aspectRatio, SAMPLE_QUALITY));
+  const { value, model } = await imageLimit(() => generateImage(MODELS.refImage, sampleParts(ctx, sheet, others), sheet.aspectRatio, SAMPLE_QUALITY));
   return { image: value, model: modelLabel("image", model) };
 }
 
@@ -594,7 +594,7 @@ export function isFatal(err: unknown): boolean {
 }
 
 async function draw(job: JobState, ctx: Context, parts: Part[], aspectRatio: string): Promise<string> {
-  const { value, model } = await imageLimit(() => generateImage(MODELS.image, parts, aspectRatio, ctx.quality));
+  const { value, model } = await imageLimit(() => generateImage(MODELS.refImage, parts, aspectRatio, ctx.quality));
   job.models.add(modelLabel("image", model));
   job.imageCalls++;
   return value;
