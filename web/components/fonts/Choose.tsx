@@ -3,12 +3,14 @@
 // 느낌 고르기(11/4). 로고를 읽은 뒤 AI가 낸 서체 방향 3개를, 가게 이름을 그 방향으로 그린 견본 그림으로 보여 주고 하나를 고르게 한다.
 // 사용자 결정(11/4): 저절로 고르지 않는다. 고를 때까지 서버가 기다리고, 창을 닫았으면 견본이 그려졌을 때 메일로 알린다.
 // 견본은 느낌 시안일 뿐이라 최종 폰트가 똑같다고 약속하지 않는다.
+// 11/5: 카드를 누르면 바로 만들기를 시작하지 않고, 고른 느낌을 다시 보여 주며 한 번 더 확인한다(만들기는 오래 걸리고 되돌릴 수 없는 비용이 든다).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { StickyBar } from "@/components/fonts/shared";
 import { Steps } from "@/components/fonts/Making";
-import { Notice } from "@/components/ui";
+import { ModalPortal } from "@/components/ModalPortal";
+import { Button, Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import type { ChooseDirection, ProjectView } from "@/lib/types";
 
@@ -49,11 +51,66 @@ function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; b
   );
 }
 
+function ConfirmDialog({ d, busy, onStart, onClose }: { d: ChooseDirection; busy: boolean; onStart: () => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
+
+  return (
+    <ModalPortal>
+      <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onPointerDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
+        <div
+          ref={ref}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="choose-confirm-title"
+          tabIndex={-1}
+          className="flex max-h-full w-full max-w-[30rem] flex-col gap-5 overflow-y-auto rounded-[1.25rem] bg-bg-canvas p-6 shadow-float outline-none"
+        >
+          <h2 id="choose-confirm-title" className="text-xl font-extrabold">
+            이 느낌으로 만들까요?
+          </h2>
+          <div className="flex flex-col gap-3">
+            {d.status === "ready" && d.imageUrl && (
+              <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-[1.25rem] bg-bg-surface-strong">
+                {/* eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 견본 그림 */}
+                <img src={d.imageUrl} alt={`${d.familyLabel} 느낌으로 그린 가게 이름 견본`} className="absolute inset-0 h-full w-full object-contain mix-blend-multiply" />
+              </div>
+            )}
+            <p className="text-15 font-bold">
+              {d.familyLabel}
+              {d.weightLabel ? ` · 굵기 ${d.weightLabel}` : ""} · {d.expression}
+            </p>
+          </div>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-15 leading-relaxed text-text-secondary">
+            <li>시작하면 이 느낌으로 한글을 그리기 시작해요. 10분 넘게 걸려요.</li>
+            <li>창을 닫아도 계속 만들고, 다 되면 메일로 알려 드려요.</li>
+            <li>견본과 최종 글자는 조금 다를 수 있어요.</li>
+          </ul>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="outline" size="md" onClick={onClose} disabled={busy}>
+              다른 느낌 보기
+            </Button>
+            <Button size="md" onClick={onStart} disabled={busy}>
+              {busy ? "시작하는 중" : "만들기 시작"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
 export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () => void }) {
   const choose = view.choose;
   const directions = choose?.directions ?? [];
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<number | null>(null);
 
   const settled = directions.length > 0 && directions.every((d) => d.status !== "drawing");
 
@@ -62,9 +119,11 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
     setError(null);
     try {
       await api.chooseProject(view.id, { action: "pick", index });
+      setConfirming(null);
       onChanged();
     } catch (err) {
       setError(errorMessage(err));
+      setConfirming(null);
     } finally {
       setSending(false);
     }
@@ -81,17 +140,18 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
         <p className="text-17 leading-normal font-medium text-text-secondary">
           {choose?.again
             ? "그렸던 30자는 지웠어요. 다른 느낌을 고르면 그 느낌으로 30자를 다시 그려 보여 드려요."
-            : `가게 이름을 ${directions.length || 3}가지 느낌으로 그려 봤어요. 하나를 고르면 그 느낌으로 바로 한글을 그리기 시작해요. 견본과 최종 글자는 조금 다를 수 있어요.`}
+            : `가게 이름을 ${directions.length || 3}가지 느낌으로 그려 봤어요. 하나를 고르고 한 번 더 확인하면 그 느낌으로 한글을 그리기 시작해요. 견본과 최종 글자는 조금 다를 수 있어요.`}
         </p>
       </div>
 
       <ul aria-label="서체 느낌" className="grid gap-4 sm:grid-cols-3">
         {directions.map((d, i) => (
-          <Card key={`${d.family}-${i}`} d={d} index={i} busy={sending} onPick={(index) => void pick(index)} />
+          <Card key={`${d.family}-${i}`} d={d} index={i} busy={sending} onPick={(index) => setConfirming(index)} />
         ))}
       </ul>
 
       {error && <Notice tone="error">{error}</Notice>}
+      {confirming !== null && directions[confirming] && <ConfirmDialog d={directions[confirming]} busy={sending} onStart={() => void pick(confirming)} onClose={() => setConfirming(null)} />}
 
       <StickyBar className="flex flex-col gap-1">
         <span aria-live="polite" className="text-15 font-bold">

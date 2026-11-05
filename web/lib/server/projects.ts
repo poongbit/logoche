@@ -283,9 +283,19 @@ export async function createProject(owner: string, req: CreateProjectRequest): P
 
 /** 로고를 읽어 조절값·서체 방향 3개를 정하고, 방향마다 가게 이름 견본을 그리는 느낌 고르기 단계로 넘어간다(11/4).
  * 방향이 없으면(모의 응답 등) 예전처럼 바로 참고 글자 30자를 그린다. */
+const ANALYZE_ATTEMPTS = 3;
+
 async function analyze(p: Stored) {
-  const style = await analyzeStyle({ ...p.upload, logoImage: await logoOf(p.id) });
+  let style = await analyzeStyle({ ...p.upload, logoImage: await logoOf(p.id) });
+  // 11/5: 서체 방향이 하나도 없으면(AI가 빈 방향을 냈을 때) 예전에는 사용자가 고르기 전에 AI가 정한 느낌으로 바로 글자 그리기를 시작했다.
+  // 시작 전 확인을 건너뛰는 길이라 막는다: 다시 읽어 보고, 끝내 없으면 만들기를 시작하지 않고 실패로 알린다(이 단계 비용은 로고 읽기뿐).
+  for (let attempt = 1; !MOCK && (style.directions?.length ?? 0) === 0 && attempt < ANALYZE_ATTEMPTS; attempt++) {
+    if ((await read(p.id)).phase !== "analyzing") return;
+    console.error("[logoche] 서체 방향이 비어 로고를 다시 읽어요", p.id, attempt);
+    style = await analyzeStyle({ ...p.upload, logoImage: await logoOf(p.id) });
+  }
   if ((await read(p.id)).phase !== "analyzing") return; // 읽는 동안 사용자가 중단했다
+  if (!MOCK && (style.directions?.length ?? 0) === 0) throw new Error("로고에서 서체 느낌을 정하지 못했어요. 잠시 뒤 다시 만들어 주세요.");
   const choosing = !MOCK && (style.directions?.length ?? 0) > 0;
   const glyphJobId = choosing ? null : startGlyphJob(await glyphRequest({ ...p, style }));
   await update(p.id, (q) => {
@@ -822,6 +832,13 @@ export async function chooseProject(owner: string, id: string, action: ChooseAct
   if (action.action !== "pick" || !(Number.isInteger(action.index) && action.index >= 0 && action.index < count)) throw new RouteError(400, "고를 수 있는 안이 아니에요");
   await update(id, (q) => void (q.choose && (q.choose.picked = action.index)));
   drive(id);
+  // 11/5: 글자 그리기 작업이 시작되어 단계가 바뀔 때까지 기다렸다가 돌려준다. 기다리지 않으면 화면이 아직 '느낌 고르기'인 상태를 받아
+  // 선택 화면에 그대로 남는다(선택을 기다리는 동안은 화면이 새로 받지 않는다). 못 바뀌어도(최대 20초) 그대로 돌려주고 이후는 화면이 따라간다.
+  for (let i = 0; i < 40; i++) {
+    const q = await read(id);
+    if (q.phase !== "choosing" || q.error) return;
+    await sleep(500);
+  }
 }
 
 /** 다시 만들기: 그린 글자는 그대로 두고 빠진 글자만 그려 폰트를 다시 만든다. 참고 글자가 없으면 처음부터 한다. */
