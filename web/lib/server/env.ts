@@ -23,6 +23,8 @@ const chain = (value: string | undefined, fallback: string[]) =>
 export type ImageQuality = "low" | "medium" | "high" | "xhigh" | "max";
 export const OPENAI_IMAGE_QUALITY = (process.env.OPENAI_IMAGE_QUALITY || "high") as ImageQuality;
 // 11/2: 만들 때 고르는 그리기 수준. 정밀은 지금까지 쓴 품질(OPENAI_IMAGE_QUALITY), 표준은 한 단계 낮춰 싸고 빠르다.
+// 11/5 혼합 시험: 나머지 글자(rest.ts)만 다른 품질로 그린다. 비우면 참고 글자와 같은 품질. 스타일은 30자가 정하므로 나머지를 낮춰 원가를 줄일 수 있는지 본다.
+export const REST_IMAGE_QUALITY = (process.env.OPENAI_REST_QUALITY || undefined) as ImageQuality | undefined;
 export const DRAW_QUALITY: Record<"standard" | "fine", ImageQuality> = { standard: "medium", fine: OPENAI_IMAGE_QUALITY };
 // 화면 2 견본 품질. 세 장을 그리는 동안 기다리므로 한 단계 낮춰 빨리 그린다.
 export const SAMPLE_QUALITY = (process.env.OPENAI_SAMPLE_QUALITY || "medium") as ImageQuality;

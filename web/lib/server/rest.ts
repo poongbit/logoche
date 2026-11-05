@@ -21,7 +21,7 @@ import { KSX1001_HANGUL } from "@/lib/hangul";
 import { HANGUL_BY_FREQUENCY } from "@/lib/hangulOrder";
 import type { StartBuildJobRequest } from "@/lib/types";
 import { engine, type EngineRef } from "./engine";
-import { MODELS, RouteError, modelLabel } from "./env";
+import { MODELS, REST_IMAGE_QUALITY, RouteError, modelLabel } from "./env";
 import { listEdits } from "./edits";
 import { checkSheet, isFatal, jobContext, jobDir, limiter, loadJob, readDataUrl, readyRefs, restSheetParts, type Context, type JobState } from "./glyphs";
 import { generateImage } from "./openai";
@@ -167,7 +167,7 @@ async function drawSheet(
     const sheet = await engine.glyphSheet(chars.join(""), ctx.guide, ctx.guideFont);
     const { value: image, model } = await sheetLimit(() => {
       if (run.aborted) throw new Aborted(); // 순서를 기다리는 동안 중단됐으면 이미지를 부르지 않는다
-      return generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, ctx.quality);
+      return generateImage(MODELS.image, restSheetParts(ctx, sheet, approved), sheet.aspectRatio, REST_IMAGE_QUALITY ?? ctx.quality);
     });
     job.models.add(modelLabel("image", model));
     const sheetNo = ++index.sheets;
