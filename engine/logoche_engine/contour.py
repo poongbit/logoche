@@ -44,6 +44,7 @@ class Tweak:
     scale: float = 100
     tx: float = 0
     ty: float = 0
+    rel: str | None = None  # 전체 조정("*")에서만: 이 글자에서 굵기 조정(pull)이 만든 두께 변화의 배율을 재어 다른 글자에도 그 배율로 건다(drawn.resolve_all). 없으면 pull을 모든 글자에 같은 양으로 건다
 
     @property
     def geometric(self) -> bool:

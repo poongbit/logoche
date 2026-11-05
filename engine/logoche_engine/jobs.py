@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import shutil
 import threading
@@ -9,7 +10,7 @@ import time
 import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from fontTools.ttLib import TTFont
@@ -23,6 +24,10 @@ from .checks import CheckResult, Similarity, check_glyph_set, run_checks
 from .contour import Axes, Tweak
 from .hangul import KSX1001_HANGUL
 from .paths import BUILDS_DIR, ISSUED_DIR
+
+# 서체를 만든 방식의 이름. 방식이 바뀌어 점수 분포가 달라지면(10/30 MX-Font → 그린 글자) 분석에서 갈라 볼 수 있게 빌드마다 남긴다.
+PIPELINE_VERSION = "drawn-v1"
+PROVENANCE_MAX_BYTES = 8000
 
 CHECK_KEYS = ["glyph_set", "broken_glyphs", "embedding", "naming_license", "platform_render", "size_legibility", "similarity"]
 
@@ -40,6 +45,39 @@ class StageProgress:
     total: int = 0
     started: float | None = None
     finished: float | None = None
+
+
+def write_provenance(build_dir: Path, build_id: str, logo_hash: str | None, axes: Axes, counts: dict[str, int], client: dict) -> None:
+    """빌드마다 출처를 남긴다(11/5). 같은 로고를 다시 빌드한 것과 서로 다른 로고의 결과를 나중에 가르고, 방식이 바뀐 시기를 구분하려는 기록이다.
+    client는 웹이 넘긴 값(프로젝트 번호·서체 방향 등). 가게 이름·소유자·로고 이미지는 넣지 않는다. 기록이 실패해도 빌드는 계속한다."""
+    try:
+        record = {
+            "buildId": build_id,
+            "pipeline": PIPELINE_VERSION,
+            "startedAt": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+            "logoHash": logo_hash,
+            "axes": asdict(axes),
+            "counts": counts,
+            "client": client,
+        }
+        body = json.dumps(record, ensure_ascii=False)
+        if len(body.encode()) > PROVENANCE_MAX_BYTES:
+            record["client"] = {"truncated": True}
+            body = json.dumps(record, ensure_ascii=False)
+        build_dir.mkdir(parents=True, exist_ok=True)
+        tmp = build_dir / "provenance.json.tmp"
+        tmp.write_text(body, encoding="utf-8")
+        tmp.replace(build_dir / "provenance.json")
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+
+
+def read_provenance(font_path: Path) -> dict | None:
+    """font.ttf 옆의 출처 기록. 11/5 전에 만든 빌드에는 없다."""
+    try:
+        return json.loads((font_path.parent / "provenance.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 @dataclass
@@ -183,7 +221,7 @@ class BuildManager:
 
     def start(
         self, glyphs: dict[str, np.ndarray], axes: Axes, meta: FontMeta, logo_hash: str | None, edits: dict[str, drawn.Edit] | None = None,
-        tweaks: dict[str, Tweak] | None = None,
+        tweaks: dict[str, Tweak] | None = None, provenance: dict | None = None,
     ) -> BuildState:
         """glyphs: 그린 글자(음절 → 자리 맞춘 틀 그림, drawn.py). edits: 사용자가 고친 글자. tweaks: 글자별 조정."""
         edits = edits or {}
@@ -191,6 +229,10 @@ class BuildManager:
         state = BuildState(meta.font_id, logo_hash, meta.store_name, total=len(set(glyphs) | set(edits)))
         for key, total in (("trace", state.total), ("save", 1), ("check", len(CHECK_KEYS))):
             state.progress[key].total = total
+        write_provenance(
+            BUILDS_DIR / state.build_id, state.build_id, logo_hash, axes,
+            {"glyphs": len(glyphs), "edits": len(edits), "tweaks": len(tweaks)}, provenance or {},
+        )
         with self._lock:
             self._builds[state.build_id] = state
         self._pool.submit(self._run, state, glyphs, axes, meta, edits, tweaks)

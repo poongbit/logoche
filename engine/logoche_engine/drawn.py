@@ -38,7 +38,7 @@ from fontTools.misc.transform import Transform
 from PIL import Image, ImageDraw, ImageFont
 
 from . import raster
-from .contour import SHARP_BELOW, Axes, Tweak, style_transform, tweak_transform, vtrace
+from .contour import ALL_GLYPHS, SHARP_BELOW, Axes, Tweak, style_transform, tweak_transform, vtrace
 from .hangul import KSX1001_HANGUL
 from .reference import REFERENCE_FONTS, REFERENCE_WEIGHTS, glyph_bounds, load_font
 
@@ -387,14 +387,37 @@ def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX, tweak: Twe
     return path, width
 
 
+def resolve_all(glyphs: dict[str, np.ndarray], axes: Axes, offset_px: float, tweaks: dict[str, Tweak]) -> tuple[Tweak | None, tuple[float, float] | None]:
+    """전체 조정("*")을 풀어 (모든 글자에 걸 조정, 굵기 기준)을 돌려준다. 전체 조정이 rel(기준 글자)을 가지면 그 글자에 굵기 조정(pull)을 걸었을 때
+    윤곽이 실제로 얼마나(px) 옮겨지는지와 그 글자의 획 두께를 재어 (옮긴 거리, 기준 두께)로 삼고, 조정에서 pull은 뺀다. 다른 글자는 outline이
+    "옮긴 거리 × 자기 두께 ÷ 기준 두께"만큼 옮긴다. 곧 기준 글자에서 보인 두께 변화의 비율을 글자마다 자기 두께에 맞춰 건다.
+    기준 글자가 없으면 pull을 그대로 둔다(모든 글자에 같은 양)."""
+    t = tweaks.get(ALL_GLYPHS)
+    if t is None or not t.rel:
+        return t, None
+    plain = replace(t, rel=None)
+    src = glyphs.get(t.rel)
+    if not t.pull or src is None or not src.any():
+        return plain, None
+    thickness = raster.solid_thickness(glyph_mask(src, axes, offset_px))
+    moved = tweaked_axes(axes, Tweak(pull=t.pull))
+    delta = weight_offset(moved) - offset_px
+    if thickness <= 0 or abs(delta) < 0.05:
+        return plain, None
+    return replace(plain, pull=0), (delta, thickness)
+
+
 def outline(
-    mask: np.ndarray | None, axes: Axes, advance: int, offset_px: float, edit: Edit | None = None, tweak: Tweak | None = None
+    mask: np.ndarray | None, axes: Axes, advance: int, offset_px: float, edit: Edit | None = None, tweak: Tweak | None = None, thick: tuple[float, float] | None = None
 ) -> tuple[pathops.Path, int]:
-    """그린 글자(틀 그림) 하나를 외곽선으로. 고친 글자가 있으면 그 그림을 쓴다. tweak: 이 글자만의 조정."""
+    """그린 글자(틀 그림) 하나를 외곽선으로. 고친 글자가 있으면 그 그림을 쓴다. tweak: 이 글자만의 조정. thick: 전체 굵기 조정의 (기준 글자에서 옮긴 거리, 기준 두께)(resolve_all)."""
     if tweak is not None and tweak.pull:
         axes = tweaked_axes(axes, tweak)
         offset_px = weight_offset(axes)
     if edit is not None:
         return trace(edit_mask(edit, axes), axes, advance, EDIT_PX, tweak)
     assert mask is not None
+    if thick:
+        # 이 글자의 지금 획 두께 ≈ 그린 두께 + 양쪽 offset. 기준 글자와 두께 비율만큼 옮긴다.
+        offset_px += thick[0] * (raster.solid_thickness(mask) + 2 * offset_px) / thick[1]
     return trace(glyph_mask(mask, axes, offset_px), axes, advance, PX, tweak)

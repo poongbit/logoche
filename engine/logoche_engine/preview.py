@@ -21,6 +21,7 @@ def render_preview(glyphs: dict[str, np.ndarray], axes: Axes, text: str, edits: 
     edits = edits or {}
     tweaks = tweaks or {}
     offset_px = drawn.weight_offset(axes)
+    all_tweak, all_thick = drawn.resolve_all(glyphs, axes, offset_px, tweaks)
     to_svg = Transform(1, 0, 0, -1, 0, layout.ascender)
     space = round(round(layout.advance * axes.width / 100 + axes.tracking * 10) * 0.3)  # build.py의 space 폭
 
@@ -31,7 +32,8 @@ def render_preview(glyphs: dict[str, np.ndarray], axes: Axes, text: str, edits: 
             out.append({"char": ch, "path": "", "advance": space})
         elif ch in glyphs or ch in edits:
             if ch not in made:
-                path, advance = drawn.outline(glyphs.get(ch), axes, layout.advance, offset_px, edits.get(ch), tweaks.get(ch, tweaks.get(ALL_GLYPHS)))
+                own = tweaks.get(ch)
+                path, advance = drawn.outline(glyphs.get(ch), axes, layout.advance, offset_px, edits.get(ch), own or all_tweak, None if own else all_thick)
                 made[ch] = {"path": svg_path(path, to_svg)[0], "advance": advance}
             out.append({"char": ch, **made[ch]})
         else:

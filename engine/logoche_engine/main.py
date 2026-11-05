@@ -7,6 +7,7 @@ uv run uvicorn logoche_engine.main:app --port 8000
 
 from __future__ import annotations
 
+import json
 import re
 import threading
 from contextlib import asynccontextmanager
@@ -199,6 +200,7 @@ class TweakInput(BaseModel):
     scale: float = Field(100, ge=40, le=170)
     tx: float = Field(0, ge=-300, le=300)
     ty: float = Field(0, ge=-300, le=300)
+    rel: str | None = Field(None, min_length=1, max_length=1)
 
 
 def _tweaks(tweaks: dict[str, TweakInput]) -> dict[str, Tweak]:
@@ -261,6 +263,7 @@ class BuildRequest(BaseModel):
     aiNotice: str = ""
     edits: list[EditInput] = Field(default_factory=list)  # 사용자가 고친 글자
     tweaks: dict[str, TweakInput] = Field(default_factory=dict)  # 글자별 조정(굵기·기울기·크기·위치)
+    provenance: dict = Field(default_factory=dict)  # 웹이 넘기는 출처(프로젝트 번호·서체 방향 등). jobs.write_provenance가 빌드 폴더에 남긴다
 
 
 @app.post("/builds")
@@ -268,9 +271,11 @@ def start_build(req: BuildRequest) -> dict:
     glyphs, edits = _glyphs(req.refs, req.glyphs), _edits(req.edits)
     if not glyphs and not edits:
         raise HTTPException(400, "그린 글자가 없어요")
+    if len(json.dumps(req.provenance, ensure_ascii=False).encode()) > 8000:
+        raise HTTPException(400, "출처 기록이 너무 커요")
     build_id = req.buildId or new_build_id()
     meta = FontMeta(build_id, req.storeName, req.models, req.licenseText, req.aiNotice)
-    state = builds.start(glyphs, _axes(req.axes), meta, req.logoHash, edits, _tweaks(req.tweaks))
+    state = builds.start(glyphs, _axes(req.axes), meta, req.logoHash, edits, _tweaks(req.tweaks), req.provenance)
     return {"buildId": state.build_id}
 
 

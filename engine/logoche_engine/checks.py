@@ -1,12 +1,14 @@
 """상업용 검사 7항목. 키 이름은 웹(web/lib/types.ts CheckKey)과 같다. OCR은 웹이 Claude로 따로 한다.
 
 platform_render는 실제 기기에 띄워 보는 검사가 아니라 각 환경이 요구하는 표·값을 갖췄는지 보는 구조 검사다.
-similarity는 무료 폰트(compare/free, scripts/fetch_compare_fonts.py)와 비교한다. 상용 폰트 비교 대상은 아직 없다(design.md 정할 것 5).
+similarity는 무료 폰트(compare/free, scripts/fetch_compare_fonts.py)와 비교한다. 상용 폰트 파일은 아직 없다(design.md 정할 것 5).
+폰트 파일 대신 견본 이미지(compare/specimen/<이름>/, specimen.py)에서 뽑은 지문과도 비교할 수 있다. 정밀도가 낮아 종류를 따로 센다(11/5).
 발급 대장(받아 간 서체)과는 비교하지 않는다(10/30 결정: 서체마다 따로 만든다. MX-Font 서체끼리는 뼈대가 거의 같아
 앞서 받아 간 서체가 다른 가게의 새 서체를 막았다. 러너스하이·와사비 0.88)."""
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cache
@@ -19,6 +21,7 @@ from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFont
 
 from .hangul import KSX1001_HANGUL
+from . import specimen as specimen_mod
 from .paths import COMPARE_DIR
 from .reference import REFERENCE_FONTS, REFERENCE_NAME
 
@@ -27,6 +30,12 @@ from .reference import REFERENCE_FONTS, REFERENCE_NAME
 # 0.92~0.93이 나온다(IBM Plex Sans KR ~ 나눔고딕, 나눔명조 ~ Noto Serif KR). 질감만 입힌 사본은 0.76~0.98,
 # 우리 빌드의 최고 점수는 10/28까지 0.24~0.77이었고, 11/3 고양이 로고 전체 실측에서 0.83(Pretendard Bold)이 나왔다. 사본을 놓치는 쪽이 더 위험해서 0.85를 그대로 둔다(engine/README.md).
 SIMILARITY_THRESHOLD = 0.85
+# 견본 이미지 기준값. 아직 보정하지 않아 파일 기준과 같게 둔다. 이미지는 해상도·압축 때문에 점수가 낮게 나와 같은 값이면 사본을 더 놓친다.
+# 다운스케일·JPEG 열화를 입힌 사본으로 점수가 얼마나 떨어지는지 재서 정한다(tests/test_specimen.py가 첫 수치를 찍는다).
+SPECIMEN_THRESHOLD = SIMILARITY_THRESHOLD
+SPECIMEN_MIN_COMMON = 8  # 견본에서 지문이 만들어진 한글 글자가 이보다 적으면 점수가 흔들려 비교에서 뺀다
+SPECIMEN_MAX_CHARS = 300  # 견본 하나에서 쓰는 글자 수 상한(비교 비용)
+THRESHOLDS = {"free": SIMILARITY_THRESHOLD, "commercial": SIMILARITY_THRESHOLD, "specimen": SPECIMEN_THRESHOLD}
 FREQUENT_CHARS = "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르"
 COMPLEX_CHARS = "값읽밟뚫쌌꽃흙닭햇볕밖삶젊짧넓흘렀갔왔됐뷔쿄퀘쥐틔펴훼괜찮읊겠많않싫옳힘쓸쐈"
 PANGRAM_CHARS = "다람쥐헌쳇바퀴에타고파"  # 다람쥐 헌 쳇바퀴에 타고파(기본 자음 14개가 모두 나온다)
@@ -51,7 +60,7 @@ class Similarity:
     score: float
     threshold: float
     nearestFont: str
-    nearestKind: str  # free · commercial
+    nearestKind: str  # free · commercial · specimen(견본 이미지)
     passed: bool
     compared: dict[str, int]
 
@@ -194,6 +203,8 @@ def check_size_legibility(path: Path) -> CheckResult:
 
 # ---------- 유사도 ----------
 
+logger = logging.getLogger(__name__)
+
 SIM_SIZE = 64
 SIM_TOLERANCE = 2.0  # 픽셀. 뼈대가 이 거리 안에 있으면 겹친 것으로 본다.
 
@@ -208,11 +219,32 @@ def _shape_image(font_path: Path, ch: str) -> np.ndarray | None:
     return skeleton(_render(font_path, ch, 96))
 
 
+def _straighten(gray: np.ndarray) -> np.ndarray:
+    """글자의 기울기를 펴고 가로 퍼짐을 세로와 같게 맞춘다(11/5 정규화 B안). 기울이거나 늘린 복사본이 점수를 피해 가지 못하게 한다.
+    모멘트로 잡아서 한 글자씩 독립으로 편다. 서체 고유의 기울기·폭 개성도 함께 지워지는 대가가 있다(docs/similarity-analysis-20261105.md)."""
+    ys, xs = np.nonzero(gray > 127)
+    if len(xs) < 20:
+        return gray
+    cx, cy = xs.mean(), ys.mean()
+    dx, dy = xs - cx, ys - cy
+    myy = (dy * dy).mean()
+    if myy < 1e-6:
+        return gray
+    mxx, mxy = (dx * dx).mean(), (dx * dy).mean()
+    k = mxy / myy  # x' = x - k*y
+    var_x = mxx - mxy * mxy / myy
+    sx = float(np.sqrt(myy / var_x)) if var_x > 1e-6 else 1.0
+    h, w = gray.shape
+    m = np.array([[sx, -k * sx, 0.0], [0.0, 1.0, 0.0]])
+    m[:, 2] = np.array([w / 2, h / 2]) - m[:, :2] @ np.array([cx, cy])
+    return cv2.warpAffine(gray, m.astype(np.float32), (w, h), flags=cv2.INTER_LINEAR)
+
+
 def skeleton(rendered: np.ndarray) -> np.ndarray | None:
     """96px로 그린 글자(0~255)의 뼈대를 SIM_SIZE 칸에 맞춰 돌려준다."""
     # 중간값 거르기로 붓 질감(가장자리 요철·마른 붓 틈)을 지운 뒤 뼈대를 잡는다. 안 거르면 요철마다 뼈대 가지가 생겨,
     # Source Han Sans에 질감만 입힌 사본이 0.79~0.82로 기준 아래가 됐다(거르면 0.92~0.96, 다른 서체 점수는 ±0.02, 10/28).
-    image = cv2.medianBlur(rendered, 5) > 127
+    image = _straighten(cv2.medianBlur(rendered, 5)) > 127
     ys, xs = np.nonzero(image)
     if len(xs) == 0:
         return None
@@ -227,17 +259,38 @@ def skeleton(rendered: np.ndarray) -> np.ndarray | None:
     return ridge if ridge.any() else None
 
 
+def _shape_entry(ridge: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    return ridge, cv2.distanceTransform((~ridge).astype(np.uint8), cv2.DIST_L2, 5)
+
+
 @cache
-def _shape_set(font_path: Path, mtime: float) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-    """글자마다 (뼈대, 뼈대까지의 거리장)."""
+def _shape_set(font_path: Path, mtime: float, chars: str = SAMPLE_CHARS) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """글자마다 (뼈대, 뼈대까지의 거리장). chars는 견본에 든 글자를 맞춰 볼 때만 바꾼다."""
     font = TTFont(font_path, lazy=True)
     cmap = font.getBestCmap()
     out = {}
-    for ch in SAMPLE_CHARS:
+    for ch in chars:
         if ord(ch) in cmap:
             ridge = _shape_image(font_path, ch)
             if ridge is not None:
-                out[ch] = (ridge, cv2.distanceTransform((~ridge).astype(np.uint8), cv2.DIST_L2, 5))
+                out[ch] = _shape_entry(ridge)
+    return out
+
+
+@cache
+def _specimen_set(folder: Path, stamp: float) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """견본 이미지 한 폴더의 지문. 쓸 수 없는 견본은 비교에서 빼고(빈 집합) 이유만 남긴다 — 깨진 견본 하나가 빌드를 막으면 안 된다."""
+    try:
+        sheet = specimen_mod.load(folder)
+    except (specimen_mod.SpecimenError, OSError) as e:
+        logger.warning("견본 이미지 %s를 비교에서 뺐어요: %s", folder.name, e)
+        return {}
+    out = {}
+    for ch, glyph in list(sheet.glyphs.items())[:SPECIMEN_MAX_CHARS]:
+        if "가" <= ch <= "힣":  # 한글 음절만. 견본에 든 글자 그대로 비교한다(견본마다 보여 주는 글자가 달라 샘플 글자로 한정하면 겹침이 거의 없다)
+            ridge = skeleton(glyph)
+            if ridge is not None:
+                out[ch] = _shape_entry(ridge)
     return out
 
 
@@ -268,34 +321,74 @@ def _display_name(path: Path) -> str:
         return path.stem
 
 
+def _specimen_folders() -> list[Path]:
+    root = COMPARE_DIR / "specimen"
+    if not root.exists():
+        return []
+    return sorted(p for p in root.iterdir() if p.is_dir() and (p / "meta.json").exists())
+
+
+def _specimen_name(folder: Path) -> str:
+    try:
+        return specimen_mod.read_meta(folder).name
+    except specimen_mod.SpecimenError:
+        return folder.name
+
+
 def comparison_set() -> list[tuple[str, str, Path]]:
-    """(종류, 이름, 파일) 목록."""
+    """(종류, 이름, 파일 또는 견본 폴더) 목록."""
     out: list[tuple[str, str, Path]] = [("free", f"{REFERENCE_NAME} {w.title()}", p) for w, p in REFERENCE_FONTS.items()]
     out += [("free", _display_name(p), p) for p in _font_files(COMPARE_DIR / "free")]
     out += [("commercial", _display_name(p), p) for p in _font_files(COMPARE_DIR / "commercial")]
+    out += [("specimen", _specimen_name(p), p) for p in _specimen_folders()]
     return out
+
+
+def shape_set_of(kind: str, path: Path) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    if kind == "specimen":
+        try:
+            return _specimen_set(path, specimen_mod.stamp(path))
+        except (specimen_mod.SpecimenError, OSError) as e:
+            logger.warning("견본 이미지 %s를 비교에서 뺐어요: %s", path.name, e)
+            return {}
+    return _shape_set(path, path.stat().st_mtime)
+
+
+def shape_set_for_chars(kind: str, path: Path, chars: str) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """폰트(파일)에서 chars만 그린 지문. 견본에 든 글자로 맞춰 비교할 때 쓴다."""
+    return _shape_set(path, path.stat().st_mtime, chars)
 
 
 def warm_comparison() -> None:
     """비교 폰트의 뼈대를 미리 만들어 캐시에 둔다(엔진을 켤 때 한 번)."""
-    for _, _, font_path in comparison_set():
-        _shape_set(font_path, font_path.stat().st_mtime)
+    for kind, _, path in comparison_set():
+        shape_set_of(kind, path)
 
 
 def check_similarity(path: Path) -> tuple[CheckResult, Similarity]:
-    mine = _shape_set(path, path.stat().st_mtime)
-    candidates = comparison_set()
-    best = ("free", REFERENCE_NAME, 0.0)
-    counts = {"free": 0, "commercial": 0}
-    for kind, name, font_path in candidates:
+    mtime = path.stat().st_mtime
+    mine = _shape_set(path, mtime)
+    best = (-1.0, "free", REFERENCE_NAME, 0.0)  # (기준을 넘은 만큼, 종류, 이름, 점수). 종류마다 기준이 달라 '넘은 만큼'으로 가장 위험한 것을 고른다
+    counts = {"free": 0, "commercial": 0, "specimen": 0}
+    for kind, name, source in comparison_set():
+        theirs = shape_set_of(kind, source)
+        ours = mine
+        if kind == "specimen":
+            if len(theirs) < SPECIMEN_MIN_COMMON:
+                continue
+            ours = _shape_set(path, mtime, "".join(sorted(theirs)))  # 견본에 든 글자를 우리 폰트에서도 그린다
         counts[kind] += 1
-        score = shape_similarity(mine, _shape_set(font_path, font_path.stat().st_mtime))
-        if score > best[2]:
-            best = (kind, name, score)
-    kind, name, score = best
-    sim = Similarity(round(score, 3), SIMILARITY_THRESHOLD, name, kind, score < SIMILARITY_THRESHOLD, counts)
-    detail = f"{score:.2f} (기준 {SIMILARITY_THRESHOLD:.2f}) · 무료 폰트 {counts['free']}개와 비교"
+        score = shape_similarity(ours, theirs)
+        excess = score - THRESHOLDS[kind]
+        if excess > best[0]:
+            best = (excess, kind, name, score)
+    _, kind, name, score = best
+    threshold = THRESHOLDS[kind]
+    sim = Similarity(round(score, 3), threshold, name, kind, score < threshold, counts)
+    detail = f"{score:.2f} (기준 {threshold:.2f}) · 무료 폰트 {counts['free']}개와 비교"
     detail += f" · 상용 폰트 {counts['commercial']}개" if counts["commercial"] else " · 상용 폰트는 비교 안 함"
+    if counts["specimen"]:
+        detail += f" · 견본 이미지 {counts['specimen']}종(정밀도 낮음)"
     return _result("similarity", sim.passed, detail), sim
 
 
