@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { BASE_GOTHIC_STACK } from "@/lib/preview";
 
 // 화면 5 시안(Claude Design 'Logoche Final' 3k·3l·3s). 로고 색 [대표색, 어두운 색, 밝은 색]을 입힌다.
@@ -52,8 +52,8 @@ const fit = (text: string, max: number, share = 86): CSSProperties => ({ fontSiz
 
 function SceneLabel({ title, place }: { title: string; place: string }) {
   return (
-    <span className="absolute bottom-3 left-3 rounded-full bg-bg px-3 py-1.5 text-13 font-bold @6xl/mock:bottom-5 @6xl/mock:left-5 @6xl/mock:px-4 @6xl/mock:py-2 @6xl/mock:text-15">
-      {title} <span className="font-medium text-muted">· {place}</span>
+    <span className="absolute bottom-3 left-3 rounded-full bg-bg-canvas px-3 py-1.5 text-13 font-bold @6xl/mock:bottom-5 @6xl/mock:left-5 @6xl/mock:px-4 @6xl/mock:py-2 @6xl/mock:text-15">
+      {title} <span className="font-medium text-text-secondary">· {place}</span>
     </span>
   );
 }
@@ -215,7 +215,7 @@ function PhotoStage({
   }, [photo, color]);
 
   return (
-    <div ref={stageRef} className={`relative overflow-hidden bg-stage ${className}`}>
+    <div ref={stageRef} className={`relative overflow-hidden bg-bg-surface-strong ${className}`}>
       <div
         className={`absolute top-0 left-0 origin-top-left transition-opacity duration-300 ${painted && view ? "opacity-100" : "opacity-0"}`}
         style={{ width: photo.width, height: photo.height, transform: view ? `scale(${view.s}) translate(${-view.x}px, ${-view.y}px)` : undefined }}
@@ -238,7 +238,7 @@ function Face({ box, className = "", style, children }: { box: ReturnType<typeof
 }
 
 /** 간판 · 가게 앞(실제 사진). 간판 면·차양을 로고 대표색으로 칠한다. 로고 색을 모르면 사진의 파랑 그대로 + 흰 글자. */
-export function SignScene({ storeName, fontStyle, colors }: MockupProps) {
+export function SignScene({ storeName, fontStyle, colors, fill }: MockupProps & { fill?: boolean }) {
   const color = /^#[0-9a-f]{6}$/i.test(colors[0] ?? "") ? colors[0] : null;
   const fontSize = Math.min(SIGN_FACE.h * 0.6, (SIGN_FACE.w * 0.84) / Math.max(2, [...storeName].length));
   return (
@@ -246,7 +246,7 @@ export function SignScene({ storeName, fontStyle, colors }: MockupProps) {
       photo={SIGN_PHOTO}
       color={color}
       label={["간판", "가게 앞"]}
-      className="aspect-[920/520] rounded-2xl @2xl/mock:col-span-2 @2xl/mock:aspect-[1110/510] @6xl/mock:col-span-1 @6xl/mock:aspect-[920/520] @6xl/mock:rounded-none"
+      className={fill ? "h-full rounded-[1.25rem]" : "aspect-[920/520] rounded-2xl @2xl/mock:col-span-2 @2xl/mock:aspect-[1110/510] @6xl/mock:col-span-1 @6xl/mock:aspect-[920/520] @6xl/mock:rounded-none"}
     >
       <Face box={SIGN_FACE} className="grid place-items-center">
         <span
@@ -267,12 +267,12 @@ export function SignScene({ storeName, fontStyle, colors }: MockupProps) {
 
 /** 메뉴판 · 테이블 위(실제 사진). 종이 색은 그대로 두고, 글자는 로고의 어두운 색을 종이 결과 곱해 인쇄한 것처럼 얹는다.
  * 위·오른쪽·아래 집게가 종이 가장자리를 덮어서 글자는 안쪽(위아래 15%, 양옆 12%)에 둔다. */
-export function MenuScene({ storeName, menu, fontStyle, colors }: MockupProps) {
+export function MenuScene({ storeName, menu, fontStyle, colors, fill }: MockupProps & { fill?: boolean }) {
   const ink = readableOn(MENU_PAPER, [palette(colors).dark], 4.5);
   const { w, h } = MENU_FACE;
   const nameSize = Math.min(h * 0.15, (w * 0.76 * 0.9) / Math.max(2, [...storeName].length));
   return (
-    <PhotoStage photo={MENU_PHOTO} label={["메뉴판", "테이블 위"]} className="h-[18.75rem] rounded-2xl @2xl/mock:h-[22.5rem] @6xl/mock:h-full @6xl/mock:rounded-none">
+    <PhotoStage photo={MENU_PHOTO} label={["메뉴판", "테이블 위"]} className={fill ? "h-full rounded-[1.25rem]" : "h-[18.75rem] rounded-2xl @2xl/mock:h-[22.5rem] @6xl/mock:h-full @6xl/mock:rounded-none"}>
       <Face box={MENU_FACE} className="flex flex-col justify-center mix-blend-multiply" style={{ padding: `${h * 0.15}px ${w * 0.12}px`, gap: h * 0.05, color: ink }}>
         <div className="text-center leading-none" style={{ ...fontStyle, fontSize: nameSize }}>
           {storeName}
@@ -299,7 +299,7 @@ function MenuPaper({ storeName, menu, fontStyle, colors }: MockupProps) {
       </div>
       {menu.map(([item, price]) => (
         <div key={item} className="flex items-baseline justify-between gap-3">
-          <span className="text-19" style={fontStyle}>
+          <span className="text-17" style={fontStyle}>
             {item}
           </span>
           <span className="text-sm" style={fontStyle}>
@@ -321,7 +321,7 @@ function InstaPost({ storeName, menu, fontStyle, colors, large }: MockupProps & 
       <span className={`leading-[1.15] ${large ? "text-26 @6xl/mock:text-36" : "text-32"}`} style={fontStyle}>
         {menu[0]?.[0]}
       </span>
-      <span className={large ? "text-sm @6xl/mock:text-19" : "text-17"} style={fontStyle}>
+      <span className={large ? "text-sm @6xl/mock:text-22" : "text-17"} style={fontStyle}>
         {storeName}
       </span>
     </div>
@@ -329,10 +329,10 @@ function InstaPost({ storeName, menu, fontStyle, colors, large }: MockupProps & 
 }
 
 /** 인스타그램 · 휴대폰 */
-export function InstaScene(props: MockupProps) {
+export function InstaScene(props: MockupProps & { fill?: boolean }) {
   return (
-    <div className="relative grid h-[22.5rem] place-items-center overflow-hidden rounded-2xl bg-[#E4E0D9] @6xl/mock:h-full @6xl/mock:rounded-none">
-      <div className={`h-[18.75rem] w-[11.25rem] -translate-y-3.5 rounded-[1.75rem] bg-ink p-[0.4375rem] @6xl/mock:h-[31.875rem] @6xl/mock:w-[15.625rem] @6xl/mock:-translate-y-6 @6xl/mock:rounded-[2.5rem] @6xl/mock:p-2.5 ${SHADOW}`}>
+    <div className={`relative grid place-items-center overflow-hidden bg-[#E4E0D9] ${props.fill ? "h-full rounded-[1.25rem]" : "h-[22.5rem] rounded-2xl @6xl/mock:h-full @6xl/mock:rounded-none"}`}>
+      <div className={`h-[18.75rem] w-[11.25rem] -translate-y-3.5 rounded-[1.75rem] bg-bg-inverse p-[0.4375rem] @6xl/mock:h-[31.875rem] @6xl/mock:w-[15.625rem] @6xl/mock:-translate-y-6 @6xl/mock:rounded-[2.5rem] @6xl/mock:p-2.5 ${SHADOW}`}>
         <div className="h-full w-full overflow-hidden rounded-[1.375rem] bg-white @6xl/mock:rounded-[2rem]">
           <div className="h-[1.625rem] @6xl/mock:h-10" />
           <div className="flex items-center gap-1.5 px-2.5 py-1 @6xl/mock:gap-2 @6xl/mock:px-3 @6xl/mock:py-2">
@@ -340,9 +340,9 @@ export function InstaScene(props: MockupProps) {
               // eslint-disable-next-line @next/next/no-img-element -- 사용자가 올린 data URL
               <img src={props.logo} alt="" className="h-[1.375rem] w-[1.375rem] rounded-full object-cover object-left @6xl/mock:h-[1.875rem] @6xl/mock:w-[1.875rem]" />
             ) : (
-              <span className="h-[1.375rem] w-[1.375rem] rounded-full bg-stage @6xl/mock:h-[1.875rem] @6xl/mock:w-[1.875rem]" />
+              <span className="h-[1.375rem] w-[1.375rem] rounded-full bg-bg-surface-strong @6xl/mock:h-[1.875rem] @6xl/mock:w-[1.875rem]" />
             )}
-            <span className="text-13 font-bold text-ink">{props.storeName}</span>
+            <span className="text-13 font-bold text-text-primary">{props.storeName}</span>
           </div>
           <InstaPost {...props} large />
         </div>
@@ -373,7 +373,7 @@ function CompareRow({ label, muted, props }: { label: string; muted?: boolean; p
   const c = palette(props.colors);
   return (
     <>
-      <div className={`flex items-center text-base leading-snug font-bold ${muted ? "text-muted" : ""} max-lg:pt-2`}>{label}</div>
+      <div className={`flex items-center text-base leading-snug font-bold ${muted ? "text-text-secondary" : ""} max-lg:pt-2`}>{label}</div>
       <CompareCell className="bg-[linear-gradient(#D7D1C7,#B9B1A4)]">
         <div className={`grid h-[7.5rem] w-[84%] place-items-center rounded-lg [container-type:inline-size] ${SHADOW}`} style={{ background: c.main }}>
           <span className="leading-none" style={{ ...props.fontStyle, ...fit(props.storeName, 76), color: c.onMain }}>
@@ -399,6 +399,119 @@ export function CompareStage({ fontName, ...props }: MockupProps & { fontName: s
     <div className="grid gap-2 lg:h-full lg:grid-cols-[7rem_1.2fr_1fr_0.9fr] lg:grid-rows-2">
       <CompareRow label={fontName} props={props} />
       <CompareRow label="기본 고딕" muted props={{ ...props, fontStyle: BASE_GOTHIC_STYLE }} />
+    </div>
+  );
+}
+
+// ---------- 11/5 DESIGN.md 8-2 ----------
+
+type SceneKey = "sign" | "menu" | "insta";
+const SCENES: { key: SceneKey; label: string }[] = [
+  { key: "sign", label: "간판" },
+  { key: "menu", label: "메뉴판" },
+  { key: "insta", label: "인스타" },
+];
+
+function Scene({ kind, ...props }: MockupProps & { kind: SceneKey }) {
+  if (kind === "menu") return <MenuScene {...props} fill />;
+  if (kind === "insta") return <InstaScene {...props} fill />;
+  return <SignScene {...props} fill />;
+}
+
+/** 밀어서 비교: 같은 시안 두 장을 겹치고 위 장(내 폰트)을 clip-path로 잘라 보인다. 손잡이를 끌거나 화살표 키로 5%씩 옮긴다. */
+export function CompareSlider({ top, bottom, topLabel, bottomLabel }: { top: ReactNode; bottom: ReactNode; topLabel: string; bottomLabel: string }) {
+  const [pos, setPos] = useState(50);
+  const box = useRef<HTMLDivElement>(null);
+  const move = (e: PointerEvent<HTMLDivElement>) => {
+    const r = box.current?.getBoundingClientRect();
+    if (r) setPos(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+  };
+  const keys = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const step = e.key === "ArrowLeft" ? -5 : e.key === "ArrowRight" ? 5 : 0;
+    if (!step) return;
+    e.preventDefault();
+    setPos((v) => Math.min(100, Math.max(0, v + step)));
+  };
+  return (
+    <div
+      ref={box}
+      className="relative h-full touch-pan-y overflow-hidden rounded-[1.25rem] select-none"
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        move(e);
+      }}
+      onPointerMove={(e) => e.buttons && move(e)}
+    >
+      <div className="absolute inset-0">{bottom}</div>
+      <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        {top}
+      </div>
+      <span className="pointer-events-none absolute top-3 left-3 rounded-full bg-bg-inverse px-3 py-1 text-13 font-bold text-text-inverse">{topLabel}</span>
+      <span className="pointer-events-none absolute top-3 right-3 rounded-full bg-bg-canvas px-3 py-1 text-13 font-bold">{bottomLabel}</span>
+      <div className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-bg-canvas shadow-[0_0_0_1px_rgb(20_20_20/0.25)]" style={{ left: `${pos}%` }} />
+      <button
+        type="button"
+        role="slider"
+        aria-label="내 폰트와 기본 고딕 비교"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(pos)}
+        aria-valuetext={`내 폰트 ${Math.round(pos)}%`}
+        onKeyDown={keys}
+        className="absolute top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize place-items-center rounded-full border-2 border-border-active bg-bg-canvas shadow-float"
+        style={{ left: `${pos}%` }}
+      >
+        <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M9 7l-5 5 5 5M15 7l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/** 시안 탭: 간판·메뉴판·인스타를 하나씩. 무대 높이는 탭을 바꿔도 같다. '기본 고딕과 비교'를 켜면 밀어서 비교로 바뀐다. */
+export function MockupTabs({ fontName, ...props }: MockupProps & { fontName: string }) {
+  const [kind, setKind] = useState<SceneKey>("sign");
+  const [compare, setCompare] = useState(false);
+  const chip = (on: boolean) =>
+    `inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-15 transition-colors ${
+      on ? "border-2 border-border-active bg-bg-canvas pl-3 font-bold" : "border-[1.5px] border-border-default font-semibold hover:border-border-active hover:bg-bg-surface"
+    }`;
+  const check = (
+    <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0">
+      <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="시안 종류" className="flex flex-wrap gap-2">
+          {SCENES.map((t) => (
+            <button key={t.key} type="button" aria-pressed={kind === t.key} onClick={() => setKind(t.key)} className={chip(kind === t.key)}>
+              {kind === t.key && check}
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <button type="button" aria-pressed={compare} onClick={() => setCompare(!compare)} className={`${chip(compare)} sm:ml-auto`}>
+          {compare && check}
+          기본 고딕과 비교
+        </button>
+      </div>
+      <div className="@container/mock">
+        <div className="h-[22.5rem] @2xl/mock:h-[30rem]">
+          {compare ? (
+            <CompareSlider
+              topLabel={fontName}
+              bottomLabel="기본 고딕"
+              top={<Scene kind={kind} {...props} />}
+              bottom={<Scene kind={kind} {...props} fontStyle={BASE_GOTHIC_STYLE} />}
+            />
+          ) : (
+            <Scene kind={kind} {...props} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

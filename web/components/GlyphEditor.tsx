@@ -621,14 +621,14 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="flex max-h-full w-full flex-col overflow-hidden bg-bg outline-none lg:max-w-[70rem] lg:rounded-[1.25rem] lg:shadow-[0_30px_80px_-30px_rgba(17,17,17,.6)]"
+        className="flex max-h-full w-full flex-col overflow-hidden bg-bg-canvas outline-none lg:max-w-[70rem] lg:rounded-[1.25rem] lg:shadow-float"
       >
-        <div className="flex items-center gap-3 border-b border-line px-5 py-3.5 lg:px-6">
+        <div className="flex items-center gap-3 border-b border-border-default px-5 py-3.5 lg:px-6">
           <h2 className="text-lg font-extrabold lg:text-xl">{title}</h2>
-          <span className="hidden text-sm font-medium text-muted lg:inline">
+          <span className="hidden text-sm font-medium text-text-secondary lg:inline">
             {toolLabel} · {tool === "select" ? (floating ? "끌어서 옮기고 Enter로 내려놓기 · Delete로 지우기" : "옮길 부분을 네모로 둘러싸기") : `굵기 ${size}px`}
           </span>
-          <button type="button" onClick={requestClose} aria-label="닫기" className="ml-auto grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-stage">
+          <button type="button" onClick={requestClose} aria-label="닫기" className="ml-auto grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-bg-surface-strong">
             <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -637,7 +637,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[6rem_minmax(0,1fr)_15rem] lg:overflow-hidden">
           {/* 도구 */}
-          <div role="toolbar" aria-label="도구" className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-line px-4 py-2.5 lg:flex-col lg:overflow-y-auto lg:border-r lg:border-b-0 lg:px-2.5 lg:py-3">
+          <div role="toolbar" aria-label="도구" className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border-default px-4 py-2.5 lg:flex-col lg:overflow-y-auto lg:border-r lg:border-b-0 lg:px-2.5 lg:py-3">
             {TOOLS.map((t) => (
               <button
                 key={t.key}
@@ -648,8 +648,8 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                   commitFloating();
                   setTool(t.key);
                 }}
-                className={`flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold transition-colors duration-150 ${
-                  tool === t.key ? "bg-ink text-bg" : "text-ink hover:bg-stage"
+                className={`flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-xs font-bold transition-colors duration-150 ${
+                  tool === t.key ? "bg-bg-inverse text-text-inverse" : "text-text-primary hover:bg-bg-surface-strong"
                 }`}
               >
                 <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -658,13 +658,13 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                 <span className="whitespace-nowrap">{t.label}</span>
               </button>
             ))}
-            <span aria-hidden className="mx-1 w-px shrink-0 bg-line lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
+            <span aria-hidden className="mx-1 w-px shrink-0 bg-border-default lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
             <button
               type="button"
               onClick={doUndo}
               disabled={history.undo === 0}
               title="되돌리기 (⌘Z)"
-              className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold hover:bg-stage disabled:text-muted disabled:hover:bg-transparent"
+              className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-xs font-bold hover:bg-bg-surface-strong disabled:text-text-disabled disabled:hover:bg-transparent"
             >
               <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5">
                 <path d="M7 4.5L3.5 8 7 11.5M4 8h8a4 4 0 010 8H8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -676,7 +676,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
               onClick={doRedo}
               disabled={history.redo === 0}
               title="다시 하기 (⇧⌘Z)"
-              className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold hover:bg-stage disabled:text-muted disabled:hover:bg-transparent"
+              className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-xs font-bold hover:bg-bg-surface-strong disabled:text-text-disabled disabled:hover:bg-transparent"
             >
               <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5">
                 <path d="M13 4.5L16.5 8 13 11.5M16 8H8a4 4 0 000 8h4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -686,7 +686,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
           </div>
 
           {/* 그림 */}
-          <div className="flex shrink-0 flex-col items-center gap-3 bg-stage px-4 py-4 lg:min-h-0 lg:shrink lg:px-6">
+          <div className="flex shrink-0 flex-col items-center gap-3 bg-bg-surface-strong px-4 py-4 lg:min-h-0 lg:shrink lg:px-6">
             <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-semibold">
               <label className="flex items-center gap-2">
                 굵기
@@ -702,7 +702,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                 />
                 <span className="w-12 tabular-nums">{size}px</span>
               </label>
-              <div role="radiogroup" aria-label="칠할 색" className="flex items-center gap-1 rounded-full bg-bg p-1" title="색 바꾸기 (X)">
+              <div role="radiogroup" aria-label="칠할 색" className="flex items-center gap-1 rounded-full bg-bg-canvas p-1" title="색 바꾸기 (X)">
                 {[
                   { on: true, label: "검정" },
                   { on: false, label: "흰색" },
@@ -714,15 +714,15 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                     aria-checked={ink === c.on}
                     onClick={() => setInk(c.on)}
                     disabled={tool === "eraser" || tool === "select"}
-                    className={`flex h-8 items-center gap-1.5 rounded-full px-3 transition-colors disabled:text-muted ${ink === c.on && tool !== "eraser" ? "bg-stage font-bold" : "font-medium"}`}
+                    className={`flex h-8 items-center gap-1.5 rounded-full px-3 transition-colors disabled:text-text-disabled ${ink === c.on && tool !== "eraser" ? "bg-bg-surface-strong font-bold" : "font-medium"}`}
                   >
-                    <span aria-hidden className={`h-3.5 w-3.5 rounded-full border-[1.5px] border-ink ${c.on ? "bg-ink" : "bg-bg"}`} />
+                    <span aria-hidden className={`h-3.5 w-3.5 rounded-full border-[1.5px] border-border-active ${c.on ? "bg-bg-inverse" : "bg-bg-canvas"}`} />
                     {c.label}
                   </button>
                 ))}
               </div>
               {SHAPE_TOOLS.has(tool) && (
-                <div role="radiogroup" aria-label="도형" className="flex items-center gap-1 rounded-full bg-bg p-1">
+                <div role="radiogroup" aria-label="도형" className="flex items-center gap-1 rounded-full bg-bg-canvas p-1">
                   {[
                     { on: true, label: "채우기" },
                     { on: false, label: "선만" },
@@ -733,7 +733,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                       role="radio"
                       aria-checked={filled === c.on}
                       onClick={() => setFilled(c.on)}
-                      className={`h-8 rounded-full px-3 transition-colors ${filled === c.on ? "bg-stage font-bold" : "font-medium"}`}
+                      className={`h-8 rounded-full px-3 transition-colors ${filled === c.on ? "bg-bg-surface-strong font-bold" : "font-medium"}`}
                     >
                       {c.label}
                     </button>
@@ -745,13 +745,13 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
             <div className="w-full flex-1 overflow-auto lg:min-h-0">
               <div className="mx-auto" style={{ width: `min(${560 * zoom}px, ${100 * zoom}%)` }}>
                 {!source ? (
-                  <div className="grid aspect-square w-full place-items-center rounded-xl bg-bg">
+                  <div className="grid aspect-square w-full place-items-center rounded-[0.875rem] bg-bg-canvas">
                     {loadError ? <Notice tone="error">글자를 불러오지 못했어요: {loadError}</Notice> : <Spinner label="글자를 불러오는 중" />}
                   </div>
                 ) : (
                   <div
                     ref={wrapRef}
-                    className="relative aspect-square w-full touch-none overflow-hidden rounded-xl bg-bg shadow-[0_0_0_1px_rgba(17,17,17,.08)] select-none"
+                    className="relative aspect-square w-full touch-none overflow-hidden rounded-[0.875rem] bg-bg-canvas shadow-[0_0_0_1px_rgba(17,17,17,.08)] select-none"
                     style={{ cursor: cursorStyle }}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
@@ -838,10 +838,10 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
           </div>
 
           {/* 보기·미리보기 */}
-          <div className="flex shrink-0 flex-col gap-4 border-t border-line px-5 py-4 lg:shrink lg:overflow-y-auto lg:border-t-0 lg:border-l">
+          <div className="flex shrink-0 flex-col gap-4 border-t border-border-default px-5 py-4 lg:shrink lg:overflow-y-auto lg:border-t-0 lg:border-l">
             <section className="flex flex-col gap-2">
-              <h3 className="text-sm font-bold text-muted">실제 크기</h3>
-              <div className="flex items-end gap-3 rounded-xl bg-subtle px-3 py-3">
+              <h3 className="text-sm font-bold text-text-secondary">실제 크기</h3>
+              <div className="flex items-end gap-3 rounded-[0.875rem] bg-bg-surface px-3 py-3">
                 {[72, 40, 22].map((px) =>
                   previewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- 편집 중인 그림
@@ -853,18 +853,18 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
               </div>
             </section>
             <section className="flex flex-col gap-1.5">
-              <h3 className="text-sm font-bold text-muted">보기</h3>
+              <h3 className="text-sm font-bold text-text-secondary">보기</h3>
               {guides && <Toggle checked={showGuides} onChange={setShowGuides} label="글자 틀" />}
               {source?.ghost && <Toggle checked={showGhost} onChange={setShowGhost} label={ghostLabel} />}
               <div className="flex items-center gap-2 pt-1 text-sm font-semibold">
                 확대
-                <div className="flex items-center rounded-full bg-stage p-1">
+                <div className="flex items-center rounded-full bg-bg-surface-strong p-1">
                   <button
                     type="button"
                     aria-label="축소"
                     disabled={zoom === ZOOMS[0]}
                     onClick={() => setZoom(ZOOMS[ZOOMS.indexOf(zoom) - 1])}
-                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg disabled:text-muted disabled:hover:bg-transparent"
+                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg-canvas disabled:text-text-disabled disabled:hover:bg-transparent"
                   >
                     −
                   </button>
@@ -874,7 +874,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                     aria-label="확대"
                     disabled={zoom === ZOOMS[ZOOMS.length - 1]}
                     onClick={() => setZoom(ZOOMS[ZOOMS.indexOf(zoom) + 1])}
-                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg disabled:text-muted disabled:hover:bg-transparent"
+                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg-canvas disabled:text-text-disabled disabled:hover:bg-transparent"
                   >
                     +
                   </button>
@@ -882,7 +882,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
               </div>
             </section>
             <section className="flex flex-col items-start gap-1.5">
-              <h3 className="text-sm font-bold text-muted">처음으로</h3>
+              <h3 className="text-sm font-bold text-text-secondary">처음으로</h3>
               <Button variant="outline" size="sm" className="h-9 px-4 text-sm" onClick={resetToStart} disabled={!source}>
                 편집 전으로
               </Button>
@@ -890,13 +890,13 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                 모두 지우기
               </Button>
             </section>
-            <p className="mt-auto hidden text-13 leading-relaxed font-medium text-muted lg:block">
+            <p className="mt-auto hidden text-13 leading-relaxed font-medium text-text-secondary lg:block">
               B 붓 · E 지우개 · L 직선 · R 네모 · O 동그라미 · G 채우기 · M 선택 · X 색 바꾸기 · [ ] 굵기 · ⌘Z 되돌리기 · Shift 반듯하게
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2.5 border-t border-line px-5 py-3.5 lg:flex-row lg:items-center lg:px-6">
+        <div className="flex flex-col gap-2.5 border-t border-border-default px-5 py-3.5 lg:flex-row lg:items-center lg:px-6">
           {confirmClose ? (
             <span className="flex flex-wrap items-center gap-2">
               <span className="text-15 font-medium">고친 내용이 사라져요.</span>
@@ -908,7 +908,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
               </Button>
             </span>
           ) : error ? (
-            <span role="alert" className="text-15 font-semibold text-bad">
+            <span role="alert" className="text-15 font-semibold text-text-error">
               {error}
             </span>
           ) : (

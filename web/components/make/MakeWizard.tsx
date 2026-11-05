@@ -8,10 +8,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { InAppNotice, useGoogleSignIn } from "@/components/GoogleSignIn";
 import { Steps } from "@/components/fonts/Making";
-import { Notice, RadioRow, TextField, onRadioKeys, rovingTab } from "@/components/ui";
+import { Chip, Notice, RadioRow, TextField, onRadioKeys, rovingTab } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { authClient } from "@/lib/authClient";
-import { ATTRIBUTE_PAIRS, INDUSTRIES, INDUSTRY_GROUPS, LOGO_SOURCES } from "@/lib/constants";
+import { ATTRIBUTE_PAIRS, BRAND_TONES, INDUSTRIES, INDUSTRY_GROUPS, LOGO_SOURCES, USAGE_CONTEXTS } from "@/lib/constants";
 import { ATTRIBUTE_GLYPHS } from "@/lib/attributeGlyphs";
 import { MAKE_STEPS, firstOpenStep, stepDone, type MakeStep } from "@/lib/makeSteps";
 import { clearDraft, loadDraft, saveDraft, type NewDraft } from "@/lib/newDraft";
@@ -64,12 +64,12 @@ function Wizard({ step, initial }: { step: MakeStep; initial: NewDraft }) {
     <div className="mx-auto flex w-full max-w-[44rem] flex-col gap-7 px-5 pt-8 pb-16 lg:pt-12">
       <Steps current={step === "rights" ? 2 : 1} />
       <div className="flex flex-col gap-2">
-        <span className="text-15 font-bold text-muted">
+        <span className="text-15 font-bold text-text-secondary">
           {upload.storeName.trim()}
-          {step !== "rights" && ` · 느낌 ${index + 1}/3`}
+          {step !== "rights" && ` · 스타일 ${index + 1}/3`}
         </span>
         <h1 className="text-26 font-extrabold lg:text-32">{title}</h1>
-        <p className="text-17 leading-normal font-medium text-muted">{sub}</p>
+        <p className="text-17 leading-normal font-medium text-text-secondary">{sub}</p>
       </div>
 
       {step === "industry" && <IndustryStep upload={upload} setUpload={setUpload} />}
@@ -80,11 +80,11 @@ function Wizard({ step, initial }: { step: MakeStep; initial: NewDraft }) {
       {step !== "rights" && (
         <div className="flex items-center justify-between gap-3 pt-2">
           {prev ? (
-            <button type="button" onClick={() => go(prev)} className="h-12 rounded-full border-[1.5px] border-edge bg-bg px-6 text-15 font-bold transition-colors hover:border-ink hover:bg-subtle">
+            <button type="button" onClick={() => go(prev)} className="h-12 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-6 text-15 font-bold transition-colors hover:border-border-active hover:bg-bg-surface">
               이전
             </button>
           ) : (
-            <button type="button" onClick={() => router.push("/")} className="h-12 rounded-full border-[1.5px] border-edge bg-bg px-6 text-15 font-bold transition-colors hover:border-ink hover:bg-subtle">
+            <button type="button" onClick={() => router.push("/")} className="h-12 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-6 text-15 font-bold transition-colors hover:border-border-active hover:bg-bg-surface">
               처음으로
             </button>
           )}
@@ -92,7 +92,7 @@ function Wizard({ step, initial }: { step: MakeStep; initial: NewDraft }) {
             type="button"
             disabled={!ready}
             onClick={() => next && go(next)}
-            className="h-12 rounded-full bg-ink px-8 text-15 font-bold text-bg transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+            className="h-12 rounded-full bg-bg-inverse px-8 text-15 font-bold text-text-inverse transition-colors hover:bg-bg-inverse-hover disabled:cursor-not-allowed disabled:bg-bg-disabled disabled:text-text-disabled"
           >
             다음
           </button>
@@ -134,10 +134,10 @@ function IndustryStep({ upload, setUpload }: StepProps) {
           else setUpload({ industry: null, industryOther: "" });
         }}
       />
-      <div role="listbox" aria-label="업종 목록" className="max-h-[19rem] overflow-y-auto overscroll-contain rounded-2xl border-[1.5px] border-line bg-bg">
+      <div role="listbox" aria-label="업종 목록" className="max-h-[19rem] overflow-y-auto overscroll-contain rounded-[1.25rem] border-[1.5px] border-border-default bg-bg-canvas">
         {groups.map((g) => (
           <div key={g.label} role="group" aria-label={g.label}>
-            <div className="sticky top-0 z-[1] bg-subtle px-4 py-1.5 text-12 font-bold text-muted">{g.label}</div>
+            <div className="sticky top-0 z-[1] bg-bg-surface px-4 py-1.5 text-12 font-bold text-text-secondary">{g.label}</div>
             {g.items.map((i) => {
               const on = upload.industry === i.value;
               return (
@@ -150,10 +150,10 @@ function IndustryStep({ upload, setUpload }: StepProps) {
                     setQuery(i.label);
                     setUpload({ industry: i.value, industryOther: "" });
                   }}
-                  className={`flex min-h-12 w-full items-center justify-between gap-3 border-t border-line px-4 text-left text-16 transition-colors first:border-t-0 hover:bg-subtle ${on ? "bg-subtle font-bold" : "font-medium"}`}
+                  className={`flex min-h-12 w-full items-center justify-between gap-3 border-t border-border-default px-4 text-left text-16 transition-colors first:border-t-0 hover:bg-bg-surface ${on ? "bg-bg-surface font-bold" : "font-medium"}`}
                 >
                   {i.label}
-                  {on && <span className="text-13 font-bold text-muted">선택됨</span>}
+                  {on && <span className="text-13 font-bold text-text-secondary">선택됨</span>}
                 </button>
               );
             })}
@@ -165,15 +165,15 @@ function IndustryStep({ upload, setUpload }: StepProps) {
             role="option"
             aria-selected={upload.industry === "other"}
             onClick={() => setUpload({ industry: "other", industryOther: q.slice(0, INDUSTRY_OTHER_MAX) })}
-            className={`flex min-h-12 w-full items-center justify-between gap-3 border-t border-line px-4 text-left text-16 hover:bg-subtle ${upload.industry === "other" ? "bg-subtle font-bold" : "font-bold"}`}
+            className={`flex min-h-12 w-full items-center justify-between gap-3 border-t border-border-default px-4 text-left text-16 hover:bg-bg-surface ${upload.industry === "other" ? "bg-bg-surface font-bold" : "font-bold"}`}
           >
             <span className="min-w-0 truncate">&lsquo;{q}&rsquo; 직접 쓰기</span>
-            {upload.industry === "other" && <span className="text-13 font-bold text-muted">선택됨</span>}
+            {upload.industry === "other" && <span className="text-13 font-bold text-text-secondary">선택됨</span>}
           </button>
         )}
-        {groups.length === 0 && !own && <p className="px-4 py-3 text-15 text-muted">맞는 업종이 없어요. 위 칸에 직접 적어 주세요.</p>}
+        {groups.length === 0 && !own && <p className="px-4 py-3 text-15 text-text-secondary">맞는 업종이 없어요. 위 칸에 직접 적어 주세요.</p>}
       </div>
-      <p className="text-13 text-muted">목록에 없으면 위 칸에 직접 적으세요. 최대 {INDUSTRY_OTHER_MAX}자예요.</p>
+      <p className="text-13 text-text-secondary">목록에 없으면 위 칸에 직접 적으세요. 최대 {INDUSTRY_OTHER_MAX}자예요.</p>
     </div>
   );
 }
@@ -188,7 +188,7 @@ function BusinessStep({ upload, setUpload }: StepProps) {
       <label htmlFor="make-feel" className="sr-only">
         사업 내용과 추구하는 가치
       </label>
-      <div className={`flex flex-col rounded-[1.25rem] border-2 bg-bg transition-shadow focus-within:shadow-[0_0_0_4px_rgb(17_17_17/0.1)] ${rejected ? "border-bad" : "border-ink"}`}>
+      <div className={`flex flex-col rounded-[1.25rem] border-2 bg-bg-canvas transition-shadow focus-within:shadow-[0_0_0_4px_rgb(17_17_17/0.1)] ${rejected ? "border-border-error" : "border-border-active"}`}>
         <textarea
           id="make-feel"
           rows={6}
@@ -196,19 +196,69 @@ function BusinessStep({ upload, setUpload }: StepProps) {
           value={upload.desiredFeel}
           onChange={(e) => setUpload({ desiredFeel: e.target.value })}
           placeholder="예: 고양이의 우아하고 유연한 곡선과 집사와의 따뜻한 교감, 정직하고 건강한 수제 간식의 가치를 담은 브랜드예요."
-          className="w-full resize-none rounded-t-[1.125rem] bg-transparent px-5 pt-4 text-18 leading-normal font-semibold outline-none placeholder:font-medium placeholder:text-muted focus-visible:shadow-none"
+          className="w-full resize-none rounded-t-[1.125rem] bg-transparent px-5 pt-4 text-17 leading-normal font-semibold outline-none placeholder:font-medium placeholder:text-text-secondary focus-visible:shadow-none"
         />
-        <div className="flex items-center justify-between px-5 pt-2 pb-3.5 font-mono text-13 text-muted">
+        <div className="flex items-center justify-between px-5 pt-2 pb-3.5 font-mono text-13 text-text-secondary">
           <span>{length < BUSINESS_MIN ? `${BUSINESS_MIN}자 이상 적어 주세요` : "좋아요"}</span>
           <span>
             {length}/{DESIRED_FEEL_MAX}
           </span>
         </div>
       </div>
+      <ChipGroup
+        label="어디에 쓰세요? (여러 개 골라도 돼요)"
+        options={USAGE_CONTEXTS}
+        picked={upload.usageContexts}
+        onChange={(usageContexts) => setUpload({ usageContexts })}
+      />
+      <ChipGroup
+        label="어떤 분위기를 원하세요? (세 개까지)"
+        options={BRAND_TONES}
+        picked={upload.brandTones}
+        max={3}
+        onChange={(brandTones) => setUpload({ brandTones })}
+      />
       {rejected && (
         <Notice tone="error">특정 폰트(○○체, ○○폰트 등)를 따라 하는 요청은 받지 않아요. &quot;둥글고 통통한&quot;처럼 원하는 모양을 말로 적어 주세요.</Notice>
       )}
     </div>
+  );
+}
+
+// 선택 입력: 체크 칩. 비워도 다음으로 간다.
+function ChipGroup<T extends string>({
+  label,
+  options,
+  picked,
+  max,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  picked: T[];
+  max?: number;
+  onChange: (next: T[]) => void;
+}) {
+  const full = max !== undefined && picked.length >= max;
+  return (
+    <fieldset className="mt-3 flex flex-col gap-2">
+      <legend className="mb-2 text-13 font-bold">{label}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => {
+          const on = picked.includes(o.value);
+          return (
+            <Chip
+              key={o.value}
+              selected={on}
+              disabled={!on && full}
+              onClick={() => onChange(on ? picked.filter((v) => v !== o.value) : [...picked, o.value])}
+            >
+              {o.label}
+            </Chip>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 
@@ -219,7 +269,7 @@ const GLYPH_KEYS: Record<string, string> = { round: "roundEdge", sharp: "sharpEd
 function GlyphMark({ id }: { id: string }) {
   const g = ATTRIBUTE_GLYPHS[GLYPH_KEYS[id]];
   return (
-    <svg aria-hidden viewBox="0 0 100 100" className="h-16 w-16 text-ink">
+    <svg aria-hidden viewBox="0 0 100 100" className="h-16 w-16 text-text-primary">
       <path d={g.d} transform={g.transform} fill="currentColor" />
     </svg>
   );
@@ -244,8 +294,8 @@ function StyleStep({ upload, setUpload }: StepProps) {
                   aria-checked={selected}
                   tabIndex={rovingTab(selected, i === 0, !!a?.[pair.key])}
                   onClick={() => pick(pair.key, o.value)}
-                  className={`flex flex-col items-center gap-1 rounded-2xl px-3 py-3 transition-colors ${
-                    selected ? "border-2 border-ink bg-subtle" : "border-[1.5px] border-edge bg-bg hover:border-ink hover:bg-subtle"
+                  className={`flex flex-col items-center gap-1 rounded-[1.25rem] px-3 py-3 transition-colors ${
+                    selected ? "border-2 border-border-active bg-bg-surface" : "border-[1.5px] border-border-strong bg-bg-canvas hover:border-border-active hover:bg-bg-surface"
                   }`}
                 >
                   <GlyphMark id={o.value} />
@@ -256,7 +306,7 @@ function StyleStep({ upload, setUpload }: StepProps) {
           </div>
         </div>
       ))}
-      <p className="text-13 text-muted">그림은 모양을 설명하는 예시예요. 완성 글자는 로고와 사업 내용을 보고 새로 그려요.</p>
+      <p className="text-13 text-text-secondary">그림은 모양을 설명하는 예시예요. 완성 글자는 로고와 사업 내용을 보고 새로 그려요.</p>
     </div>
   );
 }
@@ -318,19 +368,19 @@ function RightsStep({ upload, setUpload, onBack, onCreated }: StepProps & { onBa
       {signIn.inApp && <InAppNotice app={signIn.inApp} />}
       {signIn.problem && <Notice tone="error">{signIn.problem}</Notice>}
       <div className="flex items-center justify-between gap-3 pt-2">
-        <button type="button" onClick={onBack} disabled={submitting} className="h-12 rounded-full border-[1.5px] border-edge bg-bg px-6 text-15 font-bold transition-colors hover:border-ink hover:bg-subtle disabled:opacity-50">
+        <button type="button" onClick={onBack} disabled={submitting} className="h-12 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-6 text-15 font-bold transition-colors hover:border-border-active hover:bg-bg-surface disabled:opacity-50">
           이전
         </button>
         <button
           type="button"
           disabled={!ready || submitting || signIn.starting}
           onClick={() => void submit()}
-          className="h-12 rounded-full bg-ink px-8 text-15 font-bold text-bg transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+          className="h-12 rounded-full bg-bg-inverse px-8 text-15 font-bold text-text-inverse transition-colors hover:bg-bg-inverse-hover disabled:cursor-not-allowed disabled:bg-bg-disabled disabled:text-text-disabled"
         >
           {label}
         </button>
       </div>
-      <p className="text-13 leading-normal text-muted">
+      <p className="text-13 leading-normal text-text-secondary">
         {!session && !isPending && "Google 계정으로 로그인하면 바로 시작해요. "}로고를 읽고 느낌 세 가지를 보여 드려요. 창을 닫아도 서버가 기다리고 메일로 알려 드려요.
       </p>
     </div>

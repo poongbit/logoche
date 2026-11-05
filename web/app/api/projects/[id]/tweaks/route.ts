@@ -5,7 +5,7 @@ import type { SaveGlyphTweakRequest } from "@/lib/types";
 
 // 11/3 다듬기: 글자 하나(또는 전체 "*")의 조정을 저장한다. 조정 표는 프로젝트 보기(GET /api/projects/[id])의 tweaks에 실려 온다.
 // - GET ?char=붕: 그 글자의 조정 기록(최대 100개)
-// - PUT: { char, tweak, note? }. tweak이 null이면 조정을 지운다. 글자 하나는 지금 폰트에 바로 반영(patched), 전체는 rebuild: true
+// - PUT: { char, tweak, note? }. tweak이 null이면 조정을 지운다. 글자 하나는 지금 폰트에 바로 반영(patched), 전체는 바로 폰트를 다시 만든다(rebuild는 늘 false)
 export async function GET(request: Request, ctx: RouteContext<"/api/projects/[id]/tweaks">) {
   return handle(async () => {
     const owner = await requireUser(request);

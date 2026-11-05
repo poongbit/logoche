@@ -1,29 +1,196 @@
-/* 글꼴(SUIT·Noto Sans KR)은 app/layout.tsx의 <link>로 불러온다. CSS @import면 이 파일을 다 받은 뒤에야 받기 시작해 첫 화면이 늦다(11/2 다시 점검). */
+/* 글꼴(SUIT·Noto Sans KR·Black Han Sans)은 app/layout.tsx의 <link>로 불러온다. CSS @import면 이 파일을 다 받은 뒤에야 받기 시작해 첫 화면이 늦다(11/2 다시 점검). */
 @import "tailwindcss";
 
-/* 10/29 Claude Design 'Logoche Final'(C안 확정): 흰 바탕 + 검정 강조 하나. 로고 색은 화면 5 시안과 로고 미리보기에만 쓴다.
-   11/2 메인 화면(YoFont 메인 차용): 화면 바탕은 크림(--paper), 카드·입력칸은 흰색(--bg). 꼬리표·단계 표시에 파랑(--accent)과 고정폭 글씨.
-   대비(크림 바탕): 글자 #111 17:1, 보조 글자 #5C5C5C 6.0:1, 파랑 5.8:1, 테두리 #8A8A8A 3.1:1. 흰 카드 위는 보조 6.7:1·테두리 3.4:1.
-   무대는 크림 위에서도 보이게 한 단계 어둡게 했다(#EBE9E3, 보조 글자 5.5:1, 무대 위 테두리 #767676 3.7:1). */
+/* 11/5 컬러 토큰 적용(1103_컬러 토큰.md, 1103_DESIGN.md). 화면 바탕은 흰색(bg/canvas), 주 버튼은 먹 + 흰 글자, 민트는 '로고체가 일하는 자리'에만.
+   새 코드에는 Semantic 토큰(bg-bg-canvas, text-text-primary …)만 쓴다. 아래 '예전 이름'은 화면을 하나씩 옮기는 동안 남기는 별칭이다. */
+
+/* 로고체 컬러 토큰 (11/3) — Figma 변수 Primitive·Semantic과 이름이 같다. */
+
+/* Primitive: 값 보관용. :root에만 두어 Tailwind 유틸리티(bg-mint-400 등)가 생기지 않게 한다 — 화면에는 Semantic만 쓴다. */
 :root {
-  --paper: #f5f3ee; /* 화면 바탕(크림) */
-  --bg: #ffffff; /* 카드·입력칸 */
-  --ink: #111111;
-  --muted: #5c5c5c;
-  --accent: #2c56c9; /* 꼬리표 점·단계 표시 */
-  --line: #e4e3df; /* 구분선 */
-  --edge: #8a8a8a; /* 칩·버튼·입력칸 테두리 */
-  --edge-stage: #767676; /* 무대 위 테두리 */
-  --stage: #ebe9e3; /* 무대(견본·로고를 놓는 바탕) */
-  --subtle: #f6f6f4; /* 열린 묶음·선택한 행 */
-  --track: #dadad6; /* 슬라이더 길·진행 막대 */
-  --hover: #3a3a3a; /* 주 버튼 호버 */
-  --good: #1e7a46;
-  --bad: #b3261e;
+  --color-white: #ffffff;
+  --color-neutral-50: #f6f6f5;
+  --color-neutral-100: #ececea;
+  --color-neutral-200: #ddddda;
+  --color-neutral-300: #c4c4c0;
+  --color-neutral-400: #9e9e9a;
+  --color-neutral-500: #7a7a77;
+  --color-neutral-600: #5e5e5b;
+  --color-neutral-700: #454543;
+  --color-neutral-800: #2e2e2d;
+  --color-neutral-900: #1c1c1c;
+  --color-neutral-950: #141414;
+  --color-mint-50: #effdf8;
+  --color-mint-100: #dffaf2;
+  --color-mint-200: #b8f3e1;
+  --color-mint-300: #7feacb;
+  --color-mint-400: #36e0b0;
+  --color-mint-500: #1fc496;
+  --color-mint-600: #139d78;
+  --color-mint-700: #0a7558;
+  --color-mint-800: #0b5a45;
+  --color-mint-900: #19352d;
+  --color-mint-950: #10231e;
+  --color-green-50: #effaea;
+  --color-green-100: #daf3cf;
+  --color-green-200: #b5e6a1;
+  --color-green-300: #86d46a;
+  --color-green-400: #5cbf3e;
+  --color-green-500: #3fa224;
+  --color-green-600: #2e831a;
+  --color-green-700: #246615;
+  --color-green-800: #1d4f13;
+  --color-green-900: #1e3318;
+  --color-green-950: #142211;
+  --color-amber-50: #fff8eb;
+  --color-amber-100: #ffeecc;
+  --color-amber-200: #ffdb94;
+  --color-amber-300: #ffc65c;
+  --color-amber-400: #ffb224;
+  --color-amber-500: #f09a00;
+  --color-amber-600: #c27a00;
+  --color-amber-700: #8f5a00;
+  --color-amber-800: #6b4400;
+  --color-amber-900: #3e2c0e;
+  --color-amber-950: #291e0b;
+  --color-red-50: #fef2f1;
+  --color-red-100: #fde1de;
+  --color-red-200: #fbc2bc;
+  --color-red-300: #f6968c;
+  --color-red-400: #f0675c;
+  --color-red-500: #e03c32;
+  --color-red-600: #c02a21;
+  --color-red-700: #9a211a;
+  --color-red-800: #771b16;
+  --color-red-900: #442019;
+  --color-red-950: #2d1512;
+  --color-blue-50: #eff5ff;
+  --color-blue-100: #dce8fe;
+  --color-blue-200: #bad3fd;
+  --color-blue-300: #8bb6fa;
+  --color-blue-400: #5a93f5;
+  --color-blue-500: #3473ea;
+  --color-blue-600: #225bd1;
+  --color-blue-700: #1c47a6;
+  --color-blue-800: #1a3b82;
+  --color-blue-900: #1c2a4a;
+  --color-blue-950: #141d33;
 }
 
-/* 밝은 화면만 쓴다(10/30 사용자 결정). 로고·AI가 그린 글자·견본이 모두 흰 바탕 검은 글씨라, 어두운 모드에서는 화면 절반이 밝은 판으로 남아
-   어색했다. 색은 모두 위 변수로 쓰므로, 나중에 어두운 모드를 넣을 때는 글자 그림을 반전하는 것까지 함께 설계한다. */
+/* Semantic (Light). @theme에 두면 bg-bg-canvas, text-text-primary, border-border-strong 같은 유틸리티가 생긴다. */
+@theme {
+  --color-bg-canvas: var(--color-white);
+  --color-bg-surface: var(--color-neutral-50);
+  --color-bg-surface-strong: var(--color-neutral-100);
+  --color-bg-theme: var(--color-mint-100); /* 11/5 사이트 테마 바탕: 화면 전체 바탕. 흰색(bg/canvas)은 입력칸·카드·무대에만 쓴다. */
+  --color-bg-theme-strong: var(--color-mint-200); /* 제목 띠: 테마 바탕(mint/100)보다 한 단계 진한 mint/200 */
+  --color-bg-inverse: var(--color-neutral-950);
+  --color-bg-inverse-hover: var(--color-neutral-800); /* 11/5 DESIGN.md: 먹 주 버튼 호버 */
+  --color-bg-brand: var(--color-mint-400);
+  --color-bg-brand-hover: var(--color-mint-500);
+  --color-bg-brand-subtle: var(--color-mint-100);
+  --color-bg-success: var(--color-green-600);
+  --color-bg-success-subtle: var(--color-green-100);
+  --color-bg-warning: var(--color-amber-400);
+  --color-bg-warning-subtle: var(--color-amber-100);
+  --color-bg-error: var(--color-red-600);
+  --color-bg-error-subtle: var(--color-red-100);
+  --color-bg-info: var(--color-blue-600);
+  --color-bg-info-subtle: var(--color-blue-100);
+  --color-bg-disabled: var(--color-neutral-100);
+  --color-bg-track: var(--color-neutral-200);
+  --color-text-primary: var(--color-neutral-950);
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-tertiary: var(--color-neutral-500);
+  --color-text-disabled: var(--color-neutral-400);
+  --color-text-inverse: var(--color-white);
+  --color-text-brand: var(--color-mint-700);
+  --color-text-on-brand: var(--color-neutral-950);
+  --color-text-success: var(--color-green-700);
+  --color-text-on-success: var(--color-white);
+  --color-text-warning: var(--color-amber-700);
+  --color-text-on-warning: var(--color-neutral-950);
+  --color-text-error: var(--color-red-600);
+  --color-text-on-error: var(--color-white);
+  --color-text-info: var(--color-blue-600);
+  --color-text-on-info: var(--color-white);
+  --color-border-default: var(--color-neutral-200);
+  --color-border-strong: var(--color-neutral-500);
+  --color-border-active: var(--color-neutral-950);
+  --color-border-brand: var(--color-mint-400);
+  --color-border-focus: var(--color-mint-700);
+  --color-border-success: var(--color-green-600);
+  --color-border-warning: var(--color-amber-600);
+  --color-border-error: var(--color-red-600);
+  --color-border-info: var(--color-blue-600);
+  --color-logo-die-cut: var(--color-neutral-950);
+  --color-logo-word: var(--color-white);
+  --color-logo-tag: var(--color-mint-400);
+  --color-logo-tag-text: var(--color-neutral-950);
+}
+
+/* Semantic (Dark). 지금 화면은 라이트 전용 — 어두운 모드를 켤 때 <html data-theme="dark">로 바꾼다. */
+[data-theme="dark"] {
+  --color-bg-canvas: var(--color-neutral-950);
+  --color-bg-surface: var(--color-neutral-900);
+  --color-bg-surface-strong: var(--color-neutral-800);
+  --color-bg-inverse: var(--color-white);
+  --color-bg-inverse-hover: var(--color-neutral-200);
+  --color-bg-brand-hover: var(--color-mint-300);
+  --color-bg-brand-subtle: var(--color-mint-900);
+  --color-bg-success: var(--color-green-400);
+  --color-bg-success-subtle: var(--color-green-900);
+  --color-bg-warning-subtle: var(--color-amber-900);
+  --color-bg-error: var(--color-red-400);
+  --color-bg-error-subtle: var(--color-red-900);
+  --color-bg-info: var(--color-blue-400);
+  --color-bg-info-subtle: var(--color-blue-900);
+  --color-bg-disabled: var(--color-neutral-800);
+  --color-bg-track: var(--color-neutral-800);
+  --color-text-primary: var(--color-white);
+  --color-text-secondary: var(--color-neutral-400);
+  --color-text-disabled: var(--color-neutral-600);
+  --color-text-inverse: var(--color-neutral-950);
+  --color-text-brand: var(--color-mint-400);
+  --color-text-success: var(--color-green-400);
+  --color-text-on-success: var(--color-neutral-950);
+  --color-text-warning: var(--color-amber-400);
+  --color-text-error: var(--color-red-300);
+  --color-text-on-error: var(--color-neutral-950);
+  --color-text-info: var(--color-blue-300);
+  --color-text-on-info: var(--color-neutral-950);
+  --color-border-default: var(--color-neutral-800);
+  --color-border-active: var(--color-white);
+  --color-border-focus: var(--color-mint-400);
+  --color-border-success: var(--color-green-400);
+  --color-border-warning: var(--color-amber-400);
+  --color-border-error: var(--color-red-400);
+  --color-border-info: var(--color-blue-400);
+  --color-logo-die-cut: var(--color-white);
+  --color-logo-word: var(--color-neutral-950);
+  --color-logo-tag: var(--color-neutral-950);
+  --color-logo-tag-text: var(--color-mint-400);
+}
+
+/* 예전 이름 → 새 토큰 별칭(대응표: 컬러 토큰 문서). 화면을 새 이름으로 옮기면 하나씩 지운다. */
+:root {
+  --paper: var(--color-white); /* 크림 폐기 → 흰 바탕(DESIGN.md 2-1) */
+  --bg: var(--color-white);
+  --ink: var(--color-neutral-950);
+  --muted: var(--color-neutral-600);
+  --accent: var(--color-mint-700); /* 파랑 폐기: 꼬리표 점·강조 글자 → text/brand */
+  --line: var(--color-neutral-200);
+  --edge: var(--color-neutral-500);
+  --edge-stage: var(--color-neutral-500);
+  --stage: var(--color-neutral-100);
+  --subtle: var(--color-neutral-50);
+  --track: var(--color-neutral-200);
+  --hover: var(--color-neutral-800); /* bg/inverse-hover */
+  --good: var(--color-green-700);
+  --bad: var(--color-red-600);
+}
+
+/* 밝은 화면만 쓴다(10/30 사용자 결정). 어두운 모드는 본선(11/9) 뒤에 — 글자 그림이 흰 바탕 PNG를 곱하기로 합성해서 반전 처리가 함께 필요하다. */
 
 @theme inline {
   --color-paper: var(--paper);
@@ -42,26 +209,24 @@
   --color-bad: var(--bad);
   --font-sans: "SUIT", system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-gothic: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  /* 꼬리표·단계·글자 수(11/2). 시스템 고정폭이라 따로 받지 않는다. 한글은 고정폭 글꼴에 없어 SUIT로 넘어간다. */
+  /* 큰 제목 몇 자리(메인 첫 화면, 폰트 완성 순간)에만. 굵기가 하나뿐인 포스터 글꼴이라 매 화면 제목에는 쓰지 않는다. */
+  --font-display: "Black Han Sans", "SUIT", sans-serif;
+  /* 꼬리표·단계·글자 수(11/2). 시스템 고정폭이라 따로 받지 않는다. 11/5 DESIGN.md 11장: 남길지 아직 미정 */
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "SUIT", monospace;
 }
 
-/* 글자 크기(10/30 접근성 검토): rem으로 둬서 브라우저 글자 크기 설정을 따른다. 이름은 기본 크기(16px)일 때의 px 값이다.
-   예전에는 text-[15px]처럼 px로 박아, 글자 크기를 키우면 rem인 text-sm만 커져 위계가 뒤집혔다. */
+/* 글자 크기(10/30 접근성 검토): rem. 이름은 16px 기준 px. 11/5 DESIGN.md 3-1: 18·19·28·30은 쓰지 않는다. */
 @theme {
   --text-10: 0.625rem;
   --text-12: 0.75rem;
   --text-13: 0.8125rem;
   --text-15: 0.9375rem;
   --text-17: 1.0625rem;
-  --text-18: 1.125rem;
-  --text-19: 1.1875rem;
   --text-22: 1.375rem;
   --text-26: 1.625rem;
-  --text-28: 1.75rem;
-  --text-30: 1.875rem;
   --text-32: 2rem;
   --text-36: 2.25rem;
+  --shadow-float: 0 12px 32px rgba(20, 20, 20, 0.16); /* 떠 있는 층(떠오르는 막대·받기 메뉴·모달)에만 */
 }
 
 html {
@@ -71,29 +236,35 @@ html {
 /* 넓은 화면(10/30 사용자 지적: 큰 모니터에서 내용이 가운데 좁게 몰리고 양옆이 비었다). 화면 내용은 최대 90rem(기본 1440px)이고
    글자·간격·크기가 모두 rem이라, 기준 글자 크기를 키우면 디자인 비율 그대로 커진다. %라서 사용자의 브라우저 글자 크기 설정도 따른다.
    화면 폭 기준은 CSS px다(미디어 쿼리는 html 글자 크기에 영향받지 않는다). 테두리 두께와 그림자는 선명하게 px로 둔다. */
-@media (min-width: 1800px) {
+/* 11/5 확대 시험(11/5 오후): 1024px부터 기준 글자 크기를 키운다(전부 rem이라 화면 전체가 비율대로 커진다). 되돌리려면 /tmp/bk/globals.css 또는 아래 값을 100%로. */
+@media (min-width: 1024px) {
   html {
     font-size: 112.5%;
   }
 }
-@media (min-width: 2100px) {
+@media (min-width: 1800px) {
   html {
     font-size: 125%;
   }
 }
-@media (min-width: 2500px) {
+@media (min-width: 2100px) {
   html {
     font-size: 137.5%;
   }
 }
-@media (min-width: 2900px) {
+@media (min-width: 2500px) {
   html {
     font-size: 150%;
   }
 }
+@media (min-width: 2900px) {
+  html {
+    font-size: 162.5%;
+  }
+}
 
 body {
-  background: var(--paper); /* 11/2 크림 바탕: 모든 화면 */
+  background-color: var(--color-bg-theme); /* 11/5 테마 바탕(연한 민트) */
   color: var(--ink);
   caret-color: var(--ink);
   word-break: keep-all;
@@ -106,12 +277,12 @@ body {
   color: var(--bg);
 }
 
-/* 키보드 포커스: 2px #111 테두리 + 2px 흰 틈 (C States) */
-:where(button, a, input, textarea, [role="button"], [tabindex]):focus-visible {
+/* 키보드 포커스: border/focus(mint/700, 흰 바탕 5.7:1) 2px + 2px 흰 틈. 질문 줄(summary)도 같다. */
+:where(button, a, input, textarea, summary, [role="button"], [tabindex]):focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px var(--bg),
-    0 0 0 4px var(--ink);
+    0 0 0 4px var(--color-border-focus);
 }
 
 /* 슬라이더(C States): 길 4px #DADAD6, 채움 #111, 손잡이 20px 흰 바탕 + 2px #111 테두리. --fill에 채운 비율을 넣는다. */
@@ -163,13 +334,13 @@ body {
 .ds-range:focus-visible::-webkit-slider-thumb {
   box-shadow:
     0 0 0 2px var(--bg),
-    0 0 0 4px var(--ink);
+    0 0 0 4px var(--color-border-focus);
 }
 /* 파이어폭스도 키보드로 잡으면 손잡이에 테두리(위에서 입력칸 자체의 테두리를 껐다) */
 .ds-range:focus-visible::-moz-range-thumb {
   box-shadow:
     0 0 0 2px var(--bg),
-    0 0 0 4px var(--ink);
+    0 0 0 4px var(--color-border-focus);
 }
 .ds-range:disabled {
   cursor: not-allowed;

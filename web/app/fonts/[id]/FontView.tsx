@@ -82,9 +82,9 @@ export function FontView() {
     <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
       <Steps current={view.build ? 5 : 4} />
       <div className="flex flex-col gap-2">
-        <span className="text-15 font-bold text-muted">{view.name}</span>
+        <span className="text-15 font-bold text-text-secondary">{view.name}</span>
         <h1 className="text-26 font-extrabold lg:text-32">만들다가 멈췄어요</h1>
-        <p className="text-17 leading-normal font-medium text-muted">{view.error ?? "이유를 알 수 없어요."}</p>
+        <p className="text-17 leading-normal font-medium text-text-secondary">{view.error ?? "이유를 알 수 없어요."}</p>
       </div>
       {error && <Notice tone="error">{error.message}</Notice>}
       <div className="flex flex-wrap gap-3">
@@ -99,7 +99,7 @@ export function FontView() {
               .catch((err) => setError({ message: errorMessage(err), notFound: false }))
               .finally(() => setResuming(false));
           }}
-          className="h-12 rounded-full bg-ink px-6 text-15 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted"
+          className="h-12 rounded-full bg-bg-inverse px-6 text-15 font-bold text-text-inverse hover:bg-bg-inverse-hover disabled:bg-bg-disabled disabled:text-text-disabled"
         >
           {resuming ? "다시 시작하는 중" : "이어서 만들기"}
         </button>
@@ -107,16 +107,16 @@ export function FontView() {
           type="button"
           disabled={resuming || quitting}
           onClick={() => setConfirmQuit(true)}
-          className="h-12 rounded-full border-[1.5px] border-edge px-6 text-15 font-bold hover:border-ink disabled:border-dashed disabled:text-muted"
+          className="h-12 rounded-full border-[1.5px] border-border-strong px-6 text-15 font-bold hover:border-border-active disabled:border-dashed disabled:text-text-disabled"
         >
           그만두기
         </button>
-        <Link href="/fonts" className="inline-flex h-12 items-center rounded-full px-4 text-15 font-bold text-muted underline underline-offset-4 hover:text-ink">
+        <Link href="/fonts" className="inline-flex h-12 items-center rounded-full px-4 text-15 font-bold text-text-secondary underline underline-offset-4 hover:text-text-primary">
           내 폰트로 가기
         </Link>
       </div>
       {confirmQuit && (
-        <InlineConfirm label="그만두기 확인" className="flex flex-col gap-3 rounded-[1.25rem] border-[1.5px] border-ink bg-bg p-5">
+        <InlineConfirm label="그만두기 확인" className="flex flex-col gap-3 rounded-[1.25rem] border-[1.5px] border-border-active bg-bg-canvas p-5">
           <p className="text-15 leading-normal font-bold">이 폰트를 그만둘까요? 그린 글자와 폰트가 모두 지워지고 되돌릴 수 없어요.</p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -132,17 +132,17 @@ export function FontView() {
                     setQuitting(false);
                   });
               }}
-              className="h-11 rounded-full bg-bad px-5 text-15 font-bold text-bg disabled:bg-line disabled:text-muted"
+              className="h-11 rounded-full bg-bg-error px-5 text-15 font-bold text-text-inverse disabled:bg-bg-disabled disabled:text-text-disabled"
             >
               {quitting ? "지우는 중" : "지우고 그만두기"}
             </button>
-            <button type="button" data-autofocus disabled={quitting} onClick={() => setConfirmQuit(false)} className="h-11 rounded-full border-[1.5px] border-edge px-5 text-15 font-bold hover:border-ink">
+            <button type="button" data-autofocus disabled={quitting} onClick={() => setConfirmQuit(false)} className="h-11 rounded-full border-[1.5px] border-border-strong px-5 text-15 font-bold hover:border-border-active">
               계속하기
             </button>
           </div>
         </InlineConfirm>
       )}
-      <p className="text-15 text-muted">이미 그린 글자는 그대로 쓰고, 못 그린 글자만 이어서 그려요.</p>
+      <p className="text-15 text-text-secondary">이미 그린 글자는 그대로 쓰고, 못 그린 글자만 이어서 그려요.</p>
     </div>
   );
 }

@@ -7,7 +7,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PlusIcon } from "@/components/AppHeader";
-import { DownloadMenu, HeartButton, StatusPill, formatDate, isRunning, isWorking, remainingLabel } from "@/components/fonts/shared";
+import { PageBand } from "@/components/PageBand";
+import {
+  DownloadMenu,
+  HeartButton,
+  StatusPill,
+  formatDate,
+  isRunning,
+  isWorking,
+  remainingLabel,
+} from "@/components/fonts/shared";
 import { SignInPrompt } from "@/components/GoogleSignIn";
 import { Notice, Spinner } from "@/components/ui";
 import { ApiError, api, errorMessage } from "@/lib/api";
@@ -16,7 +25,11 @@ import { GLYPH_FONT_STACK } from "@/lib/preview";
 import type { ProjectSummary } from "@/lib/types";
 
 type Filter = "all" | "done" | "making" | "failed" | "fav";
-const FILTERS: { key: Filter; label: string; test: (f: ProjectSummary) => boolean }[] = [
+const FILTERS: {
+  key: Filter;
+  label: string;
+  test: (f: ProjectSummary) => boolean;
+}[] = [
   { key: "all", label: "모든 상태", test: () => true },
   { key: "done", label: "완성", test: (f) => f.phase === "done" },
   { key: "making", label: "만드는 중", test: (f) => isRunning(f.phase) },
@@ -41,7 +54,8 @@ export function FontList() {
         setError(null);
       })
       .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) return setSignedOut(true);
+        if (err instanceof ApiError && err.status === 401)
+          return setSignedOut(true);
         setError(errorMessage(err));
       });
   }, []);
@@ -58,124 +72,219 @@ export function FontList() {
     if (!fonts) return [];
     const q = query.trim();
     const test = FILTERS.find((f) => f.key === filter)!.test;
-    const list = fonts.filter((f) => test(f) && (!q || `${f.name} ${f.storeName} ${f.desiredFeel}`.includes(q)));
+    const list = fonts.filter(
+      (f) =>
+        test(f) &&
+        (!q || `${f.name} ${f.storeName} ${f.desiredFeel}`.includes(q)),
+    );
     if (sort === "old") list.reverse();
-    if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    if (sort === "name")
+      list.sort((a, b) => a.name.localeCompare(b.name, "ko"));
     return list;
   }, [fonts, filter, query, sort]);
 
   function patch(id: string, change: Partial<ProjectSummary>) {
-    setFonts((list) => list?.map((f) => (f.id === id ? { ...f, ...change } : f)) ?? null);
+    setFonts(
+      (list) =>
+        list?.map((f) => (f.id === id ? { ...f, ...change } : f)) ?? null,
+    );
   }
 
   if (signedOut) {
     return (
-      <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
-        <h1 className="text-28 font-extrabold lg:text-32">내 폰트</h1>
-        <SignInPrompt title="로그인하면 내 폰트가 보여요" body="만든 폰트는 구글 계정에 저장돼서 나만 볼 수 있어요." callbackURL="/fonts" />
-      </div>
+      <>
+        <PageBand
+          title="내 폰트"
+          lead="만든 폰트는 구글 계정에 저장돼서 나만 볼 수 있어요."
+        />
+        <div className="mx-auto w-full max-w-[76rem] px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
+          <SignInPrompt
+            title="로그인하면 내 폰트가 보여요"
+            body="로그인한 뒤 만든 폰트를 이어서 볼 수 있어요."
+            callbackURL="/fonts"
+          />
+        </div>
+      </>
     );
   }
 
   if (!fonts) {
     return (
-      <div className="mx-auto w-full max-w-[90rem] px-5 py-10 lg:px-10">
-        {error ? <Notice tone="error">내 폰트를 불러오지 못했어요: {error}</Notice> : <Spinner label="불러오는 중" />}
-      </div>
+      <>
+        <PageBand title="내 폰트" />
+        <div className="mx-auto w-full max-w-[76rem] px-5 py-10 lg:px-10">
+          {error ? (
+            <Notice tone="error">내 폰트를 불러오지 못했어요: {error}</Notice>
+          ) : (
+            <Spinner label="불러오는 중" />
+          )}
+        </div>
+      </>
     );
   }
 
   if (fonts.length === 0) {
     return (
-      <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
-        <h1 className="text-28 font-extrabold lg:text-32">내 폰트</h1>
-        <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border-[1.5px] border-dashed border-edge bg-bg px-6 py-14 text-center">
-          <p className="text-17 font-bold">아직 만든 폰트가 없어요</p>
-          <p className="text-15 text-muted">로고 한 장으로 첫 폰트를 만들어 보세요.</p>
-          <Link href="/#make" className="inline-flex h-12 items-center gap-1.5 rounded-full bg-ink px-6 text-15 font-bold text-bg transition-colors hover:bg-hover">
-            <PlusIcon />새 폰트 만들기
-          </Link>
+      <>
+        <PageBand title="내 폰트" />
+        <div className="mx-auto flex w-full max-w-[76rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
+          <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border-[1.5px] border-dashed border-border-strong bg-bg-canvas px-6 py-14 text-center">
+            <p className="text-17 font-bold">아직 만든 폰트가 없어요</p>
+            <p className="text-15 text-text-secondary">
+              로고 한 장으로 첫 폰트를 만들어 보세요.
+            </p>
+            <Link
+              href="/#make"
+              className="inline-flex h-12 items-center gap-1.5 rounded-full bg-bg-inverse px-6 text-15 font-bold text-text-inverse transition-colors hover:bg-bg-inverse-hover"
+            >
+              <PlusIcon />새 폰트 만들기
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   const done = fonts.filter((f) => f.phase === "done").length;
   return (
-    <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
-      <h1 className="text-28 font-extrabold lg:text-32">내 폰트</h1>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="relative block min-w-0 flex-[1_1_18rem] lg:max-w-[26rem]">
-          <span className="sr-only">폰트 찾기</span>
-          <svg aria-hidden viewBox="0 0 20 20" className="absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-muted">
-            <circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M13.2 13.2L17 17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="폰트 이름 · 가게 이름 · 느낌"
-            className="h-11 w-full rounded-full border-[1.5px] border-edge bg-bg pr-5 pl-11 text-15 font-medium outline-none placeholder:text-muted hover:border-ink focus:border-2 focus:border-ink"
-          />
-        </label>
-        <div role="group" aria-label="상태" className="flex flex-wrap gap-2">
-          {FILTERS.map((f) => {
-            const on = filter === f.key;
-            return (
-              <button
-                key={f.key}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setFilter(f.key)}
-                className={`flex h-10 items-center gap-1.5 rounded-full text-15 transition-colors ${
-                  on ? "border-2 border-ink pr-4 pl-3 font-bold" : "border-[1.5px] border-edge px-4 font-semibold hover:border-ink hover:bg-subtle"
-                }`}
-              >
-                {on && (
-                  <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
-                    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-                {f.label} <span className="text-muted">{fonts.filter(f.test).length}</span>
-              </button>
-            );
-          })}
+    <>
+      <PageBand title="내 폰트" hideTitle>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="relative block min-w-0 flex-[1_1_18rem] lg:max-w-[26rem]">
+            <span className="sr-only">폰트 찾기</span>
+            <svg
+              aria-hidden
+              viewBox="0 0 20 20"
+              className="absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-text-secondary"
+            >
+              <circle
+                cx="9"
+                cy="9"
+                r="5.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M13.2 13.2L17 17"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="폰트 이름 · 가게 이름 · 느낌"
+              className="h-11 w-full rounded-full border-[1.5px] border-border-strong bg-bg-canvas pr-5 pl-11 text-15 font-medium outline-none placeholder:text-text-secondary hover:border-border-active focus:border-2 focus:border-border-active"
+            />
+          </label>
+          <div role="group" aria-label="상태" className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => {
+              const on = filter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setFilter(f.key)}
+                  className={`flex h-10 items-center gap-1.5 rounded-full text-15 transition-colors ${
+                    on
+                      ? "border-2 border-border-active pr-4 pl-3 font-bold"
+                      : "border-[1.5px] border-border-strong px-4 font-semibold hover:border-border-active hover:bg-bg-surface"
+                  }`}
+                >
+                  {on && (
+                    <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
+                      <path
+                        d="M3.5 8.5l3 3 6-7"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  {f.label}{" "}
+                  <span className="text-text-secondary">
+                    {fonts.filter(f.test).length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <label className="flex items-center gap-2 text-15 font-bold text-text-secondary lg:ml-auto">
+            정렬
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              className="h-10 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-3.5 text-15 font-semibold text-text-primary hover:border-border-active"
+            >
+              <option value="new">최신순</option>
+              <option value="old">오래된순</option>
+              <option value="name">이름순</option>
+            </select>
+          </label>
         </div>
-        <label className="flex items-center gap-2 text-15 font-bold text-muted lg:ml-auto">
-          정렬
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            className="h-10 rounded-full border-[1.5px] border-edge bg-bg px-3.5 text-15 font-semibold text-ink hover:border-ink"
-          >
-            <option value="new">최신순</option>
-            <option value="old">오래된순</option>
-            <option value="name">이름순</option>
-          </select>
-        </label>
+      </PageBand>
+      <div className="mx-auto flex w-full max-w-[76rem] flex-col gap-6 px-5 pt-8 pb-16 lg:px-10 lg:pt-10">
+        <p className="text-15 text-text-secondary">
+          {shown.length}개 · 완성 {done}개
+        </p>
+        {error && (
+          <Notice tone="warn">진행 상황을 새로 받지 못했어요: {error}</Notice>
+        )}
+
+        {shown.length === 0 ? (
+          <div className="rounded-[1.25rem] border-[1.5px] border-dashed border-border-strong px-6 py-12 text-center text-15 text-text-secondary">
+            찾는 폰트가 없어요.
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,19rem),1fr))] gap-5">
+            <Link
+              href="/#make"
+              className="grid min-h-[12rem] place-items-center rounded-[1.25rem] border-[1.5px] border-dashed border-border-strong text-center transition-colors hover:border-border-active hover:bg-bg-surface"
+            >
+              <span className="flex flex-col items-center gap-2">
+                <span
+                  aria-hidden
+                  className="grid h-12 w-12 place-items-center rounded-full bg-bg-inverse text-text-inverse"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                </span>
+                <span className="text-17 font-extrabold">새 폰트 만들기</span>
+                <span className="text-13 text-text-secondary">
+                  로고 한 장으로 시작해요
+                </span>
+              </span>
+            </Link>
+            {shown.map((f) => (
+              <FontCard
+                key={f.id}
+                font={f}
+                onPatch={(change) => patch(f.id, change)}
+                onChanged={load}
+              />
+            ))}
+          </div>
+        )}
       </div>
-
-      <p className="text-15 text-muted">
-        {shown.length}개 · 완성 {done}개
-      </p>
-      {error && <Notice tone="warn">진행 상황을 새로 받지 못했어요: {error}</Notice>}
-
-      {shown.length === 0 ? (
-        <div className="rounded-[1.25rem] border-[1.5px] border-dashed border-edge px-6 py-12 text-center text-15 text-muted">찾는 폰트가 없어요.</div>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,19rem),1fr))] gap-5">
-          {shown.map((f) => (
-            <FontCard key={f.id} font={f} onPatch={(change) => patch(f.id, change)} onChanged={load} />
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
-function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch: (c: Partial<ProjectSummary>) => void; onChanged: () => void }) {
+function FontCard({
+  font,
+  onPatch,
+  onChanged,
+}: {
+  font: ProjectSummary;
+  onPatch: (c: Partial<ProjectSummary>) => void;
+  onChanged: () => void;
+}) {
   const [preview, setPreview] = useState(font.storeName.slice(0, 8));
   const [busy, setBusy] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -184,7 +293,9 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
 
   function toggleFavorite() {
     onPatch({ favorite: !font.favorite });
-    api.updateProject(font.id, { favorite: !font.favorite }).catch(() => onPatch({ favorite: font.favorite }));
+    api
+      .updateProject(font.id, { favorite: !font.favorite })
+      .catch(() => onPatch({ favorite: font.favorite }));
   }
 
   function resume() {
@@ -193,20 +304,33 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
     api
       .rebuildProject(font.id)
       .then(onChanged)
-      .catch((err) => setResumeError(`다시 시작하지 못했어요: ${errorMessage(err)}`))
+      .catch((err) =>
+        setResumeError(`다시 시작하지 못했어요: ${errorMessage(err)}`),
+      )
       .finally(() => setBusy(false));
   }
 
   const meta =
     font.phase === "done"
-      ? [`GPT Image`, `한글 ${font.glyphCount?.toLocaleString()}자`, font.extraCount ? `숫자·부호 ${font.extraCount}자` : "", formatDate(font.createdAt)]
+      ? [
+          `GPT Image`,
+          `한글 ${font.glyphCount?.toLocaleString()}자`,
+          font.extraCount ? `숫자·부호 ${font.extraCount}자` : "",
+          formatDate(font.createdAt),
+        ]
       : [formatDate(font.createdAt)];
 
   return (
-    <article className="flex flex-col rounded-[1.25rem] border border-line bg-bg">
-      <div className="relative flex h-[10.5rem] items-center justify-center rounded-t-[1.25rem] bg-stage px-4">
+    <article className="flex flex-col">
+      <div className="relative flex h-[10.5rem] items-center justify-center rounded-[1.25rem] bg-bg-surface-strong px-4">
         {/* eslint-disable-next-line @next/next/no-img-element -- 사용자가 올린 로고(서버가 그대로 돌려줌) */}
-        <img src={font.logoUrl} loading="lazy" decoding="async" alt={`${font.storeName} 로고`} className="absolute top-3 left-3 h-[1.875rem] w-[3.75rem] rounded-md bg-bg object-contain" />
+        <img
+          src={font.logoUrl}
+          loading="lazy"
+          decoding="async"
+          alt={`${font.storeName} 로고`}
+          className="absolute top-3 left-3 h-[1.875rem] w-[3.75rem] rounded-[0.625rem] bg-bg-canvas object-contain"
+        />
         {font.phase === "done" ? (
           <input
             type="text"
@@ -214,29 +338,41 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
             value={preview}
             onChange={(e) => setPreview(e.target.value)}
             aria-label={`${font.name} 미리보기 글 (8자까지)`}
-            className="w-full rounded-lg bg-transparent text-center text-[2.75rem] leading-[1.3] outline-none hover:bg-white/45 focus:bg-bg focus:shadow-[0_0_0_2px_var(--ink)]"
+            className="w-full rounded-[0.625rem] bg-transparent text-center text-[2.75rem] leading-[1.3] outline-none hover:bg-white/45 focus:bg-bg-canvas focus:shadow-[0_0_0_2px_var(--ink)]"
             style={{ fontFamily: fontFamily ?? GLYPH_FONT_STACK }}
           />
         ) : (
-          <Link href={href} className="text-[2.75rem] leading-[1.3] text-muted" style={{ fontFamily: GLYPH_FONT_STACK }}>
+          <Link
+            href={href}
+            className="text-[2.75rem] leading-[1.3] text-text-secondary"
+            style={{ fontFamily: GLYPH_FONT_STACK }}
+          >
             {font.storeName.slice(0, 8)}
           </Link>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 px-5 pt-4 pb-5">
+      <div className="flex flex-1 flex-col gap-1.5 px-1 pt-3 pb-1">
         <div className="flex items-center gap-1">
-          <h2 className="min-w-0 truncate text-18 font-extrabold">
+          <h2 className="min-w-0 truncate text-17 font-extrabold">
             <Link href={href} className="hover:underline">
               {font.name}
             </Link>
           </h2>
-          <HeartButton label={font.name} on={font.favorite} onToggle={toggleFavorite} />
+          <HeartButton
+            label={font.name}
+            on={font.favorite}
+            onToggle={toggleFavorite}
+          />
           <span className="ml-auto">
             <StatusPill phase={font.phase} />
           </span>
         </div>
-        {font.desiredFeel && <p className="truncate text-15">{font.desiredFeel}</p>}
-        <p className="text-13 text-muted">{meta.filter(Boolean).join(" · ")}</p>
+        {font.desiredFeel && (
+          <p className="truncate text-15">{font.desiredFeel}</p>
+        )}
+        <p className="text-13 text-text-secondary">
+          {meta.filter(Boolean).join(" · ")}
+        </p>
         {font.progress && isRunning(font.phase) && (
           <div className="mt-1.5 flex items-center gap-3">
             <div
@@ -245,29 +381,50 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
               aria-valuemin={0}
               aria-valuemax={font.progress.total}
               aria-valuenow={font.progress.done}
-              className="h-1 flex-1 overflow-hidden rounded-sm bg-track"
+              className="h-1 flex-1 overflow-hidden rounded-sm bg-bg-inverse"
             >
-              <div className="h-full bg-ink transition-[width] duration-500" style={{ width: `${(font.progress.done / Math.max(1, font.progress.total)) * 100}%` }} />
+              <div
+                className="h-full bg-bg-brand transition-[width] duration-500"
+                style={{
+                  width: `${(font.progress.done / Math.max(1, font.progress.total)) * 100}%`,
+                }}
+              />
             </div>
             <span className="text-13 font-bold">
-              {font.progress.done.toLocaleString()} / {font.progress.total.toLocaleString()}자
+              {font.progress.done.toLocaleString()} /{" "}
+              {font.progress.total.toLocaleString()}자
             </span>
           </div>
         )}
-        {isRunning(font.phase) && font.remainingSeconds !== null && <p className="text-13 text-muted">{remainingLabel(font.remainingSeconds)}</p>}
-        {font.phase === "failed" && font.error && <p className="line-clamp-2 text-13 text-muted">{font.error}</p>}
+        {isRunning(font.phase) && font.remainingSeconds !== null && (
+          <p className="text-13 text-text-secondary">
+            {remainingLabel(font.remainingSeconds)}
+          </p>
+        )}
+        {font.phase === "failed" && font.error && (
+          <p className="line-clamp-2 text-13 text-text-secondary">
+            {font.error}
+          </p>
+        )}
         {resumeError && (
-          <p role="alert" className="text-13 font-semibold text-bad">
+          <p role="alert" className="text-13 font-semibold text-text-error">
             {resumeError}
           </p>
         )}
         <div className="mt-auto flex flex-wrap gap-2 pt-3.5">
           {font.phase === "done" && font.fontId ? (
             <>
-              <Link href={href} className="inline-flex h-10 items-center rounded-full border-[1.5px] border-edge px-4 text-15 font-bold hover:border-ink hover:bg-subtle">
+              <Link
+                href={href}
+                className="inline-flex h-10 items-center rounded-full border-[1.5px] border-border-strong px-4 text-15 font-bold hover:border-border-active hover:bg-bg-surface"
+              >
                 스튜디오
               </Link>
-              <DownloadMenu fontId={font.fontId} fontName={font.name} loadRecord={async () => (await api.getProject(font.id)).record} />
+              <DownloadMenu
+                fontId={font.fontId}
+                fontName={font.name}
+                loadRecord={async () => (await api.getProject(font.id)).record}
+              />
             </>
           ) : font.phase === "failed" ? (
             <>
@@ -275,11 +432,14 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
                 type="button"
                 disabled={busy}
                 onClick={resume}
-                className="inline-flex h-10 items-center rounded-full bg-ink px-4 text-15 font-bold text-bg hover:bg-hover disabled:bg-line disabled:text-muted"
+                className="inline-flex h-10 items-center rounded-full bg-bg-inverse px-4 text-15 font-bold text-text-inverse hover:bg-bg-inverse-hover disabled:bg-bg-disabled disabled:text-text-disabled"
               >
                 {busy ? "다시 시작하는 중" : "이어서 만들기"}
               </button>
-              <Link href={href} className="inline-flex h-10 items-center rounded-full px-3 text-15 font-bold underline underline-offset-4 hover:bg-stage">
+              <Link
+                href={href}
+                className="inline-flex h-10 items-center rounded-full px-3 text-15 font-bold underline underline-offset-4 hover:bg-bg-surface-strong"
+              >
                 자세히
               </Link>
             </>
@@ -287,7 +447,9 @@ function FontCard({ font, onPatch, onChanged }: { font: ProjectSummary; onPatch:
             <Link
               href={href}
               className={`inline-flex h-10 items-center rounded-full px-4 text-15 font-bold ${
-                font.phase === "reviewing" ? "bg-ink text-bg hover:bg-hover" : "border-[1.5px] border-edge hover:border-ink hover:bg-subtle"
+                font.phase === "reviewing"
+                  ? "bg-bg-inverse text-text-inverse hover:bg-bg-inverse-hover"
+                  : "border-[1.5px] border-border-strong hover:border-border-active hover:bg-bg-surface"
               }`}
             >
               {font.phase === "reviewing" ? "참고 글자 확인하기" : "진행 보기"}

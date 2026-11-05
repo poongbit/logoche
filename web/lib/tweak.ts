@@ -7,7 +7,7 @@ export const NO_TWEAK: GlyphTweak = { pull: 0, slant: 0, width: 100, height: 100
 
 /** 화면 슬라이더와 서버가 받는 범위. 엔진은 이보다 넉넉하게 받는다(엔진 main.TweakInput). */
 export const TWEAK_RANGES: Record<keyof GlyphTweak, [number, number]> = {
-  pull: [-150, 150],
+  pull: [-300, 150], // 아래쪽은 엔진 한도(main.TweakInput)까지. -150은 굵은 서체에서 기준 Bold까지밖에 못 내려가 가장 가늘게 해도 여전히 굵었다(11/5)
   slant: [-10, 30],
   width: [60, 140],
   height: [60, 140],
@@ -28,6 +28,7 @@ export const TWEAK_FIELDS: { key: keyof GlyphTweak; label: string; step: number;
 
 export const TWEAK_PRESETS: { label: string; values: Partial<GlyphTweak> }[] = [
   { label: "원래대로", values: {} },
+  { label: "가늘게", values: { pull: -150 } },
   { label: "굵게", values: { pull: 60 } },
   { label: "아주 굵게", values: { pull: 120, width: 105, tx: -4 } },
   { label: "기울임", values: { slant: 12 } },
@@ -69,5 +70,9 @@ export function deltaTransform(saved: GlyphTweak, edited: GlyphTweak, size: numb
   return `matrix(${a}, ${-c}, ${-b}, ${d}, ${tdx * k}, ${-tdy * k})`;
 }
 
-/** 굵기 차이를 글자 둘레 선 굵기(px)로 어림한다. 굵기 축 1단위는 1em=500px 틀에서 한쪽 0.077px(엔진 drawn._px_per_weight). 늘리는 쪽만 보인다. */
-export const strokeFor = (savedPull: number, editedPull: number, size: number) => Math.max(0, editedPull - savedPull) * 0.000154 * size;
+/** 굵기 차이를 글자 둘레 선 굵기(px)로 어림한다. 굵기 축 1단위는 1em=500px 틀에서 한쪽 0.077px(엔진 drawn._px_per_weight).
+ * 늘리면 글자색 선을, 줄이면 바탕색 선을 둘러 깎는다(11/5: 줄이는 쪽은 이전에 미리보기에 아무 변화가 없어 슬라이더가 안 되는 것처럼 보였다). */
+export function strokeFor(savedPull: number, editedPull: number, size: number): { width: number; thin: boolean } {
+  const d = editedPull - savedPull;
+  return { width: Math.abs(d) * 0.000154 * size, thin: d < 0 };
+}

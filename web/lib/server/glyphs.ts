@@ -238,6 +238,7 @@ export interface Context {
   expression: string;
   family: StyleFamily | null; // 서체 계열(11/4). 이전에 만든 작업에는 없다
   brief: string | null; // 서체 설계 지시문(11/4). 모든 글자표에 같은 글을 쓴다
+  mark: string | null; // 로고 고유 조형(11/5). 모든 글자에 같은 모양으로 넣는다. 이전 작업에는 없다
   direction: string[]; // AI 제안에서 바뀐 그리기 방향(둥글기·대비·흔들림)
   quality: ImageQuality; // 그리기 수준(11/2: 만들 때 고른다)
 }
@@ -267,6 +268,7 @@ function makeContext(req: StartGlyphJobRequest, sample: string | null = null): C
     expression: req.style.expression?.trim() && !isImitationRequest(req.style.expression) ? req.style.expression.trim() : DEFAULT_EXPRESSION,
     family: req.style.family ?? null,
     brief: req.style.designBrief?.trim() && !isImitationRequest(req.style.designBrief) ? req.style.designBrief.trim() : null,
+    mark: req.style.signatureDraw?.trim() || null,
     direction: directionLines(req),
     quality: DRAW_QUALITY[req.quality ?? "fine"],
   };
@@ -328,6 +330,7 @@ function styleLines(ctx: Context): string[] {
     family ? `서체 계열: ${family.text}.` : "",
     `표현 방식: ${ctx.expression}. 모든 글자에 과감하게 적용하세요.`,
     ctx.brief ? `서체 설계 지시(모든 글자에 똑같이 적용): ${ctx.brief}` : "",
+    ctx.mark ? `고유 조형(모든 글자에 같은 모양으로 한 번씩, 글자 네모 틀 안에서만, 글자와 떨어지지 않게, 읽기를 해치지 않을 만큼 뚜렷하게): ${ctx.mark}` : "",
     `기본 굵기: ${weightWord(ctx.weight, ctx.family)}. 표현 방식에 맞게 획마다 굵기를 바꿔도 됩니다.${ctx.brief ? " 가로·세로획의 굵기 차이는 서체 설계 지시를 따르세요." : ""}`,
     ctx.direction.length ? `사용자가 요청한 방향도 모든 글자에 분명히 반영하세요: ${ctx.direction.join(" / ")}.` : "",
     "획 안을 검게 채우고(속이 빈 외곽선 금지), 글자를 기울이지 말고 똑바로 세우세요.",

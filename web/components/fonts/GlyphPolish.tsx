@@ -6,9 +6,10 @@
 // 굵기만은 윤곽을 옮기는 일이라 CSS로 어림하고(늘리는 쪽만), 저장하면 정확히 반영된다.
 // 아직 없는 것: 전체 글자에 한 번에 적용(폰트를 다시 만들어야 해서 따로 만든다), AI로 다시 그리기(프롬프트 탭).
 
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import dynamic from "next/dynamic";
 import type { EditorSource } from "@/components/GlyphEditor";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { GLYPH_FONT_STACK } from "@/lib/preview";
@@ -29,17 +30,46 @@ const fmt = (key: keyof GlyphTweak, v: number) => {
   return `${f.signed && v > 0 ? "+" : ""}${v}${f.unit}`;
 };
 
+/** 슬라이더 오른쪽 숫자 칸: 직접 입력해 고친다. 입력하는 동안은 글자 그대로 두고, Enter나 칸을 벗어날 때 범위에 맞춰 반영한다. */
+function NumberBox({ value, min, max, step, unit, label, onCommit }: { value: number; min: number; max: number; step: number; unit: string; label: string; onCommit: (n: number) => void }) {
+  const [text, setText] = useState(String(value));
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    setText(String(value));
+  }
+  function commit() {
+    const n = Number(text);
+    if (text.trim() === "" || !Number.isFinite(n)) return setText(String(value));
+    onCommit(n);
+    setText(String(Math.round(Math.min(max, Math.max(min, n)))));
+  }
+  return (
+    <span className="flex w-full items-center justify-end gap-0.5">
+      <input
+        type="number"
+        inputMode="decimal"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && commit()}
+        className="h-9 w-[3.75rem] rounded-[0.625rem] border border-border-default bg-bg-canvas px-1.5 text-right font-mono text-12 outline-none focus:border-border-active [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+      />
+      <span aria-hidden className="w-3.5 shrink-0 text-left font-mono text-12 text-text-secondary">{unit}</span>
+    </span>
+  );
+}
+
 /** 기본값과 다른 항목만 한 줄로 */
 function summary(t: GlyphTweak | null): string {
   if (!t || isNoTweak(t)) return "AI가 정한 값";
   return TWEAK_FIELDS.filter((f) => t[f.key] !== NO_TWEAK[f.key])
     .map((f) => `${f.label} ${fmt(f.key, t[f.key])}`)
     .join(" · ");
-}
-
-function clock(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 type Mode = "slider" | "xform";
@@ -64,9 +94,9 @@ export const GlyphPolish = memo(function GlyphPolish({
   const savedKey = JSON.stringify(saved);
   const [values, setValues] = useState<GlyphTweak>(saved);
   const [mode, setMode] = useState<Mode>("slider");
+  const [confirmAll, setConfirmAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [history, setHistory] = useState<{ at: string; tweak: GlyphTweak | null; note: string }[]>([]);
   const [drawing, setDrawing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null); // 저장했다는 알림(몇 초 뒤 사라진다)
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,19 +116,6 @@ export const GlyphPolish = memo(function GlyphPolish({
     setSeenKey(savedKey);
     setValues(saved);
   }
-
-  // 이 글자의 조정 기록
-  useEffect(() => {
-    if (!tweakable) return;
-    let on = true;
-    api
-      .glyphTweakHistory(view.id, char)
-      .then((r) => on && setHistory(r.history))
-      .catch(() => on && setHistory([]));
-    return () => {
-      on = false;
-    };
-  }, [view.id, char, tweakable, savedKey]);
 
   const dirty = !same(values, saved);
   const edited = view.edited.includes(char);
@@ -124,6 +141,23 @@ export const GlyphPolish = memo(function GlyphPolish({
       await sleep(700); // 엔진이 다른 형식(woff2 등) 파일을 다시 만드는 동안 잠깐 기다린다
       onSaved();
       tell(tweak && !isNoTweak(tweak) ? "저장했어요. 폰트에 넣었어요." : "원래 모양으로 돌렸어요.");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // 지금 값을 모든 글자에 건다(표의 "*"). 따로 손본 글자는 그 글자 값이 우선이라 그대로이고, 폰트는 새로 만들어진다.
+  async function applyAll() {
+    setBusy(true);
+    setError(null);
+    try {
+      // 이동은 글자마다 모양이 달라 전체에는 걸지 않는다. 굵기는 숫자 그대로가 아니라 “{char}”에서 달라진 획 두께의 비율로 건다(rel).
+      const all = { ...values, tx: 0, ty: 0 };
+      await api.saveGlyphTweak(view.id, { char: "*", tweak: isNoTweak(all) ? null : values.pull !== 0 ? { ...all, rel: char } : all, note: `모든 글자에 적용 (기준 '${char}')` });
+      setConfirmAll(false);
+      onSaved();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -172,6 +206,7 @@ export const GlyphPolish = memo(function GlyphPolish({
     { y: baseline, name: "baseline" },
     { y: baseline + 0.24 * SIZE, name: "descender" },
   ];
+  const stroke = strokeFor(saved.pull, values.pull, SIZE);
   const glyphStyle: CSSProperties = {
     fontFamily: inFont ? family : GLYPH_FONT_STACK,
     fontSize: SIZE,
@@ -181,33 +216,32 @@ export const GlyphPolish = memo(function GlyphPolish({
     textAlign: "center",
     transformOrigin: "50% 50%",
     transform: inFont ? deltaTransform(saved, values, SIZE) : undefined,
-    WebkitTextStroke: inFont ? `${strokeFor(saved.pull, values.pull, SIZE)}px currentColor` : undefined,
+    WebkitTextStroke: inFont ? `${stroke.width}px ${stroke.thin ? "var(--color-bg-surface-strong)" : "currentColor"}` : undefined, // 줄일 때는 무대 바탕색 선으로 깎는다
     color: inFont ? undefined : "var(--edge)",
   };
 
-  const history5 = useMemo(() => [...history].reverse(), [history]);
   const pressedPreset = (v: Partial<GlyphTweak>) => same(values, { ...NO_TWEAK, ...v });
   const tab = "h-9 flex-1 rounded-full px-3 text-14 font-bold transition-colors";
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-bg p-4">
+    <div className="flex min-w-0 flex-col gap-3 rounded-[1.25rem] border border-border-default bg-bg-canvas p-4">
       <div className="flex items-baseline gap-2">
         <span className="text-17 font-extrabold">
-          {char} <span className="font-medium text-muted">{code(char)}</span>
+          {char} <span className="font-medium text-text-secondary">{code(char)}</span>
         </span>
-        {(!isNoTweak(saved) || edited) && <span className="rounded-full bg-ink px-2 py-0.5 text-12 font-extrabold text-bg">손봤어요</span>}
+        {(!isNoTweak(saved) || edited) && <span className="rounded-full bg-bg-inverse px-2 py-0.5 text-12 font-extrabold text-text-inverse">수정</span>}
       </div>
 
-      <div ref={stageRef} className="relative grid place-items-center overflow-hidden rounded-2xl bg-stage" style={{ height: H }}>
+      <div ref={stageRef} className="relative grid place-items-center overflow-hidden rounded-[1.25rem] bg-bg-surface-strong" style={{ height: H }}>
         {/* 가이드선: HTML로 그려 라벨 글자가 늘어나지 않게 한다(이전 SVG는 가로로 늘려 글자가 찌그러졌다) */}
         {lines.map((l) => (
           <div
             key={l.name}
             aria-hidden
-            className={`pointer-events-none absolute inset-x-0 border-t ${l.name === "baseline" ? "border-dashed border-ink/50" : "border-accent/45"}`}
+            className={`pointer-events-none absolute inset-x-0 border-t ${l.name === "baseline" ? "border-dashed border-border-active/50" : "border-border-active/45"}`}
             style={{ top: l.y }}
           >
-            <span className="absolute -top-4 left-2 font-mono text-12 text-accent">{l.name}</span>
+            <span className="absolute -top-4 left-2 font-mono text-12 text-text-brand">{l.name}</span>
           </div>
         ))}
         <span ref={glyphRef} role="img" className="relative z-[1] block select-none" style={glyphStyle} aria-label={`${char} 미리보기`}>
@@ -219,7 +253,7 @@ export const GlyphPolish = memo(function GlyphPolish({
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
-            className="absolute z-[2] cursor-move touch-none border-[1.5px] border-accent"
+            className="absolute z-[2] cursor-move touch-none border-[1.5px] border-border-active"
             style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
           >
             {[
@@ -235,7 +269,7 @@ export const GlyphPolish = memo(function GlyphPolish({
               <i
                 key={h as string}
                 data-h={h}
-                className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 touch-none rounded-[3px] border-[1.5px] border-accent bg-bg after:absolute after:-inset-3 after:content-['']"
+                className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 touch-none rounded-[3px] border-[1.5px] border-border-active bg-bg-canvas after:absolute after:-inset-3 after:content-['']"
                 style={{ left: `${x}%`, top: `${y}%`, cursor: `${cur}-resize` }}
               />
             ))}
@@ -251,11 +285,11 @@ export const GlyphPolish = memo(function GlyphPolish({
 
       {tweakable && inFont && (
         <>
-          <div role="group" aria-label="편집 방식" className="flex gap-1 rounded-full bg-subtle p-1">
-            <button type="button" aria-pressed={mode === "slider"} onClick={() => setMode("slider")} className={`${tab} ${mode === "slider" ? "bg-bg shadow-[0_1px_2px_rgba(0,0,0,0.12)]" : "hover:bg-stage"}`}>
+          <div role="group" aria-label="편집 방식" className="flex gap-1 rounded-full bg-bg-surface p-1">
+            <button type="button" aria-pressed={mode === "slider"} onClick={() => setMode("slider")} className={`${tab} ${mode === "slider" ? "border border-border-active bg-bg-canvas" : "hover:bg-bg-surface-strong"}`}>
               슬라이더
             </button>
-            <button type="button" aria-pressed={mode === "xform"} onClick={() => setMode("xform")} className={`${tab} ${mode === "xform" ? "bg-bg shadow-[0_1px_2px_rgba(0,0,0,0.12)]" : "hover:bg-stage"}`}>
+            <button type="button" aria-pressed={mode === "xform"} onClick={() => setMode("xform")} className={`${tab} ${mode === "xform" ? "border border-border-active bg-bg-canvas" : "hover:bg-bg-surface-strong"}`}>
               끌어서 바꾸기
             </button>
           </div>
@@ -269,7 +303,7 @@ export const GlyphPolish = memo(function GlyphPolish({
                     type="button"
                     aria-pressed={pressedPreset(p.values)}
                     onClick={() => setValues({ ...NO_TWEAK, ...p.values })}
-                    className={`h-10 rounded-full border px-3 text-13 font-semibold transition-colors ${pressedPreset(p.values) ? "border-ink bg-ink text-bg" : "border-line bg-subtle hover:border-ink"}`}
+                    className={`h-10 rounded-full border px-3 text-13 font-semibold transition-colors ${pressedPreset(p.values) ? "border-border-active bg-bg-inverse text-text-inverse" : "border-border-default bg-bg-surface hover:border-border-active"}`}
                   >
                     {p.label}
                   </button>
@@ -280,8 +314,8 @@ export const GlyphPolish = memo(function GlyphPolish({
                   const [lo, hi] = [clampTweakValue(f.key, -1e9), clampTweakValue(f.key, 1e9)];
                   const changed = values[f.key] !== NO_TWEAK[f.key];
                   return (
-                    <label key={f.key} className="grid grid-cols-[4.5rem_minmax(0,1fr)_3.25rem] items-center gap-2 text-13">
-                      <span className={changed ? "font-extrabold text-accent" : "font-semibold"}>{f.label}</span>
+                    <label key={f.key} className="grid grid-cols-[4.5rem_minmax(0,1fr)_5rem] items-center gap-2 text-13">
+                      <span className={changed ? "font-extrabold text-text-brand" : "font-semibold"}>{f.label}</span>
                       <input
                         type="range"
                         min={lo}
@@ -292,7 +326,7 @@ export const GlyphPolish = memo(function GlyphPolish({
                         className="ds-range"
                         style={{ "--fill": `${((values[f.key] - lo) / (hi - lo)) * 100}%` } as CSSProperties}
                       />
-                      <output className="text-right font-mono text-12 text-muted">{fmt(f.key, values[f.key])}</output>
+                      <NumberBox value={values[f.key]} min={lo} max={hi} step={f.step} unit={f.unit} label={`${f.label} 값`} onCommit={(n) => set(f.key, n)} />
                     </label>
                   );
                 })}
@@ -300,26 +334,26 @@ export const GlyphPolish = memo(function GlyphPolish({
             </>
           ) : (
             <div className="flex flex-col gap-2">
-              <p className="text-13 leading-normal text-muted">글자 둘레의 네모 점을 끌면 크기와 가로·세로가 바뀌고, 안쪽을 끌면 옮겨져요. 윤곽을 늘이고 옮기는 방식이라 선이 뭉개지지 않아요.</p>
-              <p className="rounded-xl bg-subtle px-3 py-2 font-mono text-12 text-muted">
+              <p className="text-13 leading-normal text-text-secondary">글자 둘레의 네모 점을 끌면 크기와 가로·세로가 바뀌고, 안쪽을 끌면 옮겨져요. 윤곽을 늘이고 옮기는 방식이라 선이 뭉개지지 않아요.</p>
+              <p className="rounded-[0.875rem] bg-bg-surface px-3 py-2 font-mono text-12 text-text-secondary">
                 크기 {values.scale}% · 가로 {values.width}% · 세로 {values.height}% · 이동 {values.tx}, {values.ty}
               </p>
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" onClick={() => setValues((v) => ({ ...v, tx: 0, ty: 0 }))} className="h-10 rounded-full border border-line bg-subtle px-3 text-13 font-semibold hover:border-ink">
+                <button type="button" onClick={() => setValues((v) => ({ ...v, tx: 0, ty: 0 }))} className="h-10 rounded-full border border-border-default bg-bg-surface px-3 text-13 font-semibold hover:border-border-active">
                   가운데로
                 </button>
-                <button type="button" onClick={() => setValues((v) => ({ ...v, scale: 100, width: 100, height: 100 }))} className="h-10 rounded-full border border-line bg-subtle px-3 text-13 font-semibold hover:border-ink">
+                <button type="button" onClick={() => setValues((v) => ({ ...v, scale: 100, width: 100, height: 100 }))} className="h-10 rounded-full border border-border-default bg-bg-surface px-3 text-13 font-semibold hover:border-border-active">
                   크기 100%
                 </button>
               </div>
             </div>
           )}
-          {values.pull > saved.pull ? <p className="text-12 text-muted">굵기는 저장하면 정확히 반영돼요. 지금 보이는 것은 어림이에요.</p> : values.pull < saved.pull ? <p className="text-12 text-muted">가늘게 하는 모양은 저장하면 보여요.</p> : null}
+          {values.pull !== saved.pull ? <p className="text-12 text-text-secondary">굵기는 저장하면 정확히 반영돼요. 지금 보이는 것은 어림이에요.</p> : null}
         </>
       )}
 
       {error && <Notice tone="error">{error}</Notice>}
-      <p role="status" className={notice ? "text-13 font-bold text-good" : "sr-only"}>
+      <p role="status" className={notice ? "text-13 font-bold text-text-success" : "sr-only"}>
         {notice}
       </p>
 
@@ -330,7 +364,7 @@ export const GlyphPolish = memo(function GlyphPolish({
               type="button"
               disabled={busy || isNoTweak(values)}
               onClick={() => setValues(NO_TWEAK)}
-              className="h-11 flex-1 rounded-full border-[1.5px] border-edge bg-bg px-3 text-14 font-bold hover:border-ink disabled:cursor-not-allowed disabled:border-dashed disabled:text-muted"
+              className="h-11 flex-1 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-3 text-14 font-bold hover:border-border-active disabled:cursor-not-allowed disabled:border-dashed disabled:text-text-disabled"
             >
               원래대로
             </button>
@@ -338,53 +372,51 @@ export const GlyphPolish = memo(function GlyphPolish({
               type="button"
               disabled={busy || !dirty}
               onClick={() => void send(values, mode === "xform" ? "끌어서 바꾸기" : "슬라이더")}
-              className="h-11 flex-[1.5] rounded-full bg-ink px-3 text-14 font-bold text-bg hover:bg-hover disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+              className="h-11 flex-[1.5] rounded-full bg-bg-inverse px-3 text-14 font-bold text-text-inverse hover:bg-bg-inverse-hover disabled:cursor-not-allowed disabled:bg-bg-disabled disabled:text-text-disabled"
             >
               {busy ? "저장하는 중" : "저장하고 폰트에 넣기"}
             </button>
           </>
         )}
       </div>
+      {tweakable && inFont && !isNoTweak(values) && (
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirmAll(true)}
+            className="h-11 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-3 text-14 font-bold hover:border-border-active hover:bg-bg-surface disabled:cursor-not-allowed disabled:border-dashed disabled:text-text-disabled"
+          >
+            이 조정을 모든 글자에 적용
+          </button>
+          {confirmAll && (
+            <InlineConfirm label="모든 글자에 적용 확인" className="flex flex-col gap-3 rounded-[0.875rem] border-[1.5px] border-border-active bg-bg-canvas p-4 text-14 leading-normal">
+              <p>
+                <b>{summary(values)}</b>을(를) 폰트에 들어 있는 모든 글자에 걸어요. 굵기는 숫자 그대로가 아니라 “{char}”에서 달라진 획 두께의 비율만큼 다른 글자에도 걸고, 가로·세로 이동은 빼요. 따로 손본 글자는 그 글자 값이 우선이라 그대로예요. 새로 그리는 글자는 없고, 폰트 파일만 새로 만들어져 몇 분 걸려요. 그동안 이 화면은 만드는 중으로 바뀌어요.
+              </p>
+              <div className="flex gap-2">
+                <button type="button" disabled={busy} onClick={() => void applyAll()} className="h-10 flex-1 rounded-full bg-bg-inverse px-3 text-14 font-bold text-text-inverse hover:bg-bg-inverse-hover disabled:cursor-not-allowed disabled:bg-bg-disabled disabled:text-text-disabled">
+                  {busy ? "시작하는 중" : "모두 적용"}
+                </button>
+                <button type="button" data-autofocus disabled={busy} onClick={() => setConfirmAll(false)} className="h-10 flex-1 rounded-full border-[1.5px] border-border-strong px-3 text-14 font-bold hover:border-border-active">
+                  취소
+                </button>
+              </div>
+            </InlineConfirm>
+          )}
+        </>
+      )}
       <button
         type="button"
         disabled={busy}
         onClick={() => setDrawing(true)}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-edge bg-bg px-3 text-14 font-bold hover:border-ink hover:bg-subtle disabled:cursor-not-allowed disabled:text-muted"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-3 text-14 font-bold hover:border-border-active hover:bg-bg-surface disabled:cursor-not-allowed disabled:text-text-disabled"
       >
         <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
           <path d="M3 13l.6-2.7 7.2-7.2a1.4 1.4 0 0 1 2 2l-7.2 7.2zM9.6 4.3l2 2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        직접 그리기{edited ? " (고친 적 있어요)" : ""}
+        직접 그리기
       </button>
-
-      {tweakable && inFont && (
-        <div className="flex flex-col gap-1.5 border-t border-line pt-3">
-          <span className="text-12 font-bold text-muted">조정 기록 · 최대 100개</span>
-          <div className="rounded-xl border-[1.5px] border-good bg-subtle px-3 py-2 text-13">
-            <b className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full bg-good" />현재 버전</b> <span className="text-muted">지금 폰트에 들어 있는 것</span>
-            <div className="text-12 text-muted">{summary(isNoTweak(saved) ? null : saved)}</div>
-          </div>
-          {history5.slice(1, 5).map((h, i) => (
-            <div key={h.at} className="flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-13">
-              <div className="min-w-0 flex-1">
-                <div className="font-bold">
-                  v{history.length - 1 - i} · {clock(h.at)}
-                </div>
-                <div className="truncate text-12 text-muted">{summary(h.tweak)}</div>
-              </div>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void send(h.tweak, `v${history.length - 1 - i}로 되돌림`)}
-                className="h-10 shrink-0 rounded-full border border-edge px-3 text-13 font-bold hover:border-ink disabled:text-muted"
-              >
-                되돌리기
-              </button>
-            </div>
-          ))}
-          {history.length === 0 && <span className="text-12 text-muted">아직 손본 적이 없어요.</span>}
-        </div>
-      )}
 
       {drawing && (
         <GlyphEditor

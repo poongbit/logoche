@@ -1,7 +1,7 @@
 // Python 엔진 서버(engine/) 호출. 엔진은 측정·기준 글자표·글자표 자르기와 자리 맞추기·TTF 빌드·구조 검사를 맡는다.
 // 10/30: MX-Font를 뺐다. 엔진은 이미지 API가 그린 글자로 바로 외곽선을 딴다. 이미지 API·Claude 호출은 웹 서버가 한다.
 
-import type { BuildStage, CheckResult, GlyphGuides, GlyphTweak, NearestKind, PreviewResponse, TweakTable } from "@/lib/types";
+import type { BuildStage, CheckResult, GlyphGuides, NearestKind, PreviewResponse, StoredTweak, TweakTable } from "@/lib/types";
 import { ENGINE_URL, RouteError } from "./env";
 
 interface Measured {
@@ -63,6 +63,7 @@ export interface EngineBuildRequest {
   aiNotice: string;
   edits: EngineEdit[];
   tweaks: TweakTable; // 글자별 조정("*"는 전체). 폰트를 통째로 다시 만들 때도 늘 실어 보낸다(tweaks.ts)
+  provenance?: Record<string, unknown>; // 11/5 출처 기록(엔진이 빌드 폴더의 provenance.json에 남긴다)
 }
 
 export interface EngineGlyphEditRequest {
@@ -71,7 +72,7 @@ export interface EngineGlyphEditRequest {
   refs: EngineRef[];
   glyphs: EngineRef[]; // 이 글자가 나머지 글자면 그 그림
   edit: EngineEdit | null;
-  tweak: GlyphTweak | null; // 이 글자에 실제로 걸리는 조정(글자별, 없으면 전체)
+  tweak: StoredTweak | null; // 이 글자에 실제로 걸리는 조정(글자별, 없으면 전체)
 }
 
 export type FontFormat = "ttf" | "otf" | "woff" | "woff2";

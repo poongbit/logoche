@@ -37,6 +37,7 @@ export type MeasuredAxes = Partial<Record<AxisKey, { value: number; reason: stri
 export interface Interpretation {
   strokeEnd: string;
   signature: string | null;
+  signatureDraw?: string | null;
   toneMismatch: string | null;
   directions: StyleDirection[]; // 1개 이상, 첫 안이 추천
   slogans?: string[];
@@ -128,6 +129,7 @@ export function buildStyleCard(
     axes,
     strokeEnd: interpretation.strokeEnd,
     signature: interpretation.signature,
+    signatureDraw: interpretation.signatureDraw ?? null,
     toneMismatch: interpretation.toneMismatch,
     expression: interpretation.directions[0]?.expression ?? "",
     expressionOptions: interpretation.directions.map((d) => d.expression),
@@ -152,6 +154,13 @@ const InterpretationSchema = z.object({
     .string()
     .nullable()
     .describe("심볼에서 따올 만한 시그니처 요소와 그 요소가 들어갈 자소 자리. 예: 심볼의 둥근 얼굴 → ㅇ 자리. 없으면 null"),
+  mark: z
+    .object({
+      shape: z.string().describe("로고 심볼에서 따올 수 있는 눈에 보이는 구체적 조형 하나. 예: 다섯 꼭짓점 별, 물방울, 둥근 점. 추상어(분위기·느낌)는 쓰지 말고, 그림으로 옮길 수 있는 모양만. 15자 안"),
+      placement: z.string().describe("그 조형을 글자의 어디에 넣을지. 한 곳만 정한다. 예: ㅇ 안쪽 속공간 가운데에 작게, ㅂ의 위쪽 세로획 끝에 작게. 글자 네모 틀 안에서만, 25자 안"),
+    })
+    .nullable()
+    .describe("로고에서 따와 모든 글자에 같은 모양으로 넣을 고유 조형. 로고에 그림으로 옮길 만한 구체적 조형이 없으면 null"),
   readTones: z.array(z.enum(TONE_VALUES)).describe("로고가 주는 분위기를 보기 중에서 1~3개, 강한 순서로"),
   directions: z
     .array(
@@ -159,6 +168,7 @@ const InterpretationSchema = z.object({
         family: z.enum(FAMILY_VALUES).describe("서체 계열"),
         expression: z.string().describe("이 방향의 획 표현 방식. 한국어 15자 안의 짧은 구. 예: 고양이 등허리처럼 휜 획"),
         brief: z.string().describe("이 방향의 서체 설계 지시문. 한국어 4~6문장(아래 조건)"),
+        why: z.string().describe("이 방향이 이 가게에 어울리는 이유 한 줄. 한국어 40자 안, 사용자가 입력한 업종·사업 내용·분위기·쓸 곳이나 로고에서 실제로 읽은 것만 근거로 쓴다. 예: 디저트 가게라 둥글고 부드러운 획이 어울려요"),
         weight: z
           .number()
           .describe("이 방향의 기본 굵기(굵기 축 값, 150~850의 정수). 말로 옮기면 300 미만 아주 가늘게, 300~419 가늘게, 420~539 보통, 540~679 굵게, 680 이상 아주 굵게"),
@@ -231,7 +241,31 @@ function weightHint(upload: UploadInput): string {
   return `고른 톤(${toneNames(tones)})이 권하는 굵기는 ${lo}~${hi}입니다. 이 범위를 기준으로 삼되, 가는 명조는 더 가늘게, 둥근 고딕은 더 굵게처럼 계열에 맞게 ±150까지 조정할 수 있습니다.${floorText}`;
 }
 
-function interpretPrompt(upload: UploadInput): string {
+/** 같은 속성 칸에 이미 있는 서체의 특징 카드(11/5 L1 조향 실험). 서비스 화면은 넘기지 않는다. */
+export interface NeighborCard {
+  family: StyleFamily;
+  expression: string;
+  weight?: number;
+}
+
+/** 이웃 서체의 특징과 칸 전체의 쓰임을 보여 주고, 아직 비어 있는 쪽을 긍정문으로 권한다("피하라"를 나열하지 않는다). */
+export function neighborBlock(neighbors: NeighborCard[], all: NeighborCard[]): string {
+  if (neighbors.length === 0) return "";
+  const familyName = (f: StyleFamily) => STYLE_FAMILIES.find((x) => x.value === f)?.label ?? f;
+  const counts = new Map<StyleFamily, number>();
+  for (const n of all) counts.set(n.family, (counts.get(n.family) ?? 0) + 1);
+  const unused = STYLE_FAMILIES.filter((f) => !counts.has(f.value)).map((f) => f.label);
+  return [
+    "",
+    `이미 같은 속성으로 만든 서체가 ${all.length}개 있습니다. 서체끼리 닮지 않게 하는 것이 목표입니다. 최근 서체의 특징:`,
+    ...neighbors.map((n) => `- ${familyName(n.family)} · ${n.expression}${n.weight ? ` · 굵기 ${n.weight}` : ""}`),
+    `이 속성에서 쓰인 계열: ${[...counts].map(([f, c]) => `${familyName(f)} ${c}개`).join(", ")}${unused.length ? ` (아직 없는 계열: ${unused.join(", ")})` : ""}`,
+    "첫 안은 위와 계열, 획 끝 처리, 글자 구조(가로·세로 비율, 속공간, 획 연결 방식)가 다른, 이 속성에서 아직 비어 있는 방향으로 하세요. 사용자가 고른 속성은 그대로 지킵니다.",
+    "",
+  ].join("\n");
+}
+
+function interpretPrompt(upload: UploadInput, steer?: { neighbors: NeighborCard[]; all: NeighborCard[] }): string {
   const industry = industryText(upload) || "미정";
   const usage = upload.usageContexts.map((u) => USAGE_CONTEXTS.find((x) => x.value === u)?.label).join("·");
   return [
@@ -243,15 +277,18 @@ function interpretPrompt(upload: UploadInput): string {
     usage ? `주 사용처: ${usage}` : "",
     upload.desiredFeel && !isImitationRequest(upload.desiredFeel) ? `사업 내용과 추구하는 가치: ${upload.desiredFeel}` : "",
     attributeBlock(upload),
+    steer ? neighborBlock(steer.neighbors, steer.all) : "",
     `보기(readTones): ${BRAND_TONES.map((t) => `${t.value}=${t.label}`).join(", ")}`,
     `서체 계열 보기(family): ${STYLE_FAMILIES.map((f) => `${f.value}=${f.label}(${f.hint})`).join(", ")}`,
     "",
     "방향(directions) 작성 조건:",
     "- 3개 중 적어도 2개는 계열이 달라야 하고, 표현 방식도 뚜렷이 달라야 합니다. 첫 안이 가장 추천하는 안입니다.",
     "- brief는 4~6문장의 한국어 서체 설계 지시문입니다. 계열, 가로·세로획의 굵기 차이(대비), 획 끝 처리(삐침·돌기·테이퍼·맺음), 곡선의 성격, 속공간과 글자 리듬, 브랜드 가치가 어떤 조형으로 이어지는지를 구체적인 타이포그래피 용어로 쓰세요.",
+    "- why는 사용자에게 그대로 보이는 한 줄입니다. 입력(업종·사업 내용·분위기·쓸 곳)과 로고에 실제로 있는 내용만 근거로 쓰고, 없는 사실을 지어내지 마세요. 순위를 말하지 말고('가장 좋아요' 금지) 그 방향이 왜 어울리는지만 쓰세요. 해요체.",
     "- brief는 서체 전체에 적용되는 설계를 말합니다. 가게 이름이나 특정 글자, 로고를 언급하지 마세요.",
     "- brief에 색, 배경, 기울기, 글자 크기·위치·높이 변화, 네모 틀을 벗어나는 것은 쓰지 마세요. 글자는 검은 단색으로 똑바로 서 있고 모든 글자가 같은 크기 틀에 들어갑니다.",
     "- 특정 서체 이름은 쓰지 말고, 속이 빈 외곽선은 시키지 마세요.",
+    "- mark(고유 조형)는 로고 심볼에서 따올 수 있는 눈에 보이는 구체적인 조형 하나와, 그 조형을 글자의 어디에 넣을지 한 곳입니다. 서체 전체에 같은 모양으로 들어가므로 작고 단순해야 하고 글자를 읽는 데 방해가 되면 안 됩니다. 글자 네모 틀 밖으로 나오거나 글자와 떨어진 장식이 되면 안 됩니다. 로고에 그런 조형이 없으면 null.",
     "- weight(기본 굵기)는 방향마다 따로 정합니다. 그 방향의 계열과 설계 지시문에 맞는 굵기여야 하고, 같은 값을 세 방향에 되풀이하지 마세요. 서로 100 이상 차이 나게 정하세요.",
     `- ${weightHint(upload)}`,
   ]
@@ -295,16 +332,16 @@ function cleanDirections(directions: StyleDirection[], storeName: string, weight
     if (!expression || seen.has(expression)) continue;
     seen.add(expression);
     const w = typeof d.weight === "number" && Number.isFinite(d.weight) ? Math.round(Math.min(weightRange?.[1] ?? WEIGHT_CAP, WEIGHT_CAP, Math.max(weightRange?.[0] ?? 150, 150, weightFloor, d.weight))) : undefined; // 범위와 주 사용처의 하한에 맞춘다
-    out.push({ family: d.family, expression, brief: d.brief ? sanitizeBrief(d.brief, storeName) : null, weight: w });
+    out.push({ family: d.family, expression, brief: d.brief ? sanitizeBrief(d.brief, storeName) : null, why: d.why?.trim().slice(0, 60) || null, weight: w });
   }
   return out.slice(0, 3);
 }
 
-export async function analyzeStyle(upload: UploadInput): Promise<StyleCard> {
+export async function analyzeStyle(upload: UploadInput, steer?: { neighbors: NeighborCard[]; all: NeighborCard[] }): Promise<StyleCard> {
   if (!upload.logoImage) throw new RouteError(400, "로고 이미지가 없어요. 화면 1에서 로고를 다시 올려 주세요.");
   const [measure, { value: interpretation, model }] = await Promise.all([
     engine.measure(upload.logoImage, upload.storeName),
-    generateJson(MODELS.interpret, [{ text: interpretPrompt(upload) }, imagePart(upload.logoImage)], InterpretationSchema, "medium"),
+    generateJson(MODELS.interpret, [{ text: interpretPrompt(upload, steer) }, imagePart(upload.logoImage)], InterpretationSchema, "medium"),
   ]);
 
   const measured: MeasuredAxes = {};
@@ -322,6 +359,7 @@ export async function analyzeStyle(upload: UploadInput): Promise<StyleCard> {
     {
       strokeEnd: interpretation.strokeEnd,
       signature: interpretation.signature,
+      signatureDraw: interpretation.mark ? `${interpretation.mark.shape.trim()}을(를) ${interpretation.mark.placement.trim()}` : null,
       toneMismatch,
       directions: rankDirections(
         cleanDirections(interpretation.directions, upload.storeName ?? "", Math.max(0, ...upload.usageContexts.map((u) => USAGE_WEIGHT_FLOOR[u] ?? 0)), upload.attributes ? ATTRIBUTE_WEIGHT[upload.attributes.weight] : null),

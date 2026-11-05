@@ -91,14 +91,14 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-labelledby="delete-title"
         tabIndex={-1}
-        className="flex max-h-full w-full max-w-[30rem] flex-col gap-5 overflow-y-auto rounded-[1.25rem] bg-bg p-6 shadow-[0_30px_80px_-30px_rgba(17,17,17,.6)] outline-none"
+        className="flex max-h-full w-full max-w-[30rem] flex-col gap-5 overflow-y-auto rounded-[1.25rem] bg-bg-canvas p-6 shadow-float outline-none"
       >
         {done ? (
           <>
             <h2 id="delete-title" className="text-xl font-extrabold">
               탈퇴했어요
             </h2>
-            <p className="text-15 leading-relaxed text-muted">
+            <p className="text-15 leading-relaxed text-text-secondary">
               만든 폰트와 계정 정보를 모두 지웠어요. 그동안 써 주셔서 고마워요.
             </p>
             <Button size="md" onClick={() => go()}>
@@ -126,7 +126,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
                     <li>올려 둔 로고 이미지</li>
                     <li>구글 계정 연결과 로그인 정보</li>
                   </ul>
-                  <p className="text-13 text-muted">
+                  <p className="text-13 text-text-secondary">
                     이미 내려받은 폰트 파일은 계속 쓸 수 있어요. 폰트를 내려받을
                     때 남긴 발급 기록(폰트 번호, 가게 이름)은 같은 로고로 만든
                     폰트를 가려내는 데 쓰려고 남아요.
@@ -164,7 +164,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
                 size="md"
                 onClick={() => void leave()}
                 disabled={!ready}
-                className="bg-bad hover:bg-bad"
+                className="bg-bg-error hover:bg-bg-error"
               >
                 {busy ? "탈퇴하는 중" : "탈퇴하기"}
               </Button>

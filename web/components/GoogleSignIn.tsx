@@ -69,14 +69,14 @@ function GoogleMark({ className = "h-[18px] w-[18px]" }: { className?: string })
 export function SignInPrompt({ title, body, callbackURL }: { title: string; body: string; callbackURL: string }) {
   const { start, starting, problem, inApp } = useGoogleSignIn();
   return (
-    <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-line bg-bg px-6 py-14 text-center">
-      <p className="text-19 font-extrabold">{title}</p>
-      <p className="max-w-[28rem] text-15 leading-relaxed text-muted">{body}</p>
+    <div className="flex flex-col items-center gap-4 border-y border-border-default px-6 py-14 text-center">
+      <p className="text-17 font-extrabold">{title}</p>
+      <p className="max-w-[28rem] text-15 leading-relaxed text-text-secondary">{body}</p>
       <button
         type="button"
         disabled={starting}
         onClick={() => void start(callbackURL)}
-        className="inline-flex h-12 items-center gap-3 rounded-full border-[1.5px] border-edge bg-bg px-6 text-15 font-bold transition-colors hover:border-ink disabled:text-muted"
+        className="inline-flex h-12 items-center gap-3 rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-6 text-15 font-bold transition-colors hover:border-border-active disabled:text-text-disabled"
       >
         <GoogleMark />
         {starting ? "구글로 가는 중" : "Google 계정으로 로그인"}

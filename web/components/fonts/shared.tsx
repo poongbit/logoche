@@ -26,7 +26,7 @@ export const PHASE_LABELS: Record<ProjectPhase, string> = {
 /** 화면 아래에 붙는 막대(느낌 고르기·30자 결정이 같이 쓴다). 휴대폰에서 내용이 길어 아래로 밀려도 결정 단추가 늘 보이게 한다. 안쪽 배치는 className으로 정한다. */
 export function StickyBar({ className = "", children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={`sticky bottom-0 z-10 -mx-5 mt-auto border-t border-line bg-paper px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-mx-10 lg:px-10 lg:pb-5 ${className}`}>{children}</div>
+    <div className={`sticky bottom-0 z-10 -mx-5 mt-auto border-t border-border-default bg-bg-canvas px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:-mx-10 lg:px-10 lg:pb-5 ${className}`}>{children}</div>
   );
 }
 
@@ -42,12 +42,12 @@ export function remainingLabel(seconds: number | null): string {
 
 export function StatusPill({ phase }: { phase: ProjectPhase }) {
   const base = "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-13 font-bold";
-  if (phase === "done") return <span className={`${base} border-[1.5px] border-good text-good`}>{PHASE_LABELS.done}</span>;
-  if (phase === "failed") return <span className={`${base} border-[1.5px] border-bad text-bad`}>{PHASE_LABELS.failed}</span>;
-  if (phase === "reviewing" || phase === "choosing") return <span className={`${base} border-[1.5px] border-ink`}>{PHASE_LABELS[phase]}</span>;
+  if (phase === "done") return <span className={`${base} border-[1.5px] border-border-success text-text-success`}>{PHASE_LABELS.done}</span>;
+  if (phase === "failed") return <span className={`${base} border-[1.5px] border-border-error text-text-error`}>{PHASE_LABELS.failed}</span>;
+  if (phase === "reviewing" || phase === "choosing") return <span className={`${base} border-[1.5px] border-border-active`}>{PHASE_LABELS[phase]}</span>;
   return (
-    <span className={`${base} bg-stage`}>
-      <span aria-hidden className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-track border-t-ink" />
+    <span className={`${base} bg-bg-surface-strong`}>
+      <span aria-hidden className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-border-default border-t-border-active" />
       {PHASE_LABELS[phase]}
     </span>
   );
@@ -61,7 +61,7 @@ export function HeartButton({ label, on, onToggle, size = 18 }: { label: string;
       aria-label={`${label} 즐겨찾기`}
       aria-pressed={on}
       onClick={onToggle}
-      className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-subtle"
+      className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-bg-surface"
     >
       <svg aria-hidden viewBox="0 0 20 20" style={{ width: size, height: size }}>
         <path
@@ -99,6 +99,10 @@ async function fetchBlob(input: string, init?: RequestInit): Promise<Blob> {
   return res.blob();
 }
 
+function Spin() {
+  return <span aria-hidden className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-border-default border-t-border-active" />;
+}
+
 /** 받기 메뉴: 형식 하나씩, 또는 모두 받기(zip: 네 형식 · CSS 예시 · 라이선스 · 제작 기록). 제작 기록은 누를 때 불러온다(목록 카드).
  * 메뉴 역할(role="menu")은 화살표 키까지 갖춰야 해서, 펼침 단추 + 단추 목록으로 둔다(11/2 점검). 열면 첫 항목으로, Esc로 닫으면 '받기'로 돌아간다. */
 export function DownloadMenu({
@@ -121,6 +125,8 @@ export function DownloadMenu({
   const trigger = useRef<HTMLButtonElement>(null);
   const first = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  const [formats, setFormats] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -165,12 +171,23 @@ export function DownloadMenu({
       saveBlob(blob, `${fontName}.zip`);
     });
 
+  async function copyCss() {
+    const css = `@font-face {\n  font-family: "${fontName}";\n  src: url("${fontName}.woff2") format("woff2");\n  font-display: swap;\n}`;
+    try {
+      await navigator.clipboard.writeText(css);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("복사하지 못했어요. 브라우저가 막았을 수 있어요.");
+    }
+  }
+
   // 키보드로 메뉴 밖 다른 칸으로 옮겨 가면 닫는다(받는 중 단추가 비활성으로 바뀌며 포커스를 잃을 때는 relatedTarget이 없어 그대로 둔다)
   const leave = (e: FocusEvent<HTMLDivElement>) => {
     if (open && e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
   };
 
-  const item = "flex h-11 w-full items-center justify-between gap-3 rounded-[0.625rem] px-3 text-left text-15 font-bold hover:bg-subtle disabled:opacity-50";
+  const item = "flex min-h-11 w-full items-center justify-between gap-3 rounded-[0.625rem] px-3 text-left text-15 font-bold hover:bg-bg-surface disabled:opacity-50";
   return (
     <div ref={root} onBlur={leave} className="relative">
       <button
@@ -180,7 +197,7 @@ export function DownloadMenu({
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen(!open)}
         className={`inline-flex items-center gap-2 rounded-full font-bold transition-colors ${
-          primary ? "h-12 bg-ink px-6 text-15 text-bg hover:bg-hover" : "h-10 border-[1.5px] border-edge bg-bg px-4 text-15 hover:border-ink hover:bg-subtle"
+          primary ? "h-12 bg-bg-inverse px-6 text-15 text-text-inverse hover:bg-bg-inverse-hover" : "h-10 border-[1.5px] border-border-strong bg-bg-canvas px-4 text-15 hover:border-border-active hover:bg-bg-surface"
         }`}
       >
         <DownloadIcon />
@@ -189,27 +206,56 @@ export function DownloadMenu({
       {open && (
         <div
           id={panelId}
-          className={`absolute top-full z-20 mt-2 w-[17rem] rounded-2xl border border-line bg-bg p-2 shadow-[0_12px_32px_rgba(17,17,17,0.14)] motion-safe:animate-[ds-pop_160ms_ease-out] ${
+          className={`absolute top-full z-20 mt-2 w-[17rem] rounded-[1.25rem] border border-border-default bg-bg-canvas p-2 shadow-float motion-safe:animate-[ds-pop_160ms_ease-out] ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >
-          {FILES.map((f, i) => (
-            <button key={f.format} ref={i === 0 ? first : undefined} type="button" disabled={!!busy} onClick={() => one(f.format)} className={item}>
-              <span>
-                {f.label} <span className="font-medium text-muted">{f.note}</span>
-              </span>
-              {busy === f.format && <span aria-hidden className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-track border-t-ink" />}
-            </button>
-          ))}
-          <div className="mx-1 my-1.5 h-px bg-line" />
-          <button type="button" disabled={!!busy} onClick={all} className={item}>
-            <span>
-              모두 받기 <span className="font-medium text-muted">zip · 제작 기록</span>
+          <button ref={first} type="button" disabled={!!busy} onClick={() => one("ttf")} className={item}>
+            <span className="flex flex-col">
+              <span>내 컴퓨터에 설치</span>
+              <span className="text-13 font-medium text-text-secondary">TTF · 워드, 한글, 포토샵 등</span>
             </span>
-            {busy === "zip" && <span aria-hidden className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-track border-t-ink" />}
+            {busy === "ttf" && <Spin />}
           </button>
+          <button type="button" disabled={!!busy} onClick={() => one("woff2")} className={item}>
+            <span className="flex flex-col">
+              <span>홈페이지에 쓰기</span>
+              <span className="text-13 font-medium text-text-secondary">WOFF2 파일</span>
+            </span>
+            {busy === "woff2" && <Spin />}
+          </button>
+          <button type="button" disabled={!!busy} onClick={() => void copyCss()} className={item}>
+            <span className="flex flex-col">
+              <span>홈페이지 CSS 복사</span>
+              <span className="text-13 font-medium text-text-secondary">@font-face 코드</span>
+            </span>
+            {copied && <span className="text-13 font-bold text-text-success">복사했어요</span>}
+          </button>
+          <button type="button" disabled={!!busy} onClick={all} className={item}>
+            <span className="flex flex-col">
+              <span>간판·인쇄 업체에 보내기</span>
+              <span className="text-13 font-medium text-text-secondary">zip · OTF · 라이선스 · 제작 기록</span>
+            </span>
+            {busy === "zip" && <Spin />}
+          </button>
+          <div className="mx-1 my-1.5 h-px bg-border-default" />
+          <button type="button" aria-expanded={formats} onClick={() => setFormats(!formats)} className={item}>
+            <span className="text-text-secondary">파일 형식 골라 받기</span>
+            <svg aria-hidden viewBox="0 0 16 16" className={`h-4 w-4 shrink-0 text-text-secondary transition-transform ${formats ? "rotate-180" : ""}`}>
+              <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {formats &&
+            FILES.map((f) => (
+              <button key={f.format} type="button" disabled={!!busy} onClick={() => one(f.format)} className={`${item} pl-6`}>
+                <span>
+                  {f.label} <span className="font-medium text-text-secondary">{f.note}</span>
+                </span>
+                {busy === f.format && <Spin />}
+              </button>
+            ))}
           {error && (
-            <p role="alert" className="px-3 pt-2 pb-1 text-13 font-semibold text-bad">
+            <p role="alert" className="px-3 pt-2 pb-1 text-13 font-semibold text-text-error">
               {error}
             </p>
           )}

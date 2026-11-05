@@ -9,10 +9,10 @@ type ButtonSize = "lg" | "md" | "sm";
 
 const BUTTON_BASE = "inline-flex items-center justify-center gap-2 rounded-full font-bold transition-colors duration-150 disabled:cursor-not-allowed";
 const BUTTON_STYLES: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-bg hover:bg-hover disabled:bg-line disabled:text-muted",
+  primary: "bg-bg-inverse text-text-inverse hover:bg-bg-inverse-hover disabled:bg-bg-disabled disabled:text-text-disabled",
   outline:
-    "border-[1.5px] border-edge bg-bg text-ink hover:border-ink hover:bg-subtle disabled:border-dashed disabled:border-edge disabled:bg-subtle disabled:text-muted",
-  ghost: "text-ink underline underline-offset-4 hover:bg-stage disabled:text-muted disabled:no-underline",
+    "border-[1.5px] border-border-strong bg-bg-canvas text-text-primary hover:border-border-active hover:bg-bg-surface disabled:border-dashed disabled:border-border-strong disabled:bg-bg-surface disabled:text-text-disabled",
+  ghost: "text-text-primary underline underline-offset-4 hover:bg-bg-surface-strong disabled:text-text-disabled disabled:no-underline",
 };
 const BUTTON_SIZES: Record<ButtonSize, string> = {
   lg: "h-14 px-10 text-17",
@@ -74,10 +74,10 @@ export function Chip({
       onClick={onClick}
       className={`flex h-10 items-center gap-1.5 rounded-full text-15 transition-colors duration-150 ${
         selected
-          ? "border-2 border-ink bg-bg pr-4 pl-3 font-bold text-ink"
+          ? "border-2 border-border-active bg-bg-canvas pr-4 pl-3 font-bold text-text-primary"
           : disabled
-            ? "cursor-not-allowed border-[1.5px] border-dashed border-edge bg-subtle px-4 font-semibold text-muted"
-            : "border-[1.5px] border-edge bg-bg px-4 font-semibold text-ink hover:border-ink hover:bg-subtle"
+            ? "cursor-not-allowed border-[1.5px] border-dashed border-border-strong bg-bg-surface px-4 font-semibold text-text-secondary"
+            : "border-[1.5px] border-border-strong bg-bg-canvas px-4 font-semibold text-text-primary hover:border-border-active hover:bg-bg-surface"
       }`}
     >
       {selected && (
@@ -86,7 +86,7 @@ export function Chip({
         </svg>
       )}
       {children}
-      {badge && <span className="text-13 font-bold text-good">{badge}</span>}
+      {badge && <span className="text-13 font-bold text-text-success">{badge}</span>}
     </button>
   );
 }
@@ -116,16 +116,16 @@ export function RadioRow({
       tabIndex={tabIndex}
       onClick={onClick}
       className={`flex w-full items-center gap-3 text-left transition-colors duration-150 ${
-        large ? "min-h-[3.875rem] rounded-[0.875rem] px-5 py-4 text-18" : "min-h-[2.875rem] rounded-xl px-4 py-2 text-15"
-      } ${selected ? "border-2 border-ink bg-subtle font-bold" : "border-[1.5px] border-edge bg-bg font-medium hover:border-ink hover:bg-subtle"} ${
+        large ? "min-h-[3.875rem] rounded-[0.875rem] px-5 py-4 text-17" : "min-h-[2.875rem] rounded-[0.875rem] px-4 py-2 text-15"
+      } ${selected ? "border-2 border-border-active bg-bg-surface font-bold" : "border-[1.5px] border-border-strong bg-bg-canvas font-medium hover:border-border-active hover:bg-bg-surface"} ${
         large && !selected ? "font-semibold" : ""
       }`}
     >
       <span
         aria-hidden
-        className={`grid shrink-0 place-items-center rounded-full border-2 ${large ? "h-[1.375rem] w-[1.375rem]" : "h-5 w-5"} ${selected ? "border-ink" : "border-edge"}`}
+        className={`grid shrink-0 place-items-center rounded-full border-2 ${large ? "h-[1.375rem] w-[1.375rem]" : "h-5 w-5"} ${selected ? "border-border-active" : "border-border-strong"}`}
       >
-        {selected && <span className={`rounded-full bg-ink ${large ? "h-[0.6875rem] w-[0.6875rem]" : "h-2.5 w-2.5"}`} />}
+        {selected && <span className={`rounded-full bg-bg-inverse ${large ? "h-[0.6875rem] w-[0.6875rem]" : "h-2.5 w-2.5"}`} />}
       </span>
       <span className="min-w-0">{children}</span>
       {aside && <span className="ml-auto shrink-0">{aside}</span>}
@@ -162,7 +162,7 @@ export function CheckIcon({ className = "h-3 w-3" }: { className?: string }) {
 export function TextField({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`h-12 w-full rounded-full border-[1.5px] border-edge bg-bg px-5 text-base font-medium text-ink outline-none transition-colors placeholder:text-muted hover:border-ink focus:border-2 focus:border-ink disabled:cursor-not-allowed disabled:border-dashed disabled:bg-subtle ${className}`}
+      className={`h-12 w-full rounded-full border-[1.5px] border-border-strong bg-bg-canvas px-5 text-base font-medium text-text-primary outline-none transition-colors placeholder:text-text-secondary hover:border-border-active focus:border-2 focus:border-border-active disabled:cursor-not-allowed disabled:border-dashed disabled:bg-bg-surface ${className}`}
       {...props}
     />
   );
@@ -171,16 +171,16 @@ export function TextField({ className = "", ...props }: InputHTMLAttributes<HTML
 type NoticeTone = "info" | "warn" | "error" | "good";
 
 const NOTICE_STYLES: Record<NoticeTone, string> = {
-  info: "bg-subtle text-ink",
-  warn: "border-[1.5px] border-edge bg-bg text-ink",
-  error: "border-2 border-bad bg-bg text-ink",
-  good: "bg-subtle text-ink",
+  info: "bg-bg-surface text-text-primary",
+  warn: "border-[1.5px] border-border-strong bg-bg-canvas text-text-primary",
+  error: "border-2 border-border-error bg-bg-canvas text-text-primary",
+  good: "bg-bg-surface text-text-primary",
 };
 
 export function Notice({ tone = "info", children }: { tone?: NoticeTone; children: ReactNode }) {
   return (
-    <div role={tone === "error" ? "alert" : undefined} className={`rounded-xl px-4 py-3 text-15 font-medium leading-relaxed ${NOTICE_STYLES[tone]}`}>
-      {tone === "good" && <CheckIcon className="mr-1.5 inline h-3.5 w-3.5 align-[-0.125em] text-good" />}
+    <div role={tone === "error" ? "alert" : undefined} className={`rounded-[0.875rem] px-4 py-3 text-15 font-medium leading-relaxed ${NOTICE_STYLES[tone]}`}>
+      {tone === "good" && <CheckIcon className="mr-1.5 inline h-3.5 w-3.5 align-[-0.125em] text-text-success" />}
       {children}
     </div>
   );
@@ -189,8 +189,8 @@ export function Notice({ tone = "info", children }: { tone?: NoticeTone; childre
 /** 빠진 항목 표시: 동그라미 느낌표 + 짧은 말 */
 export function Missing({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-[0.3125rem] text-13 font-semibold text-muted">
-      <span aria-hidden className="grid h-3.5 w-3.5 place-items-center rounded-full border-[1.5px] border-muted text-10 font-bold leading-none">
+    <span className="inline-flex items-center gap-[0.3125rem] text-13 font-semibold text-text-secondary">
+      <span aria-hidden className="grid h-3.5 w-3.5 place-items-center rounded-full border-[1.5px] border-border-strong text-10 font-bold leading-none">
         !
       </span>
       {children}
@@ -201,10 +201,10 @@ export function Missing({ children }: { children: ReactNode }) {
 /** 불러오는 중 표시. role="status"라서 화면 읽기 프로그램도 알린다(11/2 다시 점검). */
 export function Spinner({ label, size = 20 }: { label?: ReactNode; size?: number }) {
   return (
-    <span role="status" className="inline-flex items-center gap-2.5 text-15 font-medium text-ink">
+    <span role="status" className="inline-flex items-center gap-2.5 text-15 font-medium text-text-primary">
       <span
         aria-hidden
-        className="shrink-0 animate-spin rounded-full border-[3px] border-track border-t-ink"
+        className="shrink-0 animate-spin rounded-full border-[3px] border-border-default border-t-border-active"
         style={{ width: size, height: size }}
       />
       {label ?? <span className="sr-only">불러오는 중</span>}
@@ -215,11 +215,11 @@ export function Spinner({ label, size = 20 }: { label?: ReactNode; size?: number
 /** 단계 동그라미: 끝남 ✓ · 진행 중 회전 · 남음 빈 원 */
 export function StepMark({ status }: { status: "done" | "active" | "pending" | "failed" }) {
   const base = "grid h-[1.375rem] w-[1.375rem] shrink-0 place-items-center rounded-full text-xs font-bold";
-  if (status === "active") return <span aria-hidden className={`${base} animate-spin border-[3px] border-track border-t-ink`} />;
-  if (status === "pending") return <span aria-hidden className={`${base} border-2 border-edge`} />;
-  if (status === "failed") return <span aria-hidden className={`${base} bg-bad text-bg`}>!</span>;
+  if (status === "active") return <span aria-hidden className={`${base} animate-spin border-[3px] border-border-default border-t-border-active`} />;
+  if (status === "pending") return <span aria-hidden className={`${base} border-2 border-border-strong`} />;
+  if (status === "failed") return <span aria-hidden className={`${base} bg-bg-error text-text-inverse`}>!</span>;
   return (
-    <span aria-hidden className={`${base} bg-stage text-ink`}>
+    <span aria-hidden className={`${base} bg-bg-surface-strong text-text-primary`}>
       <CheckIcon />
     </span>
   );
@@ -228,11 +228,11 @@ export function StepMark({ status }: { status: "done" | "active" | "pending" | "
 /** 화면 맨 아래 동작 막대: 왼쪽 상태 한 줄, 오른쪽 이전과 주 버튼. 화면 아래에 붙어 있다. */
 export function Footer({ status, lead, children }: { status?: ReactNode; lead?: ReactNode; children: ReactNode }) {
   return (
-    <footer className="sticky bottom-0 z-10 mt-auto border-t border-line bg-paper">
+    <footer className="sticky bottom-0 z-10 mt-auto border-t border-border-default bg-bg-canvas">
       {/* 위 테두리 1px + 87px = 88px(디자인). 화면 4~6은 이 높이를 빼고 남는 높이를 채운다. */}
-      <div className="mx-auto flex max-w-[90rem] flex-col gap-2.5 px-5 pt-3 pb-5 lg:h-[5.4375rem] lg:flex-row lg:items-center lg:gap-3.5 lg:px-12 lg:py-0">
+      <div className="mx-auto flex max-w-[76rem] flex-col gap-2.5 px-5 pt-3 pb-5 lg:h-[5.4375rem] lg:flex-row lg:items-center lg:gap-3.5 lg:px-12 lg:py-0">
         {lead}
-        <div className="text-sm leading-snug font-medium text-ink lg:text-15" aria-live="polite">
+        <div className="text-sm leading-snug font-medium text-text-primary lg:text-15" aria-live="polite">
           {status}
         </div>
         {/* 휴대폰: 버튼을 한 줄에 놓고 마지막(주 버튼)을 넓힌다 */}

@@ -285,7 +285,7 @@ export async function ensureRest(jobId: string, req: StartBuildJobRequest): Prom
   if (!job.finished) throw new RouteError(409, "참고 글자를 아직 그리는 중이에요");
   const index = await readIndex(jobId);
   const force = new Set((req.redraw ?? []).filter((c) => c in index.drawn).slice(0, RECHECK_COUNT));
-  const chars = [...byShape([...force]), ...plan(job, index, req.upload.storeName, new Set(await listEdits(jobId)))];
+  const chars = req.skipDraw ? [] : [...byShape([...force]), ...plan(job, index, req.upload.storeName, new Set(await listEdits(jobId)))];
   const ctx = await jobContext(job, req);
   const run: RestRun = { total: chars.length, done: 0, failed: 0, startedAt: Date.now(), finishedAt: null, sheetSeconds: [], error: null, aborted: false, promise: Promise.resolve() };
   run.promise = (async () => {

@@ -233,12 +233,14 @@ export const BUILD_STAGES: { key: BuildStageKey; label: string; description: str
 export const NEAREST_KIND_LABELS: Record<NearestKind, string> = {
   free: "무료 폰트",
   commercial: "상용 폰트",
+  specimen: "견본 이미지",
 };
 
 /** 유사도 검사가 무엇과 비교했는지. 상용 폰트와 비교하지 않았으면 그렇다고 밝힌다(선별 검사이지 권리 보증이 아님, 10/28). */
 export function similarityScope(compared: Record<NearestKind, number>): string {
   const base = `무료 폰트 ${compared.free}개`;
-  return compared.commercial ? `${base}·상용 폰트 ${compared.commercial}개와 비교` : `${base}와 비교, 상용 폰트와는 비교하지 않음`;
+  const specimen = compared.specimen ? `·견본 이미지 ${compared.specimen}종` : "";
+  return compared.commercial ? `${base}·상용 폰트 ${compared.commercial}개${specimen}와 비교` : `${base}${specimen}와 비교, 상용 폰트 파일과는 비교하지 않음`;
 }
 
 // 기본 자음 14개가 모두 나오는 팬그램. 견본·OCR 검수 글자에 쓴다. (10/27~28에는 이 문장의 자소만 그렸다.)

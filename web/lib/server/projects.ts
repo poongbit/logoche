@@ -13,7 +13,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { AXES, BRAND_TONES, attributeLabel, CHECKS, EXTRA_CHARS, FAMILY_LABEL, weightLabel, LOGO_FONTS, LOGO_SOURCES, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
+import { AXES, BRAND_TONES, attributeLabel, CHECKS, EXTRA_CHARS, FAMILY_LABEL, weightLabel, LOGO_FONTS, LOGO_SOURCES, MIN_REFERENCE_READY, NEAREST_KIND_LABELS, SHOWCASE_FONTS, USAGE_CONTEXTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { DESIRED_FEEL_MAX, industryText, isImitationRequest, missingUploadFields } from "@/lib/rules";
 import type {
@@ -163,7 +163,28 @@ async function glyphRequest(p: Stored, sampleId: string | null = null): Promise<
 
 async function buildRequest(p: Stored): Promise<StartBuildJobRequest> {
   const req = await glyphRequest(p);
-  return { ...req, storeName: p.upload.storeName, logoHash: p.upload.logoHash, glyphJobId: p.glyphJobId, axes: req.style.axes };
+  return {
+    ...req,
+    storeName: p.upload.storeName,
+    logoHash: p.upload.logoHash,
+    glyphJobId: p.glyphJobId,
+    axes: req.style.axes,
+    provenance: buildProvenance(p, req.style),
+  };
+}
+
+/** 11/5 빌드 출처. 같은 로고의 재빌드와 서로 다른 로고의 결과를 나중에 가르려는 기록이다(유사도 분석). 가게 이름·소유자·로고 이미지는 넣지 않는다. */
+function buildProvenance(p: Stored, style: StyleCard): Record<string, unknown> {
+  return {
+    source: "web",
+    projectId: p.id,
+    sampleId: p.upload.sampleId,
+    industry: p.upload.industry,
+    attributes: p.upload.attributes ?? null,
+    brandTones: p.upload.brandTones,
+    family: style.family ?? null,
+    axes: style.axes.map((a) => ({ key: a.key, value: a.value, suggested: a.suggested, basis: a.basis, chosen: a.chosen ?? false })),
+  };
 }
 
 // ---------- 만들기 ----------
@@ -319,8 +340,20 @@ async function waitChoice(p: Stored): Promise<boolean | void> {
   });
 }
 
-/** 참고 글자 30자가 다 그려지면 결과를 보여 주고 사용자가 나머지를 그릴지 정하는 단계(reviewing)로 간다(11/4).
- * 나머지 글자를 그리는 일(약 2,300자, 약 6분)이 이 서비스에서 가장 큰 비용이라, 30자를 보고 정한 뒤에만 시작한다. 저절로 계속하지 않는다. */
+/** 참고 글자 30자가 다 그려지면 떨어진 글자를 사용자에게 묻지 않고 우리 비용으로 다시 그린 뒤(11/5 사용자 결정), 통과한 글자가 충분하면
+ * 확인 없이 바로 나머지 글자를 이어서 그린다. 사용자는 견본을 고른 뒤 "글자를 그리고 있어요" 하나로 이어지는 화면만 본다.
+ * 다시 그려도 통과한 글자가 MIN_REFERENCE_READY보다 적을 때만 예전처럼 30자를 보여 주고 사용자가 정하게 한다(reviewing).
+ * 이전(11/4)에는 나머지 글자를 그리는 일(약 2,300자, 약 6분)이 가장 큰 비용이라 30자를 보고 정한 뒤에만 시작했다. 크레딧 차감 시점은 견본을 고르고 만들기를 시작할 때다. */
+const AUTO_RETRY_ROUNDS = Number(process.env.REF_AUTO_RETRY_ROUNDS ?? 2);
+
+async function waitIdle(jobId: string) {
+  for (;;) {
+    const job = await getGlyphJob(jobId);
+    if (!job.items.some((i) => i.status === "drawing" || i.status === "redrawing")) return job;
+    await sleep(1000);
+  }
+}
+
 async function waitRefs(p: Stored) {
   const id = p.glyphJobId!;
   let job = await getGlyphJob(id);
@@ -328,14 +361,48 @@ async function waitRefs(p: Stored) {
     await sleep(2000);
     job = await getGlyphJob(id);
   }
-  const ready = job.items.filter((i) => i.status === "ready").length;
+  let ready = job.items.filter((i) => i.status === "ready").length;
   if (ready === 0) throw new Error("참고 글자를 하나도 그리지 못했어요");
   if ((await read(p.id)).phase !== "drawing") return; // 그리는 동안 사용자가 중단했다
+  // 떨어진 글자를 자동으로 다시 그린다(글자 하나씩, 최대 AUTO_RETRY_ROUNDS번). 사용자에게는 보이지 않는다.
+  let retried = 0;
+  for (let round = 0; round < AUTO_RETRY_ROUNDS; round++) {
+    const failedIdx = job.items.flatMap((i, index) => (i.status === "failed" ? [index] : []));
+    if (!failedIdx.length) break;
+    if ((await read(p.id)).phase !== "drawing") return;
+    const req = await glyphRequest(p);
+    for (const index of failedIdx) {
+      try {
+        await retryGlyph(id, index, req);
+        retried++;
+      } catch (err) {
+        console.error("[logoche] 떨어진 참고 글자 자동 다시 그리기를 건너뜀", index, err instanceof Error ? err.message : err);
+      }
+    }
+    job = await waitIdle(id);
+    ready = job.items.filter((i) => i.status === "ready").length;
+  }
+  if ((await read(p.id)).phase !== "drawing") return;
+  const failedLeft = job.items.length - ready;
+  if (ready >= MIN_REFERENCE_READY) {
+    const q = await read(p.id);
+    const buildJobId = await startBuild(await buildRequest(q));
+    await update(p.id, (r) => {
+      if (r.phase !== "drawing") return; // 시작하는 사이 사용자가 중단했다
+      r.phase = "building";
+      r.buildJobId = buildJobId;
+      for (const m of job.models) r.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
+      r.record.push(event("check", `참고 글자 ${job.items.length}자 중 ${ready}자 통과${retried ? ` (떨어진 글자를 자동으로 ${retried}번 다시 그림)` : ""}${failedLeft ? `, ${failedLeft}자는 빼고 그림` : ""}`));
+      r.record.push(event("check", "통과한 글자가 충분해 확인 없이 나머지 글자를 이어서 그림"));
+    });
+    return;
+  }
+  // 통과한 글자가 너무 적다: 사용자에게 30자를 보여 주고 정하게 한다.
   await update(p.id, (q) => {
     q.phase = "reviewing";
     q.review = { readyAt: Date.now(), held: false, continued: false };
     for (const m of job.models) q.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
-    q.record.push(event("selection", `참고 글자 ${job.items.length}자 중 ${ready}자 통과`));
+    q.record.push(event("check", `참고 글자 ${job.items.length}자 중 ${ready}자만 통과해 사용자 확인을 기다림${retried ? ` (자동으로 ${retried}번 다시 그렸음)` : ""}`));
   });
   void notify(p.id, "draft");
 }
@@ -560,6 +627,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
         familyLabel: FAMILY_LABEL[d.family],
         expression: d.expression,
         weightLabel: d.weight ? weightLabel(d.weight) : null,
+        why: d.why ?? null,
         summary: d.brief ? (d.brief.split(/(?<=[.!?。])\s+/)[0] ?? null) : null,
         imageUrl: c.samples[i]?.status === "ready" && c.samples[i].sampleId ? `/api/style/samples/${c.samples[i].sampleId}` : null,
         status: c.samples[i]?.status ?? "failed",
@@ -726,8 +794,8 @@ export async function redrawGlyphs(owner: string, id: string, chars: string[]): 
 }
 
 /** 다듬기(11/3): 글자 하나 또는 전체("*")에 사용자가 조정을 더한다. tweak이 null이면 그 조정을 지운다.
- * 글자 하나는 지금 폰트 파일에서 그 글자만 바로 바꿔 끼운다(동기, 몇 초 안). 전체는 표만 바꾸고 rebuild: true를 돌려주므로,
- * 호출한 쪽이 폰트를 다시 만들어야 한다(rebuildProject). 모든 저장은 제작 기록에 human_edit 한 줄로 남는다. */
+ * 글자 하나는 지금 폰트 파일에서 그 글자만 바로 바꿔 끼운다(동기, 몇 초 안). 전체는 표를 바꾼 뒤 서버가 바로 폰트를 다시 만들기 시작한다
+ * (11/5: 그리지 못한 글자는 새로 그리지 않는다, skipDraw. 이미지 호출 없음). 모든 저장은 제작 기록에 human_edit 한 줄로 남는다. */
 export async function saveProjectTweak(owner: string, id: string, req: SaveGlyphTweakRequest): Promise<SaveGlyphTweakResponse> {
   const p = await readOwned(owner, id);
   if (p.phase !== "done" || !p.glyphJobId || !p.style) throw new RouteError(409, "다 만든 폰트만 다듬을 수 있어요");
@@ -736,6 +804,7 @@ export async function saveProjectTweak(owner: string, id: string, req: SaveGlyph
   const key = checkTweakKey(req.char);
   const baseWeight = p.style.axes.find((a) => a.key === "weight")?.value ?? 400;
   const tweak = req.tweak === null ? null : clampTweak(req.tweak, baseWeight);
+  if (tweak && key !== ALL_GLYPHS) delete tweak.rel; // 기준 글자는 전체 조정에서만 쓴다
   const note = typeof req.note === "string" ? req.note.trim().slice(0, 40) : "";
 
   // 표를 먼저 바꿔야 engineRequest가 새 조정을 읽는다. 엔진이 받지 않으면(빈 글자 등) 표를 되돌린다.
@@ -752,7 +821,22 @@ export async function saveProjectTweak(owner: string, id: string, req: SaveGlyph
     }
   }
   if (JSON.stringify(previous) !== JSON.stringify(table[key] ?? null)) await update(id, (q) => void q.record.push(event("human_edit", describeTweak(key, previous, table[key] ?? null, note))));
-  return { tweaks: table, patched, rebuild: key === ALL_GLYPHS };
+  if (key === ALL_GLYPHS) {
+    let buildJobId: string;
+    try {
+      buildJobId = await startBuild({ ...(await buildRequest(p)), skipDraw: true });
+    } catch (err) {
+      await writeTweak(jobId, key, previous, "저장 실패로 되돌림");
+      throw err;
+    }
+    await update(id, (q) => {
+      q.phase = "building";
+      q.buildJobId = buildJobId;
+      q.error = null;
+    });
+    drive(id);
+  }
+  return { tweaks: table, patched, rebuild: false };
 }
 
 /** 다듬기의 "직접 그리기": 편집 화면에 띄울 그림(지금 글자, AI가 그린 그대로, 글자 틀 자리). */

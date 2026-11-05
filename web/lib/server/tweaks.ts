@@ -9,7 +9,7 @@ import path from "node:path";
 import { WEIGHT_CAP } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 import { NO_TWEAK, TWEAK_RANGES, isNoTweak } from "@/lib/tweak";
-import type { GlyphTweak, TweakTable } from "@/lib/types";
+import type { GlyphTweak, StoredTweak, TweakTable } from "@/lib/types";
 import { RouteError } from "./env";
 
 const DATA_DIR = path.join(process.cwd(), ".data", "glyphs");
@@ -22,7 +22,7 @@ export { NO_TWEAK, TWEAK_RANGES, isNoTweak };
 
 export interface TweakHistoryEntry {
   at: string;
-  tweak: GlyphTweak | null; // null이면 조정을 지운 것
+  tweak: StoredTweak | null; // null이면 조정을 지운 것
   note: string;
 }
 
@@ -61,7 +61,7 @@ export function checkTweakKey(char: string): string {
 }
 
 /** 값을 슬라이더 범위로 맞춘다. 굵기는 지금 굵기(baseWeight) + 조정이 굵기 한도 안에 들게 한다(WEIGHT_CAP 넘으면 폰트가 뭉개진다). */
-export function clampTweak(input: unknown, baseWeight: number): GlyphTweak {
+export function clampTweak(input: unknown, baseWeight: number): StoredTweak {
   if (typeof input !== "object" || input === null) throw new RouteError(400, "조정 값을 보내 주세요");
   const out = { ...NO_TWEAK };
   for (const key of Object.keys(NO_TWEAK) as (keyof GlyphTweak)[]) {
@@ -72,7 +72,10 @@ export function clampTweak(input: unknown, baseWeight: number): GlyphTweak {
     out[key] = Math.round(Math.min(hi, Math.max(lo, v)) * 10) / 10;
   }
   out.pull = Math.min(WEIGHT_CAP - baseWeight, Math.max(WEIGHT_FLOOR - baseWeight, out.pull));
-  return out;
+  const rel = (input as { rel?: unknown }).rel;
+  const stored: StoredTweak = out;
+  if (typeof rel === "string" && [...rel].length === 1 && KSX1001_HANGUL.has(rel) && out.pull !== 0) stored.rel = rel; // 기준 글자(전체 조정의 굵기 배율을 잴 글자)
+  return stored;
 }
 
 export async function readTweakTable(jobId: string): Promise<TweakTable> {
@@ -84,10 +87,10 @@ export async function readTweakHistory(jobId: string, char: string): Promise<Twe
 }
 
 /** 이 글자에 실제로 걸리는 조정: 글자별 조정이 있으면 그것, 없으면 전체 조정 */
-export const effectiveTweak = (table: TweakTable, char: string): GlyphTweak | null => table[char] ?? table[ALL_GLYPHS] ?? null;
+export const effectiveTweak = (table: TweakTable, char: string): StoredTweak | null => table[char] ?? table[ALL_GLYPHS] ?? null;
 
 /** 조정을 저장한다(tweak이 null이거나 모두 기본값이면 지운다). 바꾼 표를 돌려준다. */
-export async function writeTweak(jobId: string, char: string, tweak: GlyphTweak | null, note: string): Promise<{ table: TweakTable; previous: GlyphTweak | null }> {
+export async function writeTweak(jobId: string, char: string, tweak: StoredTweak | null, note: string): Promise<{ table: TweakTable; previous: StoredTweak | null }> {
   const key = checkTweakKey(char);
   const stored = await read(jobId);
   const previous = stored.table[key] ?? null;
@@ -112,11 +115,12 @@ const LABELS: Record<keyof GlyphTweak, { name: string; unit: string; signed: boo
 };
 
 /** 제작 기록에 남길 한 줄: 바뀐 항목만 "기울기 +4° → +8°" 식으로 */
-export function describeTweak(char: string, before: GlyphTweak | null, after: GlyphTweak | null, note: string): string {
+export function describeTweak(char: string, before: StoredTweak | null, after: StoredTweak | null, note: string): string {
   const who = char === ALL_GLYPHS ? "전체 글자" : `'${char}'`;
   if (!after) return `${who} 조정을 지워 AI가 정한 값으로 되돌림`;
   const from = before ?? NO_TWEAK;
   const fmt = (k: keyof GlyphTweak, v: number) => `${LABELS[k].signed && v > 0 ? "+" : ""}${v}${LABELS[k].unit}`;
   const changes = (Object.keys(NO_TWEAK) as (keyof GlyphTweak)[]).filter((k) => after[k] !== from[k]).map((k) => `${LABELS[k].name} ${fmt(k, from[k])} → ${fmt(k, after[k])}`);
-  return `${who} 조정: ${changes.join(", ") || "변경 없음"}${note ? ` (${note})` : ""}`;
+  const rel = after.rel ? ` · 굵기는 '${after.rel}'에서 달라진 획 두께의 비율로 건다` : "";
+  return `${who} 조정: ${changes.join(", ") || "변경 없음"}${rel}${note ? ` (${note})` : ""}`;
 }

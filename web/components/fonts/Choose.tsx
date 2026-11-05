@@ -14,33 +14,33 @@ import type { ChooseDirection, ProjectView } from "@/lib/types";
 
 function Card({ d, index, busy, onPick }: { d: ChooseDirection; index: number; busy: boolean; onPick: (index: number) => void }) {
   return (
-    <li className={`flex min-w-0 flex-col gap-3 rounded-[1.25rem] border-[1.5px] bg-bg p-4 ${d.recommended ? "border-ink" : "border-line"}`}>
+    <li className={`flex min-w-0 flex-col gap-3 rounded-[1.25rem] border-[1.5px] bg-bg-canvas p-4 ${d.recommended ? "border-border-active" : "border-border-default"}`}>
       <div className="flex items-center gap-2">
         <span className="text-17 font-extrabold">{d.familyLabel}</span>
-        {d.weightLabel && <span className="text-13 font-bold text-muted">굵기 {d.weightLabel}</span>}
-        {d.recommended && <span className="rounded-full bg-ink px-2 py-0.5 text-12 font-extrabold text-bg">AI 추천</span>}
+        {d.weightLabel && <span className="text-13 font-bold text-text-secondary">굵기 {d.weightLabel}</span>}
+        {d.recommended && <span className="rounded-full bg-bg-inverse px-2 py-0.5 text-12 font-extrabold text-text-inverse">AI 추천</span>}
       </div>
-      <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-stage">
+      <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-[1.25rem] bg-bg-surface-strong">
         {d.status === "ready" && d.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- 서버가 그린 견본 그림
           <img src={d.imageUrl} alt={`${d.familyLabel} 느낌으로 그린 가게 이름 견본`} className="h-full w-full object-contain mix-blend-multiply" />
         ) : d.status === "drawing" ? (
-          <span role="status" className="flex flex-col items-center gap-2 text-15 font-bold text-muted">
-            <span aria-hidden className="h-6 w-6 animate-spin rounded-full border-[3px] border-track border-t-ink" />
+          <span role="status" className="flex flex-col items-center gap-2 text-15 font-bold text-text-secondary">
+            <span aria-hidden className="h-6 w-6 animate-spin rounded-full border-[3px] border-border-default border-t-border-active" />
             그리는 중
           </span>
         ) : (
-          <span className="px-4 text-center text-15 font-medium text-muted">견본을 그리지 못했어요. 이 느낌으로 만들 수는 있어요.</span>
+          <span className="px-4 text-center text-15 font-medium text-text-secondary">견본을 그리지 못했어요. 이 느낌으로 만들 수는 있어요.</span>
         )}
       </div>
       <p className="text-15 font-bold">{d.expression}</p>
-      {d.summary && <p className="line-clamp-3 text-14 leading-normal text-muted">{d.summary}</p>}
+      {(d.why ?? d.summary) && <p className="line-clamp-3 text-14 leading-normal text-text-secondary">{d.why ?? d.summary}</p>}
       <button
         type="button"
         disabled={busy}
         onClick={() => onPick(index)}
-        className={`mt-auto h-12 rounded-full px-5 text-15 font-bold transition-colors disabled:cursor-not-allowed disabled:border-dashed disabled:bg-subtle disabled:text-muted ${
-          d.recommended ? "bg-ink text-bg hover:bg-hover" : "border-[1.5px] border-edge bg-bg hover:border-ink hover:bg-subtle"
+        className={`mt-auto h-12 rounded-full px-5 text-15 font-bold transition-colors disabled:cursor-not-allowed disabled:border-dashed disabled:bg-bg-surface disabled:text-text-disabled ${
+          d.recommended ? "bg-bg-inverse text-text-inverse hover:bg-bg-inverse-hover" : "border-[1.5px] border-border-strong bg-bg-canvas hover:border-border-active hover:bg-bg-surface"
         }`}
       >
         이 느낌으로 만들기
@@ -76,16 +76,16 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
     <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-7 px-5 pt-8 lg:px-10 lg:pt-10">
       <Steps current={3} />
       <div className="flex flex-col gap-2">
-        <span className="text-15 font-bold text-muted">{view.name}</span>
+        <span className="text-15 font-bold text-text-secondary">{view.name}</span>
         <h1 className="text-26 font-extrabold lg:text-32">{choose?.again ? "다른 느낌으로 골라 볼까요?" : "어떤 느낌의 글씨로 만들까요?"}</h1>
-        <p className="text-17 leading-normal font-medium text-muted">
+        <p className="text-17 leading-normal font-medium text-text-secondary">
           {choose?.again
             ? "그렸던 30자는 지웠어요. 다른 느낌을 고르면 그 느낌으로 30자를 다시 그려 보여 드려요."
-            : `가게 이름을 ${directions.length || 3}가지 느낌으로 그려 봤어요. 하나를 고르면 그 느낌으로 먼저 30자를 그려 보여 드려요. 견본과 최종 글자는 조금 다를 수 있어요.`}
+            : `가게 이름을 ${directions.length || 3}가지 느낌으로 그려 봤어요. 하나를 고르면 그 느낌으로 바로 한글을 그리기 시작해요. 견본과 최종 글자는 조금 다를 수 있어요.`}
         </p>
       </div>
 
-      <ul aria-label="서체 느낌" className="grid gap-4 md:grid-cols-3">
+      <ul aria-label="서체 느낌" className="grid gap-4 sm:grid-cols-3">
         {directions.map((d, i) => (
           <Card key={`${d.family}-${i}`} d={d} index={i} busy={sending} onPick={(index) => void pick(index)} />
         ))}
@@ -97,7 +97,7 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
         <span aria-live="polite" className="text-15 font-bold">
           {status}
         </span>
-        <span className="text-13 text-muted">
+        <span className="text-13 text-text-secondary">
           창을 닫아도 돼요. 견본이 그려지면 메일로 알려 드려요.{" "}
           <Link href="/fonts" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">
             나중에 고르기

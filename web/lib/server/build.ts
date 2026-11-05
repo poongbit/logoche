@@ -117,6 +117,7 @@ export async function startBuild(req: StartBuildJobRequest): Promise<string> {
         aiNotice: RIGHTS.aiNotice,
         edits: await readEdits(glyphJobId),
         tweaks: await readTweakTable(glyphJobId),
+        provenance: { ...req.provenance, glyphJobId, redraw: req.redraw?.length ?? 0, drawModels: glyphModels(glyphJobId) },
       });
       draw.engineStarted = true;
     } catch (err) {

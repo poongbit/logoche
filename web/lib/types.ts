@@ -112,6 +112,7 @@ export interface StyleDirection {
   family: StyleFamily;
   expression: string;
   brief: string | null; // 설계 지시문. 색·기울기·위치 같은 금지 내용이 든 문장은 걸러 낸다(server/style.ts)
+  why?: string | null; // 이 가게에 이 방향이 어울리는 이유 한 줄(견본 카드에 보인다, 11/5). 이전 작업에는 없다
   weight?: number; // 이 방향의 기본 굵기(굵기 축 값). 방향을 고르면 폰트 전체 굵기가 된다. 없으면(이전 작업) 조절값 그대로(11/4)
 }
 
@@ -126,6 +127,7 @@ export interface StyleCard {
   axes: StyleAxis[];
   strokeEnd: string; // 획 끝 묘사
   signature: string | null; // 시그니처 요소와 들어갈 자리
+  signatureDraw?: string | null; // 글자 그리기에 넘기는 로고 고유 조형(구체적 조형 + 들어갈 자리). 없으면(이전 작업) 그리기 지시는 예전과 같다(11/5 시그니처 시험)
   toneMismatch: string | null; // AI 해석이 고른 톤과 다를 때 알림
   expression: string; // 참고 글자 초안의 표현 방식. 사용자가 AI 제안에서 고르거나 직접 쓴다
   expressionOptions: string[]; // AI가 로고와 고른 톤을 보고 제안한 표현 방식
@@ -236,20 +238,23 @@ export interface GlyphTweak {
   ty: number;
 }
 
+/** 표에 저장되는 조정. rel은 전체("*") 조정에서만: 굵기(pull)를 모든 글자에 같은 양으로 걸지 않고, 이 글자에서 실제로 달라진 획 두께의 배율을 다른 글자에도 건다(11/5, 엔진 drawn.resolve_all). */
+export type StoredTweak = GlyphTweak & { rel?: string };
+
 /** 조정 표. "*"는 전체 글자, 나머지는 글자별 조정(전체 조정을 덮어쓴다). 조정이 없는 글자는 표에 없다. */
-export type TweakTable = Record<string, GlyphTweak>;
+export type TweakTable = Record<string, StoredTweak>;
 
 /** 글자 조정 저장. tweak이 null이면 그 글자(또는 전체)의 조정을 지운다. 글자 하나는 지금 폰트에 바로 바꿔 끼운다. */
 export interface SaveGlyphTweakRequest {
   char: string; // 한글 한 글자 또는 "*"(전체)
-  tweak: GlyphTweak | null;
+  tweak: StoredTweak | null;
   note?: string; // 어떻게 조정했는지(슬라이더·변형·프리셋). 제작 기록에 붙는다
 }
 
 export interface SaveGlyphTweakResponse {
   tweaks: TweakTable;
   patched: boolean; // 지금 폰트에 바로 반영했는가(글자 하나만 가능)
-  rebuild: boolean; // 전체 조정이라 폰트를 다시 만들어야 반영되는가
+  rebuild: boolean; // 11/5부터 늘 false: 전체 조정은 서버가 바로 폰트를 다시 만들기 시작한다(프로젝트가 만드는 중으로 바뀐다)
 }
 
 // ---------- 화면 4. 조합·빌드 ----------
@@ -271,15 +276,15 @@ export interface CheckResult {
   detail: string;
 }
 
-export type NearestKind = "free" | "commercial";
+export type NearestKind = "free" | "commercial" | "specimen";
 
 export interface SimilarityResult {
   score: number;
   threshold: number;
   nearestFont: string;
-  nearestKind: NearestKind; // 무료 폰트 · 상용 폰트
+  nearestKind: NearestKind; // 무료 폰트 · 상용 폰트 · 견본 이미지
   passed: boolean;
-  compared: Record<NearestKind, number>; // 종류별로 비교한 폰트 수. 상용이 0이면 상용 폰트와는 비교하지 않은 것
+  compared: Record<NearestKind, number>; // 종류별로 비교한 수. 상용이 0이면 상용 폰트와는 비교하지 않은 것, 견본은 폰트 파일이 아니라 이미지에서 뽑은 지문(정밀도 낮음)
 }
 
 export type BuildPhase = "composing" | "checking" | "done" | "failed";
@@ -368,7 +373,10 @@ export interface StartBuildJobRequest extends StartGlyphJobRequest {
   logoHash: string | null; // 발급 대장에 함께 적는다(기록용)
   glyphJobId: string | null; // 참고 글자 그림을 찾는다
   axes: StyleAxis[];
+  skipDraw?: boolean; // 11/5: 전체 조정처럼 폰트만 다시 만들 때. 아직 그리지 않은 글자를 새로 그리지 않는다(이미지 호출 없음)
   redraw?: string[]; // 11/2: 이미 그린 나머지 글자 중 다시 그릴 글자(스튜디오 '다시 볼 글자'에서 고름)
+  /** 11/5: 엔진이 빌드 폴더에 남기는 출처(프로젝트 번호·서체 방향 등). 가게 이름·소유자·로고 이미지는 넣지 않는다. 서체끼리의 유사도 분석(docs/similarity-analysis-20261105.md)에 쓴다. */
+  provenance?: Record<string, unknown>;
 }
 
 export interface StartJobResponse {
@@ -438,6 +446,7 @@ export interface ChooseDirection {
   familyLabel: string;
   expression: string;
   weightLabel: string | null; // 이 방향의 굵기를 말로(가는·보통·굵은·아주 굵은)
+  why: string | null; // 이 가게에 어울리는 이유 한 줄(없으면 summary를 보인다)
   summary: string | null; // 설계 지시문 첫 문장
   imageUrl: string | null; // 견본 그림(그리는 중·실패면 null)
   status: "drawing" | "ready" | "failed";
