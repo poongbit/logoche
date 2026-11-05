@@ -22,6 +22,10 @@ const arg = (name: string) => {
 };
 const OUT = arg("--out") ?? "structure-runs.jsonl";
 const DRY = process.argv.includes("--dry");
+// 4차(모델·품질 비교): --only id,id 로 입력을 고르고 --quality fine|standard 로 그리기 수준을 정한다. 모델은 환경변수 OPENAI_IMAGE_MODEL.
+const ONLY = arg("--only")?.split(",");
+const QUALITY = (arg("--quality") ?? "standard") as "standard" | "fine";
+const TAG = arg("--tag") ?? "";
 const LOGO_ID = arg("--logo") ?? "dalkom";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -43,6 +47,7 @@ const VARIANTS: { id: string; font?: string; tones: UploadInput["brandTones"]; u
 ];
 
 async function main() {
+  if (ONLY) { for (let i = VARIANTS.length - 1; i >= 0; i--) if (!ONLY.includes(VARIANTS[i].id)) VARIANTS.splice(i, 1); }
   const logo = SAMPLE_LOGOS.find((l) => l.id === LOGO_ID)!;
   console.log(`로고 ${logo.id}, 변형 ${VARIANTS.map((v) => v.id).join(", ")}${DRY ? " (--dry: AI 호출 없음)" : ""}`);
   if (DRY) return;
@@ -84,7 +89,7 @@ async function main() {
     };
     const t0 = Date.now();
     try {
-      const jobId = startGlyphJob({ upload: { ...upload, brandTones: v.tones, usageContexts: v.usage }, style: applied, sampleId: null, quality: "standard" });
+      const jobId = startGlyphJob({ upload: { ...upload, brandTones: v.tones, usageContexts: v.usage }, style: applied, sampleId: null, quality: QUALITY });
       let job = await getGlyphJob(jobId);
       while (job.status === "running") {
         await sleep(2000);
@@ -105,19 +110,19 @@ async function main() {
         aiNotice: "select-test",
         edits: [],
         tweaks: {},
-        provenance: { source: "experiment-freedom", variant: v.id, guideFont: v.font ?? null, tones: v.tones, usage: v.usage, logoId: logo.id, family: applied.family ?? null, expression: direction.expression, refsReady: ready },
+        provenance: { source: "experiment-freedom", variant: v.id + TAG, guideFont: v.font ?? null, tones: v.tones, usage: v.usage, logoId: logo.id, family: applied.family ?? null, expression: direction.expression, refsReady: ready },
       });
       let phase = "composing";
       for (let i = 0; i < 150 && phase !== "done" && phase !== "failed"; i++) {
         await sleep(1000);
         phase = ((await (await fetch(`${ENGINE_URL}/builds/${buildId}`)).json()) as { phase: string }).phase;
       }
-      const row = { variant: v.id, guideFont: v.font ?? null, tones: v.tones, usage: v.usage, failed: job.items.filter((i) => i.status !== "ready").length, buildId, jobId, ready, phase, seconds: Math.round((Date.now() - t0) / 1000) };
+      const row = { variant: v.id + TAG, guideFont: v.font ?? null, tones: v.tones, usage: v.usage, failed: job.items.filter((i) => i.status !== "ready").length, buildId, jobId, ready, phase, seconds: Math.round((Date.now() - t0) / 1000) };
       await fs.appendFile(OUT, JSON.stringify(row) + "\n");
       console.log(`  ${v.id}: 참고 글자 ${ready}자, 빌드 ${phase}, ${row.seconds}초`);
     } catch (err) {
       console.error(`  ${v.id} 실패: ${err instanceof Error ? err.message : err}`);
-      await fs.appendFile(OUT, JSON.stringify({ variant: v.id, guideFont: v.font ?? null, tones: v.tones, usage: v.usage, error: String(err) }) + "\n");
+      await fs.appendFile(OUT, JSON.stringify({ variant: v.id + TAG, guideFont: v.font ?? null, tones: v.tones, usage: v.usage, error: String(err) }) + "\n");
     }
   }
 }

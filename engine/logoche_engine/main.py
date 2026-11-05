@@ -295,6 +295,20 @@ def start_build(req: BuildRequest) -> dict:
     return {"buildId": state.build_id}
 
 
+class RefsSimilarityRequest(BaseModel):
+    refs: list[RefInput] = Field(default_factory=list)
+
+
+@app.post("/refs/similarity")
+def refs_similarity(req: RefsSimilarityRequest) -> dict:
+    """닮음 가드(11/5): 참고 글자 30자가 무료 폰트와 얼마나 닮았는지. 서체를 만들기 전에 잰다."""
+    glyphs = {r.char: raster.to_gray(raster.decode_image(r.image)) for r in req.refs if len(r.char) == 1}
+    if len(glyphs) < 5:
+        raise HTTPException(400, "참고 글자가 너무 적어요")
+    score, name, threshold = checks.refs_similarity(glyphs)
+    return {"score": round(score, 3), "name": name, "threshold": threshold, "chars": len(glyphs)}
+
+
 class PreviewRequest(BaseModel):
     text: str
     axes: BuildAxes = Field(default_factory=BuildAxes)

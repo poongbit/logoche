@@ -392,6 +392,25 @@ def check_similarity(path: Path) -> tuple[CheckResult, Similarity]:
     return _result("similarity", sim.passed, detail), sim
 
 
+def refs_similarity(glyphs: dict[str, np.ndarray]) -> tuple[float, str, float]:
+    """참고 글자 그림(흰 바탕 검은 글씨, 글자→회색조)이 무료 폰트와 얼마나 닮았는지(11/5 닮음 가드). 완성 서체를 만들기 전 30자 단계에서 잰다.
+    무료 폰트에서 같은 글자만 그려 비교한다. 돌려주는 것: (가장 높은 닮음, 그 폰트 이름, 기준). 상용·견본은 서체 완성 검사에서만 본다."""
+    mine = {}
+    for ch, gray in glyphs.items():
+        ridge = skeleton(255 - gray)
+        if ridge is not None:
+            mine[ch] = _shape_entry(ridge)
+    chars = "".join(sorted(mine))
+    best = (0.0, "")
+    for kind, name, source in comparison_set():
+        if kind != "free":
+            continue
+        score = shape_similarity(mine, _shape_set(source, source.stat().st_mtime, chars))
+        if score > best[0]:
+            best = (score, name)
+    return best[0], best[1], THRESHOLDS["free"]
+
+
 def run_checks(
     path: Path,
     expected: list[str] | None = None,

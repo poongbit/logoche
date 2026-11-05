@@ -40,6 +40,7 @@ import { editSource, engineRequest, listEdits, readEdits, saveEdit } from "./edi
 import { engine } from "./engine";
 import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
+import { chooseGuideFont, guideFontEnabled } from "./guidefont";
 import { chooseMail, doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
 import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
@@ -156,9 +157,26 @@ export async function ownsGlyphJob(owner: string, jobId: string): Promise<boolea
   return (await ownedProjects(owner)).some((p) => p.glyphJobId === jobId);
 }
 
-async function glyphRequest(p: Stored, sampleId: string | null = null): Promise<StartGlyphJobRequest> {
+export async function glyphRequest(p: Stored, sampleId: string | null = null, guard?: { round: number; exclude: string[] }): Promise<StartGlyphJobRequest> {
   if (!p.style) throw new RouteError(409, "로고를 아직 읽는 중이에요");
-  return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: p.style, sampleId, quality: p.quality };
+  return { upload: { ...p.upload, logoImage: await logoOf(p.id) }, style: withGuideFont(p, p.style, guard), sampleId, quality: p.quality };
+}
+
+/** 구조 참고 폰트를 모든 입력에 켠다(11/5 선택 규칙). 켜진 경우 11/5 시험에서 구조 참고가 따라온 조건으로 맞춘다:
+ * 방향 설계 지시문과 사용자 조절 표시를 빼 속성이 모양을 덮지 않게 한다. 선택은 프로젝트 번호로 고정되어 같은 프로젝트는 같은 폰트다. */
+function withGuideFont(p: Stored, style: StyleCard, guard?: { round: number; exclude: string[] }): StyleCard {
+  if (!guideFontEnabled() || (style.guideFont && !guard)) return style;
+  const choice = chooseGuideFont(p.upload, guard ? `${p.id}#${guard.round}` : p.id, guard?.exclude ?? []);
+  if (!choice) return style;
+  return {
+    ...style,
+    designBrief: null,
+    axes: style.axes.map((a) => ({ ...a, chosen: false })),
+    guideFont: choice.stem,
+    guideStrong: true,
+    guideWarp: 0.6,
+    guideChoice: { cluster: choice.cluster, top: choice.top },
+  };
 }
 
 async function buildRequest(p: Stored): Promise<StartBuildJobRequest> {
@@ -183,6 +201,8 @@ function buildProvenance(p: Stored, style: StyleCard): Record<string, unknown> {
     attributes: p.upload.attributes ?? null,
     brandTones: p.upload.brandTones,
     family: style.family ?? null,
+    guideFont: style.guideFont ?? null,
+    guideCluster: style.guideChoice?.cluster ?? null,
     axes: style.axes.map((a) => ({ key: a.key, value: a.value, suggested: a.suggested, basis: a.basis, chosen: a.chosen ?? false })),
   };
 }
@@ -354,6 +374,42 @@ async function waitIdle(jobId: string) {
   }
 }
 
+// 닮음 가드(11/5): 참고 글자 30자가 무료 폰트와 기준 이상 닮으면 서체를 만들기 전에 이 단계에서 다시 그린다.
+// 참고 글자 그림의 점수는 완성 서체의 점수보다 낮게 나오는 경향이라(시험에서 0.75대가 완성 후 0.86) 기준(GUARD_REF_THRESHOLD)을 완성 서체 기준 0.85보다 낮게 둔다.
+const GUARD_THRESHOLD = Number(process.env.GUARD_REF_THRESHOLD ?? 0.78);
+const GUARD_ROUNDS = Number(process.env.GUARD_REF_ROUNDS ?? 2);
+
+type GuardOutcome = { jobId: string; note: string; style: StyleCard | null };
+
+export async function guardRefs(p: Stored, firstJobId: string): Promise<GuardOutcome | null> {
+  if (GUARD_ROUNDS <= 0 || MOCK) return null;
+  const measure = async (id: string) => (await engine.refsSimilarity(await readyRefs(id)).catch(() => null))?.score ?? null;
+  const first = await measure(firstJobId);
+  if (first === null || first < GUARD_THRESHOLD) return null;
+  let best: { jobId: string; score: number; style: StyleCard | null } = { jobId: firstJobId, score: first, style: null };
+  const used: string[] = p.style?.guideFont ? [p.style.guideFont] : [];
+  let redone = 0;
+  for (let round = 1; round <= GUARD_ROUNDS && best.score >= GUARD_THRESHOLD; round++) {
+    if ((await read(p.id)).phase !== "drawing") return null;
+    const req = await glyphRequest(p, null, { round, exclude: used });
+    if (req.style.guideFont) used.push(req.style.guideFont);
+    const id = startGlyphJob(req);
+    let job = await getGlyphJob(id);
+    while (job.status === "running") {
+      await sleep(2000);
+      job = await getGlyphJob(id);
+    }
+    const failedIdx = job.items.flatMap((i, index) => (i.status === "failed" ? [index] : []));
+    for (const index of failedIdx) await retryGlyph(id, index, req).catch(() => undefined);
+    job = await waitIdle(id);
+    redone++;
+    if (job.items.filter((i) => i.status === "ready").length < MIN_REFERENCE_READY) continue;
+    const score = await measure(id);
+    if (score !== null && score < best.score) best = { jobId: id, score, style: req.style };
+  }
+  return { jobId: best.jobId, style: best.style, note: `참고 글자 닮음 검사: 무료 폰트와 최대 ${first.toFixed(2)} → 기준 ${GUARD_THRESHOLD.toFixed(2)}를 넘어 ${redone}번 다시 그림, 최종 ${best.score.toFixed(2)}${best.score >= GUARD_THRESHOLD ? " (그래도 기준 이상, 가장 덜 닮은 것을 씀)" : ""}` };
+}
+
 async function waitRefs(p: Stored) {
   const id = p.glyphJobId!;
   let job = await getGlyphJob(id);
@@ -383,6 +439,21 @@ async function waitRefs(p: Stored) {
     ready = job.items.filter((i) => i.status === "ready").length;
   }
   if ((await read(p.id)).phase !== "drawing") return;
+  let guardNote = "";
+  if (ready >= MIN_REFERENCE_READY) {
+    const guard = await guardRefs(p, id);
+    if (guard) {
+      guardNote = guard.note;
+      if (guard.jobId !== id) {
+        job = await getGlyphJob(guard.jobId);
+        ready = job.items.filter((i) => i.status === "ready").length;
+        await update(p.id, (q) => {
+          q.glyphJobId = guard.jobId;
+          if (guard.style) q.style = guard.style;
+        });
+      }
+    }
+  }
   const failedLeft = job.items.length - ready;
   if (ready >= MIN_REFERENCE_READY) {
     const q = await read(p.id);
@@ -393,6 +464,7 @@ async function waitRefs(p: Stored) {
       r.buildJobId = buildJobId;
       for (const m of job.models) r.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
       r.record.push(event("check", `참고 글자 ${job.items.length}자 중 ${ready}자 통과${retried ? ` (떨어진 글자를 자동으로 ${retried}번 다시 그림)` : ""}${failedLeft ? `, ${failedLeft}자는 빼고 그림` : ""}`));
+      if (guardNote) r.record.push(event("check", guardNote));
       r.record.push(event("check", "통과한 글자가 충분해 확인 없이 나머지 글자를 이어서 그림"));
     });
     return;
