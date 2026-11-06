@@ -70,7 +70,7 @@ interface Stored {
   error: string | null;
   review: { readyAt: number | null; held: boolean; continued: boolean };
   // 느낌 고르기(11/4). 견본 그림은 방향마다 한 장. 서버를 다시 켜도 이어 가려고 파일에 둔다(그리는 일꾼은 메모리에 있다).
-  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null; again?: boolean };
+  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null; again?: boolean; previous?: number | null };
   draftNotified?: boolean; // 30자 초안 알림 메일을 보냈다(결정을 기다리는 단계에 들어갈 때 한 번)
   chooseNotified?: boolean; // 느낌 고르기 알림 메일을 보냈다(견본이 다 그려졌을 때 한 번)
   result: { build: BuildJob; missing: string[]; extras: string[] } | null;
@@ -743,6 +743,7 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
         recommended: i === 0,
       })),
       again: !!c.again,
+      previous: c.again && typeof c.previous === "number" ? c.previous : null,
     };
   }
   let recent: ProjectView["recent"] = [];
@@ -820,9 +821,9 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
       q.glyphJobId = null;
       q.review = { readyAt: null, held: false, continued: false };
       q.draftNotified = false;
-      if (q.choose) q.choose = { ...q.choose, picked: null, again: true };
+      if (q.choose) q.choose = { ...q.choose, previous: q.choose.picked, picked: null, again: true }; // 11/6: 다시 고르는 화면에 '전에 고른 느낌' 표시
       q.chooseNotified = false; // 다시 고를 때도 견본이 준비돼 있다고 알린다
-      q.record.push(event("selection", "참고 글자 30자를 보고 다른 느낌으로 다시 고르기로 함"));
+      q.record.push(event("selection", "기준 글자 30자를 보고 다른 느낌으로 다시 고르기로 함"));
     });
   } else {
     await update(id, (q) => {

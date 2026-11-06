@@ -461,6 +461,7 @@ export interface ChooseDirection {
 export interface ProjectChoose {
   directions: ChooseDirection[];
   again: boolean; // 30자를 보고 다른 느낌을 다시 고르는 중
+  previous?: number | null; // 11/6: 다시 고를 때 전에 고른 안의 순서(again일 때만). 화면이 '전에 고른 느낌' 꼬리표를 붙인다
 }
 
 // 11/4 사용자 결정: 느낌은 저절로 고르지 않는다. 고를 때까지 서버가 기다린다.

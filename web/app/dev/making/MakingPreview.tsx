@@ -214,7 +214,7 @@ function viewFor(state: State, t: number, now: number): ProjectView {
     case "choose-failed":
       return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "failed"]), again: false } };
     case "choose-again":
-      return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "ready"]), again: true } };
+      return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "ready"]), again: true, previous: 1 } };
     case "review": {
       const items = refs(30);
       items[6] = { ...items[6], status: "failed", imageUrl: null, problem: "검사 탈락" };

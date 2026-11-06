@@ -24,6 +24,7 @@ function Card({
   d,
   index,
   selected,
+  before,
   tabIndex,
   busy,
   onSelect,
@@ -32,6 +33,8 @@ function Card({
   d: ChooseDirection;
   index: number;
   selected: boolean;
+  /** 다른 느낌으로 다시 고를 때(again) 전에 고른 카드(488:902 '전에 고른 느낌' 외곽선 꼬리표) */
+  before: boolean;
   tabIndex: number;
   busy: boolean;
   onSelect: (index: number) => void;
@@ -50,10 +53,10 @@ function Card({
         role="radio"
         aria-checked={selected}
         tabIndex={tabIndex}
-        aria-label={`${nameOf(d, index)}${d.weightLabel ? `, 굵기 ${d.weightLabel}` : ""}${d.recommended ? ", AI 추천" : ""}${d.status === "drawing" ? ", 견본 그리는 중" : d.status === "failed" ? ", 견본 없음" : ""}. ${d.expression}`}
+        aria-label={`${nameOf(d, index)}${d.weightLabel ? `, 굵기 ${d.weightLabel}` : ""}${d.recommended ? ", AI 추천" : ""}${before ? ", 전에 고른 느낌" : ""}${d.status === "drawing" ? ", 견본 그리는 중" : d.status === "failed" ? ", 견본 없음" : ""}. ${d.expression}`}
         aria-describedby={descId}
         onClick={() => onSelect(index)}
-        className="absolute inset-0 rounded-[1.125rem] outline-offset-4 focus-visible:outline-3 focus-visible:outline-border-active"
+        className="absolute inset-0 rounded-[1.125rem] outline-offset-4 focus-visible:shadow-none focus-visible:outline-3 focus-visible:outline-border-active"
       />
       <div className="pointer-events-none relative flex items-start gap-2">
         {selected ? (
@@ -69,7 +72,13 @@ function Card({
             <span className="text-[1.1875rem] font-bold">{d.familyLabel}</span>
             {d.recommended && <span className="rounded-full bg-bg-inverse px-2.5 py-0.5 text-13 font-bold text-text-inverse">AI 추천</span>}
           </span>
-          {d.weightLabel && <span className="text-13 font-bold text-text-secondary">굵기 {d.weightLabel}</span>}
+          {/* '전에 고른 느낌'(488:902)은 이름 줄에 두면 112.5% 확대에서 'AI 추천'과 함께 줄이 넘쳐, 굵기 줄 옆에 둔다 */}
+          {(d.weightLabel || before) && (
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              {d.weightLabel && <span className="text-13 font-bold text-text-secondary">굵기 {d.weightLabel}</span>}
+              {before && <span className="rounded-full border-[1.5px] border-border-active px-2 py-px text-12 font-bold">전에 고른 느낌</span>}
+            </span>
+          )}
         </span>
       </div>
       <div className="pointer-events-none relative mt-4 grid aspect-[4/3] place-items-center overflow-hidden rounded-[0.875rem] bg-bg-surface-strong max-lg:aspect-[11/5]">
@@ -158,7 +167,7 @@ function ConfirmDialog({ view, d, index, again, busy, onStart, onClose }: { view
             as="div"
             className="[filter:drop-shadow(0_12px_32px_rgba(20,20,20,.16))]"
             topClassName="px-4 pt-5 pb-5 lg:px-10 lg:pt-8 lg:pb-6"
-            bottomClassName="px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] lg:px-10 lg:pt-7 lg:pb-4"
+            bottomClassName="px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] max-lg:rounded-b-none lg:px-10 lg:pt-7 lg:pb-4"
             top={
               <div className="flex flex-col">
                 <h2 id="choose-confirm-title" className="-mt-2 pr-12 font-display text-[1.5rem] leading-[1.3] tracking-[-0.03em] lg:text-[1.875rem]">
@@ -264,52 +273,56 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
   const action = again ? "이 느낌으로 다시 만들기" : "이 느낌으로 만들기";
 
   return (
-    <div className="mx-auto flex w-full max-w-[72rem] flex-1 flex-col px-5 pt-4 lg:px-10 lg:pt-8">
-      <Steps current={3} />
-      <div className="ds-motion mt-6 flex animate-ds-enter flex-col gap-2 lg:mt-9">
-        <span className="text-13 font-bold">{view.storeName}</span>
-        <h1 className="font-display text-[1.75rem] leading-[1.25] tracking-[-0.03em] lg:text-[3.5rem]">
-          {again ? (
-            "다른 느낌으로 골라 볼까요?"
-          ) : (
-            <>
-              어떤 느낌으로 <br className="lg:hidden" />
-              만들까요?
-            </>
-          )}
-        </h1>
-        <p className="text-15 leading-normal font-medium text-text-secondary lg:max-w-[42rem] lg:text-17">{lead}</p>
+    <>
+      <div className="mx-auto flex w-full max-w-[72rem] flex-1 flex-col px-5 pt-4 pb-8 lg:px-10 lg:pt-8 lg:pb-10">
+        <Steps current={3} />
+        <div className="ds-motion mt-6 flex animate-ds-enter flex-col gap-2 lg:mt-9">
+          <span className="text-13 font-bold">{view.storeName}</span>
+          <h1 className="font-display text-[1.75rem] leading-[1.25] tracking-[-0.03em] lg:text-[3.5rem]">
+            {again ? (
+              "다른 느낌으로 골라 볼까요?"
+            ) : (
+              <>
+                어떤 느낌으로 <br className="lg:hidden" />
+                만들까요?
+              </>
+            )}
+          </h1>
+          <p className="text-15 leading-normal font-medium text-text-secondary lg:max-w-[42rem] lg:text-17">{lead}</p>
+        </div>
+
+        <ul role="radiogroup" aria-label="서체 느낌" onKeyDown={onRadioKeys} className="ds-motion mt-6 grid animate-ds-enter gap-3 lg:mt-11 lg:grid-cols-3 lg:gap-6">
+          {directions.map((d, i) => (
+            <Card
+              key={`${d.family}-${i}`}
+              d={d}
+              index={i}
+              selected={selected === i}
+              before={again && choose?.previous === i}
+              tabIndex={rovingTab(selected === i, i === 0, selected !== null)}
+              busy={sending}
+              onSelect={setSelected}
+              onRedraw={(index) => void redraw(index)}
+            />
+          ))}
+        </ul>
+
+        <p className="mt-6 text-13 leading-normal text-text-secondary lg:mt-10">창을 닫아도 돼요. 견본을 다 그리면 메일로 알려 드리고, 고를 때까지 기다려요.</p>
+        <TextLink href="/fonts" className="self-start lg:hidden">
+          나중에 고르기
+        </TextLink>
+        {error && (
+          <div className="mt-4">
+            <Notice tone="error">{error}</Notice>
+          </div>
+        )}
+        {picked && confirming && (
+          <ConfirmDialog view={view} d={picked} index={selected!} again={again} busy={sending} onStart={() => void pick(selected!)} onClose={() => setConfirming(false)} />
+        )}
       </div>
 
-      <ul role="radiogroup" aria-label="서체 느낌" onKeyDown={onRadioKeys} className="ds-motion mt-6 grid animate-ds-enter gap-3 lg:mt-11 lg:grid-cols-3 lg:gap-6">
-        {directions.map((d, i) => (
-          <Card
-            key={`${d.family}-${i}`}
-            d={d}
-            index={i}
-            selected={selected === i}
-            tabIndex={rovingTab(selected === i, i === 0, selected !== null)}
-            busy={sending}
-            onSelect={setSelected}
-            onRedraw={(index) => void redraw(index)}
-          />
-        ))}
-      </ul>
-
-      <p className="mt-6 text-13 leading-normal text-text-secondary lg:mt-10">창을 닫아도 돼요. 견본을 다 그리면 메일로 알려 드리고, 고를 때까지 기다려요.</p>
-      <TextLink href="/fonts" className="self-start lg:hidden">
-        나중에 고르기
-      </TextLink>
-      {error && (
-        <div className="mt-4">
-          <Notice tone="error">{error}</Notice>
-        </div>
-      )}
-      {picked && confirming && (
-        <ConfirmDialog view={view} d={picked} index={selected!} again={again} busy={sending} onStart={() => void pick(selected!)} onClose={() => setConfirming(false)} />
-      )}
-
-      <StickyBar className="mt-8 flex flex-col gap-3 lg:mt-10 lg:flex-row lg:items-center lg:gap-8">
+      {/* 아래 막대는 화면 폭 전체(위 선이 화면 끝까지). 본문 틀 밖에 둔다. */}
+      <StickyBar className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-8">
         <div aria-live="polite" className="flex min-w-0 flex-col gap-1 lg:flex-1">
           <span className="text-13 font-bold text-text-secondary max-lg:hidden">고른 느낌</span>
           <span className="text-15 font-bold lg:text-17">
@@ -339,6 +352,6 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
           </span>
         )}
       </StickyBar>
-    </div>
+    </>
   );
 }
