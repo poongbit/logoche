@@ -52,35 +52,105 @@ export async function sendMail(mail: Mail): Promise<boolean> {
   return true;
 }
 
-function layout(title: string, lines: string[], link: { href: string; label: string }): { text: string; html: string } {
-  const text = [title, "", ...lines, "", `${link.label}: ${link.href}`, "", "로고체"].join("\n");
-  const html = `<div style="font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111">
-<h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(title)}</h1>
-${lines.map((l) => `<p style="font-size:15px;line-height:1.6;margin:0 0 8px">${escapeHtml(l)}</p>`).join("\n")}
-<p style="margin:24px 0"><a href="${escapeHtml(link.href)}" style="background:#111;color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;font-weight:700;font-size:15px">${escapeHtml(link.label)}</a></p>
-<p style="font-size:13px;color:#777;margin:0">로고체 · ${escapeHtml(SITE_URL.replace(/^https?:\/\//, ""))}</p>
-</div>`;
+// 11/6 디자인 반영: 로고 → (완성은 초록 띠) → 이름·상태 → 제목 그림 → 본문 → 검은 알약 버튼 → 안내 → 바닥글.
+// 메일 앱은 웹폰트를 못 써서 제목은 Black Han Sans로 미리 그린 그림(public/mail/head-*.png, 2배 크기)을 넣는다. 고치려면 그림을 다시 만든다.
+type Kind = "done" | "failed" | "choose" | "draft";
+const HEAD: Record<Kind, [number, number]> = { done: [211, 42], failed: [210, 42], choose: [221, 42], draft: [255, 42] };
+const GREEN = "#35e0b2";
+const FONT = "-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
+
+interface Body {
+  kind: Kind;
+  title: string; // 문자 버전·접근성용 대체 텍스트
+  label: string; // "이름 · 상태"
+  lines: string[]; // 줄바꿈(\n)은 그대로 <br>
+  button: { href: string; label: string };
+  note: string;
+}
+
+const para = (l: string) => `<p style="font-size:16px;line-height:1.65;margin:0 0 10px;color:#111">${escapeHtml(l).replace(/\n/g, "<br>")}</p>`;
+
+function layout(b: Body): { text: string; html: string } {
+  const text = [b.title, "", ...b.lines, "", `${b.button.label}: ${b.button.href}`, "", b.note, "", "로고체 · logoche.my"].join("\n");
+  const [w, h] = HEAD[b.kind];
+  const head = `<img src="${SITE_URL}/mail/head-${b.kind}.png" width="${w}" height="${h}" alt="${escapeHtml(b.title)}" style="display:block;border:0;height:${h}px;width:${w}px">`;
+  const logo = `<img src="${SITE_URL}/logo.png" width="88" height="32" alt="로고체" style="display:block;border:0">`;
+  const label = `<p style="font-size:13px;font-weight:700;color:#444;margin:0 0 10px">${escapeHtml(b.label)}</p>`;
+  const top =
+    b.kind === "done"
+      ? `<tr><td style="padding:32px 40px 24px">${logo}</td></tr>
+<tr><td style="background:${GREEN};padding:28px 40px 30px">${label}${head}</td></tr>
+<tr><td style="padding:32px 40px 0">`
+      : `<tr><td style="padding:32px 40px 0">${logo}<div style="border-top:1px solid #777;margin:24px 0 28px"></div>${label}<div style="margin:0 0 22px">${head}</div>`;
+  const button = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 22px"><tr>
+<td style="background:#111;border-radius:999px;padding:8px 8px 8px 26px;white-space:nowrap"><a href="${escapeHtml(b.button.href)}" style="color:#fff;text-decoration:none;font-weight:800;font-size:17px;font-family:${FONT}">${escapeHtml(b.button.label)}<span style="display:inline-block;width:40px;height:40px;line-height:40px;border-radius:20px;background:${GREEN};color:#111;text-align:center;font-weight:900;font-size:18px;margin-left:22px;vertical-align:middle">&rarr;</span></a></td>
+</tr></table>`;
+  const html = `<!doctype html><html lang="ko"><body style="margin:0;background:#fff">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff"><tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;font-family:${FONT};color:#111;text-align:left">
+${top}
+${b.lines.map(para).join("\n")}
+${button}
+<p style="font-size:13.5px;line-height:1.6;color:#555;margin:0 0 28px">${escapeHtml(b.note).replace(/\n/g, "<br>")}</p>
+<div style="border-top:1px solid #e5e5e5;padding:18px 0 36px">
+<p style="font-size:12.5px;line-height:1.6;color:#666;margin:0">로고체 · ${escapeHtml(SITE_URL.replace(/^https?:\/\//, ""))}<br>로고체에서 폰트를 만들 때 쓴 구글 계정으로 보내는 알림이에요.</p>
+</div>
+</td></tr></table>
+</td></tr></table></body></html>`;
   return { text, html };
 }
 
+const SCOPE = "한글 약 2,350자 + 숫자·문장부호·영문 대소문자 82자";
+
 export function doneMail(to: string, name: string, id: string, glyphCount: number, extraCount: number): Mail {
-  const lines = [`${name} 폰트를 다 만들었어요.`, `한글 ${glyphCount.toLocaleString()}자${extraCount ? `와 숫자·부호 ${extraCount}자` : ""}가 들어 있어요. 아래 버튼에서 써 보고 파일을 받으세요.`];
-  return { to, subject: `${name} 폰트가 완성됐어요`, ...layout(`${name} 폰트가 완성됐어요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "폰트 보러 가기" }) };
+  const b: Body = {
+    kind: "done",
+    title: "폰트가 완성됐어요",
+    label: `${name} · 완성`,
+    lines: [
+      `한글 ${glyphCount.toLocaleString()}자${extraCount ? ` + 숫자·문장부호·영문 대소문자 ${extraCount}자` : ""}가 들어 있어요.`,
+      "스튜디오에서 우리 가게 문구로 써 보고,\n쓸 곳에 맞는 파일(TTF·OTF·WOFF2)을 받으세요.",
+    ],
+    button: { href: `${SITE_URL}/fonts/${id}`, label: "폰트 보러 가기" },
+    note: "SIL OFL 1.1로 드려요. 이 가게만 쓰는 독점 권리는 아니에요.\n자세한 건 스튜디오의 권리 안내에 있어요.",
+  };
+  return { to, subject: `${name} 폰트가 완성됐어요`, ...layout(b) };
 }
 
 export function failedMail(to: string, name: string, id: string): Mail {
-  const lines = [`${name} 폰트를 만들다 멈췄어요.`, "그린 글자는 그대로 남아 있어요. 아래 버튼에서 '이어서 만들기'를 누르면 멈춘 곳부터 다시 시작해요."];
-  return { to, subject: `${name} 폰트 만들기가 멈췄어요`, ...layout(`${name} 폰트 만들기가 멈췄어요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "이어서 만들기" }) };
+  const b: Body = {
+    kind: "failed",
+    title: "만들다가 멈췄어요",
+    label: `${name} · 멈춤`,
+    lines: ["서버에서 문제가 생겨 멈췄어요. 그린 글자는 그대로 남아 있어요.", "아래 버튼에서 '이어서 만들기'를 누르면 못 그린 글자만 이어서 그려요."],
+    button: { href: `${SITE_URL}/fonts/${id}`, label: "이어서 만들기" },
+    note: "그만두고 싶으면 같은 화면의 '그만두기'를 누르세요. 지우기 전에 한 번 더 물어봐요.",
+  };
+  return { to, subject: `${name} 폰트 만들기가 멈췄어요`, ...layout(b) };
 }
 
 /** 30자 초안이 나왔고 나머지를 그릴지 정하기를 기다린다는 알림(11/4) */
 export function draftMail(to: string, name: string, id: string): Mail {
-  const lines = [`${name} 폰트의 참고 글자 30자를 그렸어요.`, "결과를 보고 나머지 글자를 이어서 그릴지, 다른 느낌으로 다시 할지 골라 주세요. 고를 때까지 기다려요."];
-  return { to, subject: `${name} 30자 초안이 나왔어요`, ...layout(`${name} 30자 초안이 나왔어요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "초안 보고 고르기" }) };
+  const b: Body = {
+    kind: "draft",
+    title: "30자 초안이 나왔어요",
+    label: `${name} · 초안`,
+    lines: ["참고 글자 30자를 그렸어요.", "결과를 보고 나머지 글자를 이어서 그릴지,\n다른 느낌으로 다시 할지 골라 주세요. 고를 때까지 기다려요."],
+    button: { href: `${SITE_URL}/fonts/${id}`, label: "초안 보고 고르기" },
+    note: "창을 닫아도 작업은 그대로 남아 있어요.",
+  };
+  return { to, subject: `${name} 30자 초안이 나왔어요`, ...layout(b) };
 }
 
 /** 서체 방향 견본이 그려졌고 사용자가 고르기를 기다린다는 알림(11/4) */
 export function chooseMail(to: string, name: string, id: string): Mail {
-  const lines = [`${name} 폰트의 서체 느낌 견본을 그렸어요.`, "가게 이름이 세 가지 느낌으로 그려져 있어요. 마음에 드는 느낌을 고르면 그 느낌으로 먼저 30자를 그려 보여 드려요. 고를 때까지 기다려요."];
-  return { to, subject: `${name} 느낌을 골라 주세요`, ...layout(`${name} 느낌을 골라 주세요`, lines, { href: `${SITE_URL}/fonts/${id}`, label: "느낌 고르러 가기" }) };
+  const b: Body = {
+    kind: "choose",
+    title: "느낌을 골라 주세요",
+    label: `${name} · 견본 세 가지`,
+    lines: ["가게 이름을 세 가지 느낌으로 그렸어요.", `하나를 고르고 한 번 더 확인하면 그 느낌으로\n${SCOPE}를\n그려요. 고를 때까지 기다려요.`],
+    button: { href: `${SITE_URL}/fonts/${id}`, label: "느낌 고르러 가기" },
+    note: "만들기를 시작하면 12~17분 걸려요. 창을 닫아도 서버에서 계속 만들어요.",
+  };
+  return { to, subject: `${name} 느낌을 골라 주세요`, ...layout(b) };
 }
