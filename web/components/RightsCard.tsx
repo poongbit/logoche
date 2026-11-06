@@ -1,7 +1,8 @@
 import { RIGHTS } from "@/lib/constants";
 
 // 쓸 수 있는 범위(11/6 스튜디오 ST2 v2 549:402, screens.md 오후 2·3차 'B: 줄 표 전문').
-// 실제로 받아 쓰는 자리라 전문을 1px 먹 줄 표로: 할 수 있어요 ✓ · 안 돼요 × · 알아 둘 점 !. 제목은 Black Han Sans 30, 라이선스 전문 링크는 같은 줄 오른쪽.
+// 실제로 받아 쓰는 자리라 전문을 1px 먹 줄 표로: 할 수 있어요 ✓ · 안 돼요 × · 알아 둘 점 !. 라이선스 전문 링크는 제목과 같은 줄 오른쪽.
+// 11/6 저녁: 제목을 스튜디오의 다른 섹션 제목(Studio.tsx Section: 28 · lg 44)과 같은 크기로. 예전 Black Han Sans 30만 혼자 작았다.
 // 권리는 SIL OFL 1.1이고 독점이 아니다(README 2장). 문구는 법률 자문 전 초안이다.
 // 줄 문구는 lib/constants RIGHTS.rows 한 곳에서 가져온다(메인의 세 줄 요약 RIGHTS.summary와 같은 사실).
 
@@ -26,8 +27,8 @@ function Mark({ kind }: { kind: "ok" | "no" | "note" }) {
 export function RightsCard({ className = "", id }: { className?: string; id?: string }) {
   return (
     <section id={id} aria-labelledby="rights-title" className={`flex flex-col ${className}`}>
-      <div className="flex flex-col items-start gap-x-6 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="rights-title" className="font-display text-2xl leading-[1.25] tracking-[-0.03em] lg:text-[1.875rem]">
+      <div className="flex flex-col items-start gap-x-6 sm:flex-row sm:items-baseline sm:justify-between">
+        <h2 id="rights-title" className="font-display text-[1.75rem] leading-[1.25] tracking-[-0.03em] lg:text-[2.75rem]">
           쓸 수 있는 범위
         </h2>
         <a
@@ -39,7 +40,7 @@ export function RightsCard({ className = "", id }: { className?: string; id?: st
           {RIGHTS.licenseName} 전문 보기
         </a>
       </div>
-      <dl className="mt-4 border-t border-border-active lg:mt-5">
+      <dl className="mt-4 border-t border-border-active lg:mt-10">
         {RIGHTS.rows.map((row) => (
           <div key={row.mark} className="grid grid-cols-[1.375rem_1fr] gap-x-2.5 gap-y-1 border-b border-border-active py-[1.0625rem] lg:grid-cols-[1.5rem_24.5rem_1fr] lg:gap-x-3 lg:py-5">
             <Mark kind={row.mark} />

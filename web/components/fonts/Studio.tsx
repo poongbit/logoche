@@ -1,7 +1,8 @@
 "use client";
 
 // 폰트 스튜디오(11/6 ST2 v2: 데스크톱 549:402 · 모바일 561:513 · 써 보기 조절 펼침 565:767 · 다시 들어왔을 때 564:769).
-// 순서는 '쓰는 곳부터'(메인과 같음): 완성 띠 → 써 보기 → 시안 → 받기 → 쓸 수 있는 범위 → 글자와 검사 → 기록.
+// 순서(11/6 저녁 결정): 완성 띠 → 써 보기 → 시안(가게에 걸어 봐요) → 글자와 검사 → 쓸 수 있는 범위 → 기록.
+// 받기는 따로 섹션을 두지 않고 완성 띠·머리 줄의 '폰트 받기' 메뉴(DownloadMenu) 하나로 받는다(쓸 곳 세 가지 + 형식 골라 받기).
 // - 완성 띠(큰 민트 면)는 완성 뒤 처음 이 폰트를 열 때만(바탕 A 규칙 ③ 완성 순간). 완성 도장은 붙은 뒤 빛이 한 번 지나간다.
 //   다시 들어오면 흰 머리 줄로 접고 반짝이지 않는다. '봤음'은 브라우저(localStorage)에 폰트마다 남기고, 못 읽으면 처음으로 본다(motion.md '언제 재생하나').
 // - 써 보기: 미리보기 판(줄을 눌러 바로 고침, 바탕색 적용)이 먼저, 조절(크기·글자 간격·줄 간격·글자색·바탕색)은 아래. 휴대폰은 조절을 한 줄로 접는다.
@@ -20,10 +21,10 @@ import { InlineConfirm } from "@/components/InlineConfirm";
 import { RecordLog } from "@/components/RecordLog";
 import { RightsCard } from "@/components/RightsCard";
 import { SelectionBar } from "@/components/fonts/SelectionBar";
-import { DownloadMenu, FONT_FILES, Spin, useFontDownloads } from "@/components/fonts/shared";
+import { DownloadMenu } from "@/components/fonts/shared";
 import { Notice, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
-import { CHECKS, EXTRA_CHARS, MENU_BY_INDUSTRY, PANGRAM, RIGHTS } from "@/lib/constants";
+import { CHECKS, EXTRA_CHARS, MENU_BY_INDUSTRY, PANGRAM } from "@/lib/constants";
 import { saveBlob } from "@/lib/files";
 import { useGeneratedFont } from "@/lib/font";
 import { KSX1001_HANGUL } from "@/lib/hangul";
@@ -281,10 +282,8 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   // 바꾼 글자 간격은 아래 시안에도 이어진다(시안은 글자 크기를 칸에 맞춰 스스로 정해서 크기·줄 간격은 넘기지 않는다)
   const mockStyle = useMemo<CSSProperties>(() => ({ fontFamily: family, letterSpacing: `${tracking / 100}em` }), [family, tracking]);
 
-  // ---------- 받기 ----------
+  // ---------- 받기(폰트 받기 메뉴의 제작 기록) ----------
   const loadRecord = useCallback(async () => view.record, [view.record]);
-  const dl = useFontDownloads(view.fontId ?? "", view.name, loadRecord);
-  const [moreFormats, setMoreFormats] = useState(false);
 
   // ---------- 글자 ----------
   const missingSet = useMemo(() => new Set(view.missing), [view.missing]);
@@ -661,72 +660,6 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
           </div>
         </Section>
 
-        {/* ---------- 받기 ---------- */}
-        <Section
-          id="get"
-          eyebrow="받기"
-          title={
-            <>
-              쓸 곳을 고르면 <br className="lg:hidden" />
-              맞는 파일을 드려요
-            </>
-          }
-        >
-          <ul className="mt-6 border-t border-border-active lg:mt-10">
-            {(
-              [
-                { title: "컴퓨터에 설치해 쓰기", note: "워드·한글·포토샵·캔바 같은 프로그램에서", actions: [{ key: "ttf", label: "TTF 받기", run: () => dl.one("ttf") }] },
-                {
-                  title: "홈페이지·쇼핑몰에 쓰기",
-                  note: "웹사이트에 바로 올리는 형식, CSS 코드도 복사해 가요",
-                  actions: [
-                    { key: "woff2", label: "WOFF2 받기", run: () => dl.one("woff2") },
-                    { key: "css", label: dl.copied ? "복사했어요" : "CSS 복사", run: dl.copyCss },
-                  ],
-                },
-                { title: "간판·인쇄 업체에 보내기", note: "업체에 그대로 넘기는 묶음 (OTF·TTF·라이선스)", actions: [{ key: "zip", label: "ZIP 받기", run: dl.all }] },
-                { title: "다른 형식 골라 받기", note: "OTF · WOFF · 라이선스 파일만", actions: [{ key: "more", label: moreFormats ? "접기" : "형식 고르기", run: async () => setMoreFormats(!moreFormats) }] },
-              ] as const
-            ).map((row) => (
-              <li key={row.title} className="flex flex-col gap-1 border-b border-border-active py-4 lg:grid lg:grid-cols-[22.5rem_minmax(0,1fr)_auto] lg:items-center lg:gap-0 lg:py-[1.375rem]">
-                <span className="text-base font-bold lg:text-lg">{row.title}</span>
-                <span className="text-sm leading-normal text-text-secondary lg:text-base">{row.note}</span>
-                <span className="mt-2 flex flex-wrap gap-2.5 lg:mt-0 lg:justify-end">
-                  {row.actions.map((a) => (
-                    <SecondaryButton key={a.key} size="sm" disabled={!view.fontId || (!!dl.busy && a.key !== "more")} aria-expanded={a.key === "more" ? moreFormats : undefined} onClick={() => void a.run()}>
-                      {dl.busy === a.key && <Spin />}
-                      {a.label}
-                    </SecondaryButton>
-                  ))}
-                </span>
-                {row.actions[0].key === "more" && moreFormats && (
-                  <span className="col-span-3 mt-3 flex flex-wrap gap-2.5 lg:justify-end">
-                    {FONT_FILES.filter((f) => f.format === "otf" || f.format === "woff").map((f) => (
-                      <SecondaryButton key={f.format} size="sm" disabled={!!dl.busy} onClick={() => void dl.one(f.format)}>
-                        {dl.busy === f.format && <Spin />}
-                        {f.label} 받기
-                      </SecondaryButton>
-                    ))}
-                    <a href={RIGHTS.licenseUrl} download="OFL-1.1.txt" className="inline-flex h-10 items-center rounded-full border-2 border-border-active px-[1.125rem] text-sm font-bold hover:bg-bg-surface">
-                      라이선스 받기
-                    </a>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-          {dl.error && (
-            <p role="alert" className="mt-3 text-sm font-semibold text-text-error">
-              {dl.error}
-            </p>
-          )}
-        </Section>
-
-        {/* ---------- 쓸 수 있는 범위 ---------- */}
-        <div className="mx-auto -mt-6 w-full max-w-page px-4 sm:px-5 lg:-mt-6 lg:px-10">
-          <RightsCard id="rights" />
-        </div>
-
         {/* ---------- 글자와 검사 ---------- */}
         <Section id="glyphs" eyebrow="글자" title="들어 있는 글자와 검사">
           <div className="mt-6 h-px bg-border-active max-lg:hidden lg:mt-10" />
@@ -859,6 +792,11 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
             )}
           </div>
         </Section>
+
+        {/* ---------- 쓸 수 있는 범위 ---------- */}
+        <div className="mx-auto w-full max-w-page px-4 sm:px-5 lg:px-10">
+          <RightsCard id="rights" />
+        </div>
 
         {/* ---------- 기록 · 지우기 ---------- */}
         <section aria-labelledby="record-title" className="mx-auto w-full max-w-page px-4 sm:px-5 lg:px-10">
