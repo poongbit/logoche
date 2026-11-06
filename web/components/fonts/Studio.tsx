@@ -217,12 +217,17 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
   const [name, setName] = useState(view.name);
   const nameInput = useRef<HTMLInputElement>(null);
   const renameLink = useRef<HTMLButtonElement>(null);
+  const renameButton = useRef<HTMLButtonElement>(null); // 다시 들어왔을 때 데스크톱의 '이름 바꾸기' 보조 버튼(564:769)
   useEffect(() => {
     if (renaming) nameInput.current?.select();
   }, [renaming]);
   function closeRename() {
     setRenaming(false);
-    requestAnimationFrame(() => renameLink.current?.focus());
+    // 눌렀던 쪽(보이는 쪽)으로 초점을 돌려준다
+    requestAnimationFrame(() => {
+      const button = renameButton.current;
+      (button?.offsetParent ? button : renameLink.current)?.focus();
+    });
   }
   function saveName() {
     const next = name.trim();
@@ -428,22 +433,25 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
       <p className="text-sm">폰트 파일 안 이름도 함께 바뀌어요. 이미 받은 파일은 다시 받아야 바뀐 이름이 보여요.</p>
     </div>
   );
+  const favoriteLink = (
+    <button
+      type="button"
+      aria-pressed={view.favorite}
+      disabled={busy}
+      onClick={() => void run(() => api.updateProject(view.id, { favorite: !view.favorite }))}
+      className="inline-flex items-center gap-1 py-2 underline decoration-1 underline-offset-[0.25em]"
+    >
+      {view.favorite && <CheckMark className="h-3.5 w-3.5" />}
+      즐겨찾기
+    </button>
+  );
   const headLinks = (
     <p className="flex items-center gap-1.5 text-sm font-bold">
       <button ref={renameLink} type="button" onClick={() => setRenaming(true)} className="py-2 underline decoration-1 underline-offset-[0.25em]">
         이름 바꾸기
       </button>
       <span aria-hidden>·</span>
-      <button
-        type="button"
-        aria-pressed={view.favorite}
-        disabled={busy}
-        onClick={() => void run(() => api.updateProject(view.id, { favorite: !view.favorite }))}
-        className="inline-flex items-center gap-1 py-2 underline decoration-1 underline-offset-[0.25em]"
-      >
-        {view.favorite && <CheckMark className="h-3.5 w-3.5" />}
-        즐겨찾기
-      </button>
+      {favoriteLink}
     </p>
   );
   const download = view.fontId && <DownloadMenu fontId={view.fontId} fontName={view.name} loadRecord={loadRecord} primary block />;
@@ -511,7 +519,8 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
           </div>
         </section>
       ) : (
-        /* 다시 들어왔을 때: 흰 머리 줄로 접는다(564:769) */
+        /* 다시 들어왔을 때: 흰 머리 줄로 접는다(564:769). 데스크톱은 오른쪽에 '이름 바꾸기'(보조) + '폰트 받기'(주), 아래 요약 줄 옆에 즐겨찾기.
+           써 보기 섹션이 첫 화면에 바로 보여서 '써 보기' 바로가기는 완성 띠에만 둔다. */
         <section aria-label="폰트 정보" className="mx-auto w-full max-w-[76rem] px-4 pt-2 sm:px-5 lg:px-10 lg:pt-4">
           <TextLink href="/fonts">← 내 폰트</TextLink>
           {renaming ? (
@@ -520,8 +529,8 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <p className="font-display text-[2.25rem] leading-[1.25] tracking-[-0.03em] lg:text-[3.5rem]">{view.name}</p>
               <div className="flex gap-3 max-lg:order-last">
-                <SecondaryButton className="max-lg:hidden" onClick={goTry}>
-                  써 보기
+                <SecondaryButton ref={renameButton} className="max-lg:hidden" onClick={() => setRenaming(true)}>
+                  이름 바꾸기
                 </SecondaryButton>
                 {download}
               </div>
@@ -530,9 +539,14 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
           )}
           <div className="mt-1 flex flex-wrap items-center gap-x-4 lg:mt-2">
             <p className="text-base text-text-secondary max-lg:hidden">{summaryLine}</p>
-            {!renaming && headLinks}
+            {!renaming && (
+              <>
+                <div className="lg:hidden">{headLinks}</div>
+                <p className="text-sm font-bold max-lg:hidden">{favoriteLink}</p>
+              </>
+            )}
           </div>
-          <div className="mt-6 h-px bg-border-active lg:mt-10" />
+          <div className="mt-6 h-px bg-border-default lg:mt-10" />
         </section>
       )}
 

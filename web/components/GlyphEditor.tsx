@@ -648,7 +648,7 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="ds-motion flex max-h-full w-full animate-ds-enter flex-col overflow-hidden bg-bg-canvas outline-none lg:max-h-[52.5rem] lg:max-w-[70rem] lg:rounded-[1.5rem] lg:shadow-float"
+        className="ds-motion flex max-h-full w-full animate-ds-enter flex-col overflow-hidden bg-bg-canvas outline-none lg:max-h-[min(52.5rem,100%)] lg:max-w-[70rem] lg:rounded-[1.5rem] lg:shadow-float"
       >
         <div className="flex shrink-0 items-start gap-3 border-b border-border-default px-4 pt-4 pb-3.5 lg:items-center lg:px-8 lg:py-[1.125rem]">
           <div className="flex min-w-0 flex-1 flex-col gap-1 lg:flex-row lg:items-baseline lg:gap-4">

@@ -104,7 +104,8 @@ export function SecondaryButton({
   className,
   type = "button",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { size?: SecondarySize; block?: boolean }) {
+}: ComponentProps<"button"> & { size?: SecondarySize; block?: boolean }) {
+  // ComponentProps<"button">: React 19에서 ref도 보통 prop으로 넘어온다(스튜디오 '이름 바꾸기'가 닫힌 뒤 초점을 돌려받는다)
   return <button type={type} className={secondaryClass(size, block, className)} {...props} />;
 }
 
