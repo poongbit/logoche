@@ -395,24 +395,49 @@ export const RECORD_CATEGORIES: { key: RecordCategory; label: string }[] = [
 // 권리 카드 문구. 법률 자문 전 초안이다.
 // 10/29 결정: MX-Font 생성망이 OFL 폰트로 학습해 결과 서체도 SIL OFL 1.1이다(OFL FAQ 1.25). 상업 사용은 되지만 서체 파일만 따로 팔지 않는다.
 // 10/30 MX-Font를 뺐지만 권리 문구는 그대로 둔다(바꿀지는 사용자 결정).
+// 11/6(screens.md 오후 2차 'B·C 조합'): 같은 사실을 두 깊이로. 스튜디오는 줄 표 전문(rows → components/RightsCard), 메인은 세 줄 요약(summary → app/page.tsx).
+// 사실은 rows 한 곳에만 적고, 요약·자주 묻는 질문·폰트 파일 설명·제작 기록(allowed·notAllowed·openNote)은 여기서 가져간다. 권리는 SIL OFL 1.1, 독점 아님.
+type RightsMark = "ok" | "no" | "note";
+const RIGHTS_ROWS: { mark: RightsMark; title: string; lines: string[] }[] = [
+  {
+    mark: "ok",
+    title: "할 수 있어요",
+    lines: [
+      "간판·메뉴판·현수막, 영상·SNS, 쇼핑몰·앱에 상업적으로 쓰기",
+      "가게 로고·브랜드 디자인(BI/CI)에 넣고 고치기",
+      "간판·인쇄 업체에 파일을 넘겨 만들기 · 가게를 넘길 때 함께 넘기기",
+      "구독 없이 계속 쓰기",
+    ],
+  },
+  { mark: "no", title: "안 돼요", lines: ["폰트 파일만 따로 팔기"] },
+  { mark: "note", title: "알아 둘 점", lines: ["이 가게만 쓰는 독점 서체는 아니에요.", "파일을 받은 사람도 같은 조건으로 쓰고 나눌 수 있어요."] },
+];
+const rightsLines = (mark: RightsMark) => RIGHTS_ROWS.find((r) => r.mark === mark)!.lines;
+
 export const RIGHTS = {
   expression: "상업 사용 가능 + 제작 기록",
   license: "SIL Open Font License 1.1",
+  /** 화면에 쓰는 이름(메인 '자세히 보기' · 스튜디오 '전문 보기') */
+  licenseName: "SIL 오픈 폰트 라이선스 1.1",
   licenseUrl: "/licenses/OFL-1.1.txt",
-  allowed: [
-    "상업 사용: 간판·메뉴판·현수막, 영상·SNS, 쇼핑몰·앱 임베딩",
-    "BI/CI 사용과 수정",
-    "간판·인쇄 업체에 파일을 넘겨 제작하기",
-    "가게를 넘길 때 함께 넘기기",
-    "구독 없이 계속 쓰기",
-  ],
-  notAllowed: ["서체 파일만 따로 판매하기"],
+  /** 스튜디오 줄 표 전문: 할 수 있어요 ✓ · 안 돼요 × · 알아 둘 점 ! */
+  rows: RIGHTS_ROWS,
+  /** 메인 세 줄 요약: rows의 줄마다 한 줄(같은 사실을 짧게). 이름표는 rows의 title */
+  summary: {
+    ok: "간판·메뉴판·SNS·쇼핑몰에 상업적으로, 로고에 넣고 고치는 것까지",
+    no: "폰트 파일만 따로 파는 건 안 돼요",
+    note: "이 가게만 쓰는 독점 서체는 아니에요",
+  } satisfies Record<RightsMark, string>,
+  allowed: rightsLines("ok"),
+  notAllowed: rightsLines("no"),
   // 사용자가 알아야 할 조건: 독점이 아니다(OFL은 받은 사람의 재배포를 막을 수 없다).
-  openNote: "서체 파일을 받은 사람도 같은 OFL 조건으로 쓰고 나눌 수 있어요. 나만 쓰는 독점 서체는 아니에요.",
+  openNote: rightsLines("note").join(" "),
   aiNotice: "이 서체는 AI를 활용해 만들었습니다.",
   // 10/28: 권리 확인을 사용자와 나눈다. 도구는 결과물을 선별 검사하고, 로고에 쓴 폰트의 라이선스는 사용자가 확인한다.
   screening:
     "유사도 검사는 다른 폰트와 닮지 않았는지 걸러 내는 선별 검사이고, 권리 문제가 없다는 보증은 아니에요. 로고에 쓴 폰트의 라이선스 확인과 최종 사용 책임은 사용하는 분께 있어요.",
+  /** 스튜디오 줄 표 아래 한 줄(screening의 앞 문장) */
+  screeningShort: "유사도 검사는 닮은 폰트를 걸러 내는 선별 검사이고, 권리 보증은 아니에요.",
 };
 
 // ---------- 서체 계열(11/4) ----------

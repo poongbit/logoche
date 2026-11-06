@@ -51,7 +51,7 @@ const FAQ: { q: string; a: ReactNode; open?: boolean }[] = [
         <a href={RIGHTS.licenseUrl} className="font-semibold text-text-primary underline underline-offset-4">
           {RIGHTS.license}
         </a>
-        로 드려요. {RIGHTS.openNote} 다만 폰트 파일만 따로 파는 건 안 돼요.
+        로 드려요. {RIGHTS.openNote} 다만 {RIGHTS.summary.no}.
       </p>
     ),
   },
@@ -212,21 +212,18 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col lg:pt-[1.875rem]">
               <ul className="flex flex-col gap-3 lg:gap-[1.125rem]">
-                <RightsLine mark="ok" label="할 수 있어요">
-                  간판·메뉴판·SNS·쇼핑몰에 상업적으로, 로고에 넣고 고치는 것까지
-                </RightsLine>
-                <RightsLine mark="no" label="안 돼요">
-                  폰트 파일만 따로 파는 건 안 돼요
-                </RightsLine>
-                <RightsLine mark="note" label="알아 둘 것">
-                  이 가게만 쓰는 독점 서체는 아니에요
-                </RightsLine>
+                {/* 스튜디오 줄 표(RightsCard)와 같은 사실의 세 줄 요약: RIGHTS.rows · RIGHTS.summary */}
+                {RIGHTS.rows.map((row) => (
+                  <RightsLine key={row.mark} mark={row.mark} label={row.title}>
+                    {RIGHTS.summary[row.mark]}
+                  </RightsLine>
+                ))}
               </ul>
               <a
                 href={RIGHTS.licenseUrl}
                 className="mt-3 ml-8 self-start py-1 text-sm text-text-secondary underline underline-offset-4 hover:text-text-primary lg:mt-[1.375rem] lg:ml-10"
               >
-                자세히 보기 · SIL 오픈 폰트 라이선스 1.1
+                자세히 보기 · {RIGHTS.licenseName}
               </a>
             </div>
           </div>
