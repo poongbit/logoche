@@ -202,10 +202,10 @@ export function DsPreview() {
 
       <Section id="stickers" title="번호표 (424:300) · 완성 도장 (549:416) · 말풍선 · 별 터짐" mint>
         <Row className="gap-10">
-          <Ticket key={`a${replay}`} {...ticketTime(15 * 60)} />
-          <Ticket key={`b${replay}`} topLine="완성까지" bottomLine="다 되면 메일로 알려 드려요" {...ticketTime(seconds)} />
-          <Ticket key={`c${replay}`} topLine="지금은" value="대기 중" bottomLine="차례가 오면 바로 시작해요" />
-          <Ticket key={`d${replay}`} width={152} {...ticketTime(9 * 60)} />
+          <Ticket {...ticketTime(15 * 60)} />
+          <Ticket topLine="완성까지" bottomLine="다 되면 메일로 알려 드려요" {...ticketTime(seconds)} />
+          <Ticket topLine="지금은" value="대기 중" bottomLine="차례가 오면 바로 시작해요" />
+          <Ticket width={152} {...ticketTime(9 * 60)} />
         </Row>
         <Row className="mt-4">
           <SecondaryButton size="sm" onClick={() => setSeconds((s) => (s == null ? 5 * 60 : s - 60))}>
@@ -215,7 +215,7 @@ export function DsPreview() {
             0초(확인 중)
           </SecondaryButton>
           <SecondaryButton size="sm" onClick={() => setReplay((r) => r + 1)}>
-            다시 붙이기
+            도장 다시 붙이기
           </SecondaryButton>
           <span className="text-sm font-bold">seconds = {String(seconds)}</span>
         </Row>
@@ -223,10 +223,10 @@ export function DsPreview() {
           <CompletionStamp key={`s${replay}`} name="한결국수체" shine />
           <CompletionStamp key={`t${replay}`} name="한결국수체" />
           <CompletionStamp key={`u${replay}`} name="한결국수체" size={96} shine />
-          <SpeechBubble key={`v${replay}`} />
-          <SpeechBubble key={`w${replay}`} width={148} rotate={6} />
-          <BurstSticker key={`x${replay}`} />
-          <BurstSticker key={`y${replay}`} size={96} />
+          <SpeechBubble />
+          <SpeechBubble width={148} rotate={6} />
+          <BurstSticker />
+          <BurstSticker size={96} />
         </Row>
       </Section>
 

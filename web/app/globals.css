@@ -241,7 +241,7 @@
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
 
   /* 11/6 등장 모션 유틸리티(animate-ds-*). 클래스에 ds-motion을 같이 붙이면 움직임 줄이기에서도 투명도 변화는 남는다(아래 @media). */
-  --animate-ds-stick: ds-stick 240ms var(--ease-enter) both; /* 스티커 '붙기' — 처음 나타날 때 한 번 */
+  --animate-ds-stick: ds-stick 240ms var(--ease-enter) both; /* 완성 도장 '붙기' — 스튜디오 첫 방문에 한 번(11/6 밤: 다른 스티커는 등장 모션 없음) */
   --animate-ds-enter: ds-enter var(--dur-base) var(--ease-enter) both; /* 바뀐 안쪽 내용 들어오기(6px 위로) */
   --animate-ds-check: ds-check var(--dur-check) var(--ease-enter) both; /* 고르기 체크 원 톡 150ms */
   --animate-ds-roll: ds-roll var(--dur-base) var(--ease-enter) both; /* 번호표 숫자 바뀔 때 세로로 넘김 */
@@ -432,7 +432,7 @@ body {
    쓰는 법: animate-ds-stick·animate-ds-enter·animate-ds-check·animate-ds-roll 유틸리티(@theme의 --animate-*).
    움직이는 건 transform·opacity만. 같은 요소에 ds-motion을 붙이면 움직임 줄이기에서 아래 '투명도만' 키프레임으로 바뀌어 남는다. */
 
-/* 스티커 '붙기': 살짝 크게(1.06배)·원래 각도보다 2° 덜 돈 데서 제자리(1배·원래 각도)로 240ms 감속. 원래 각도는 --sticker-rot(요소의 transform에도 같은 값). */
+/* 완성 도장 '붙기'(11/6 밤부터 이것 하나만): 살짝 크게(1.06배)·원래 각도보다 2° 덜 돈 데서 제자리(1배·원래 각도)로 240ms 감속. 원래 각도는 --sticker-rot(요소의 transform에도 같은 값). */
 @keyframes ds-stick {
   0% {
     opacity: 0;

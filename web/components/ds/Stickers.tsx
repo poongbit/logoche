@@ -4,13 +4,14 @@ import { useId, useRef, useState, type CSSProperties, type PointerEvent, type Re
 import { Highlight } from "./DisplayTitle";
 
 // 11/6 스티커(피그마 12 '스티커 팩 3차', 메인 427:9, 스튜디오 549:402).
-// 스티커는 사실을 말할 때만 쓴다(README 2장). 모두 처음 나타날 때 '붙기' 한 번(240ms)만 움직이고 그 뒤로는 멈춘다(둥실둥실 없음).
+// 스티커는 사실을 말할 때만 쓴다(README 2장). 11/6 밤: 등장 모션('붙기')은 완성 도장에만(첫 방문, 붙기 + 빛 한 번).
+// 번호표·말풍선·별 터짐은 처음부터 붙어 있고, 번호표만 남은 시간이 바뀔 때 숫자를 세로로 넘긴다(바뀐 걸 알리는 모션).
 // 크기는 width(px, 16px 기준 rem으로 바꿈) 하나로 정하고, 안쪽은 컨테이너 단위(cqw)로 피그마 비율 그대로 줄어든다.
 // rotate는 화면에서 보이는 기울기(CSS 각도, 양수 = 시계 방향). 피그마의 rotation과 부호가 반대다.
 
 const rem = (px: number) => `${px / 16}rem`;
 
-/** 스티커 바깥 틀: 크기·기울기·'붙기' 모션 */
+/** 스티커 바깥 틀: 크기·기울기. animate는 완성 도장의 '붙기'에만 쓴다. */
 function stickerRoot(width: number, aspect: number, rotate: number, animate: boolean, extra?: CSSProperties) {
   return {
     className: `relative inline-block shrink-0 select-none [container-type:inline-size] ${animate ? "ds-motion animate-ds-stick" : ""}`,
@@ -79,8 +80,6 @@ export type TicketProps = {
   width?: number;
   /** 보이는 기울기(deg). 메인 10° */
   rotate?: number;
-  /** 처음 나타날 때 '붙기' 한 번 */
-  animate?: boolean;
   className?: string;
 };
 
@@ -96,11 +95,10 @@ export function Ticket({
   srValue,
   width = 256,
   rotate = 10,
-  animate = true,
   className = "",
 }: TicketProps) {
   const maskId = `ticket-${useId().replace(/:/g, "")}`;
-  // 값이 바뀐 뒤에만 넘김 모션(처음 나타날 때는 '붙기'만). React의 '이전 값 기억' 방식.
+  // 값이 바뀐 뒤에만 넘김 모션(처음 나타날 때는 움직이지 않는다). React의 '이전 값 기억' 방식.
   const [shown, setShown] = useState(value);
   const [changed, setChanged] = useState(false);
   if (shown !== value) {
@@ -108,7 +106,7 @@ export function Ticket({
     setChanged(true);
   }
   const word = !prefix && !unit; // '확인 중'처럼 글자만 있을 때는 조금 작게
-  const root = stickerRoot(width, 532 / 272, rotate, animate, { "--u": "calc(100cqw / 532)" } as CSSProperties);
+  const root = stickerRoot(width, 532 / 272, rotate, false, { "--u": "calc(100cqw / 532)" } as CSSProperties);
   const u = (n: number) => `calc(var(--u) * ${n})`;
   return (
     <div {...root} className={`${root.className} ${className}`} role="img" aria-label={`${topLine} ${srValue ?? `${prefix ?? ""} ${value}${unit ?? ""}`.trim()}, ${bottomLine}. ${stubTop} ${stubValue}`}>
@@ -172,7 +170,7 @@ export type CompletionStampProps = {
   rotate?: number;
   /** 빛이 한 번 지나가기(붙은 뒤 600ms). 완성 '순간'에만 true — 다시 들어올 때는 false(motion.md '언제 재생하나'). */
   shine?: boolean;
-  /** 처음 나타날 때 '붙기' 한 번 */
+  /** 처음 나타날 때 '붙기' 한 번(스튜디오 첫 방문에만 도장을 그린다) */
   animate?: boolean;
   className?: string;
 };
@@ -227,23 +225,21 @@ export function CompletionStamp({ name, size = 150, rotate = -8, shine = false, 
 const BUBBLE_PATH =
   "M20.282 0L226.078 0C231.457 0 236.616 2.137 240.42 5.941C244.223 9.744 246.361 14.903 246.361 20.282L246.36 50.954C246.361 56.333 244.223 61.492 240.42 65.296C236.616 69.1 231.457 71.236 226.077 71.236L69.752 71.236C57.569 71.236 45.8 78.202 34.42 91.615C36.365 84.287 36.457 77.808 34.549 72.239L34.205 71.236L20.282 71.236C14.903 71.236 9.744 69.1 5.94 65.296C2.137 61.492 0 56.333 0 50.954L0 20.282C0 14.903 2.137 9.744 5.94 5.94C9.744 2.137 14.903 0 20.282 0Z";
 
-/** 말풍선 스티커(메인 '로고만 주세요!'). highlight 부분 뒤에 민트 형광펜. 메인 데스크톱 280px·4°, 모바일 148px·6°. */
+/** 말풍선 스티커(메인 '로고만 주세요!'). highlight 부분 뒤에 민트 형광펜. 메인 데스크톱 280px·4°, 모바일 148px·6°. 꼬리는 왼쪽 아래. 움직이지 않는다. */
 export function SpeechBubble({
   highlight = "로고만",
   children = " 주세요!",
   width = 280,
   rotate = 4,
-  animate = true,
   className = "",
 }: {
   highlight?: string;
   children?: ReactNode;
   width?: number;
   rotate?: number;
-  animate?: boolean;
   className?: string;
 }) {
-  const root = stickerRoot(width, 280 / 131.6, rotate, animate, { "--u": "calc(100cqw / 280)" } as CSSProperties);
+  const root = stickerRoot(width, 280 / 131.6, rotate, false, { "--u": "calc(100cqw / 280)" } as CSSProperties);
   return (
     <div {...root} className={`${root.className} ${className}`}>
       <svg aria-hidden viewBox="0 0 280 131.6" className="absolute inset-0 h-full w-full overflow-visible">
@@ -274,7 +270,6 @@ export function BurstSticker({
   bottomLine = "들어 있음",
   size = 150,
   rotate = -8,
-  animate = true,
   className = "",
 }: {
   topLine?: string;
@@ -282,10 +277,9 @@ export function BurstSticker({
   bottomLine?: string;
   size?: number;
   rotate?: number;
-  animate?: boolean;
   className?: string;
 }) {
-  const root = stickerRoot(size, 1, rotate, animate, { "--u": "calc(100cqw / 150)" } as CSSProperties);
+  const root = stickerRoot(size, 1, rotate, false, { "--u": "calc(100cqw / 150)" } as CSSProperties);
   const u = (n: number) => `calc(var(--u) * ${n})`;
   return (
     <div {...root} className={`${root.className} ${className}`} role="img" aria-label={`${topLine} ${value} ${bottomLine}`}>
