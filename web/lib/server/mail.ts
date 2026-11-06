@@ -162,17 +162,21 @@ export async function failedMail(to: string, name: string, id: string): Promise<
   return { to, subject: `${name} 폰트 만들기가 멈췄어요`, ...(await layout(b)) };
 }
 
-/** 30자 초안이 나왔고 나머지를 그릴지 정하기를 기다린다는 알림(11/4) */
+/**
+ * 기준 글자 30자를 확인해 달라는 알림(11/6 피그마 21 페이지 497:87).
+ * 처음 흐름에는 30자 초안 단계가 없다. 기준 글자를 그리다 멈춘 폰트를 '이어서 만들기'로 다시 시작해 기준 글자 30자를 그렸을 때만 온다(reviewing).
+ * 제목 그림(public/mail/head-draft.png, 글자 버전에서만 씀)은 아직 옛 문구라 다시 그려야 한다.
+ */
 export async function draftMail(to: string, name: string, id: string): Promise<Mail> {
   const b: Body = {
     kind: "draft",
-    title: "30자 초안이 나왔어요",
-    label: `${name} · 초안`,
-    lines: ["참고 글자 30자를 그렸어요.", "결과를 보고 나머지 글자를 이어서 그릴지,\n다른 느낌으로 다시 할지 골라 주세요. 고를 때까지 기다려요."],
-    button: { href: `${SITE_URL}/fonts/${id}`, label: "초안 보고 고르기" },
+    title: "기준 글자 30자를 확인해 주세요",
+    label: `${name} · 이어서 만들기 전 확인`,
+    lines: ["멈췄던 폰트를 이어서 만들기 전에 기준 글자 30자를 그렸어요.", "보고 나머지를 이어서 그릴지, 다른 느낌으로 다시 고를지\n정해 주세요. 정할 때까지 기다려요."],
+    button: { href: `${SITE_URL}/fonts/${id}`, label: "기준 글자 보러 가기" },
     note: "창을 닫아도 작업은 그대로 남아 있어요.",
   };
-  return { to, subject: `${name} 30자 초안이 나왔어요`, ...(await layout(b)) };
+  return { to, subject: `${name} 기준 글자 30자를 확인해 주세요`, ...(await layout(b)) };
 }
 
 /** 서체 방향 견본이 그려졌고 사용자가 고르기를 기다린다는 알림(11/4) */
