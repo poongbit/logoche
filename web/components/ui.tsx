@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, KeyboardEvent, ReactNode } from "react";
+import { SelectChip } from "./ds/SelectChip";
 
 // 10/29 Claude Design 'Logoche Final'·'C States'의 기본 조각. 강조는 검정 하나.
 // 비활성은 색만 흐리게 하지 않고 점선 테두리와 이유 문구로도 알린다.
@@ -52,43 +53,10 @@ export function ButtonLink({
 }
 
 /** 칩(업종·톤·사용처). badge는 '추천'처럼 칩 안에 붙는 말. 비활성이면 점선 테두리.
- * 고른 칩은 2px 검정 테두리 + 체크(10/30 사용자 지적: 검정으로 채우면 다음 버튼과 헷갈린다. 검정 채움은 누르는 버튼에만 쓴다). */
-export function Chip({
-  selected,
-  onClick,
-  children,
-  badge,
-  disabled,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  badge?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex h-10 items-center gap-1.5 rounded-full text-15 transition-colors duration-150 ${
-        selected
-          ? "border-2 border-border-active bg-bg-canvas pr-4 pl-3 font-bold text-text-primary"
-          : disabled
-            ? "cursor-not-allowed border-[1.5px] border-dashed border-border-strong bg-bg-surface px-4 font-semibold text-text-secondary"
-            : "border-[1.5px] border-border-strong bg-bg-canvas px-4 font-semibold text-text-primary hover:border-border-active hover:bg-bg-surface"
-      }`}
-    >
-      {selected && (
-        <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0">
-          <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-      {children}
-      {badge && <span className="text-13 font-bold text-text-success">{badge}</span>}
-    </button>
-  );
+ * 11/6: 모양은 공통 부품 SelectChip(components/ds)의 '중간 강도'와 같다 — 고른 칩은 회색 바탕 + 2px 먹 테두리 + 체크 + 굵은 글자.
+ * 먹 채움은 누르는 버튼에만 쓴다(10/30 사용자 지적). 새 코드는 SelectChip을 바로 쓴다(radio 모드도 있다). */
+export function Chip(props: { selected: boolean; onClick: () => void; children: ReactNode; badge?: string; disabled?: boolean }) {
+  return <SelectChip {...props} />;
 }
 
 /** 라디오 행(권리 확인·표현 방식). 고른 행은 2px 검정 테두리 + 채운 점.
