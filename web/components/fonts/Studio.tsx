@@ -453,7 +453,10 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
       {favoriteLink}
     </p>
   );
-  const download = view.fontId && <DownloadMenu fontId={view.fontId} fontName={view.name} loadRecord={loadRecord} primary block />;
+  // 완성 띠는 버튼이 왼쪽이라 메뉴를 왼쪽 끝에 맞추고, 다시 들어왔을 때의 머리 줄은 버튼이 화면 오른쪽 끝이라 오른쪽 끝에 맞춘다(안 그러면 메뉴가 화면 밖으로 잘린다).
+  const downloadMenu = (align: "left" | "right") => view.fontId && <DownloadMenu fontId={view.fontId} fontName={view.name} loadRecord={loadRecord} primary block align={align} />;
+  const download = downloadMenu("left");
+  const downloadRight = downloadMenu("right");
   const slogan = view.slogans[0];
 
   return (
@@ -531,7 +534,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                 <SecondaryButton ref={renameButton} className="max-lg:hidden" onClick={() => setRenaming(true)}>
                   이름 바꾸기
                 </SecondaryButton>
-                {download}
+                {downloadRight}
               </div>
               <p className="text-sm text-text-secondary lg:hidden">{summaryLine}</p>
             </div>
