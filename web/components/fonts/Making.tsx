@@ -5,21 +5,9 @@
 // 단계: 로고 읽기(Analyzing) → 기준 글자 30자(S1) → 나머지 글자(S2) → 폰트 파일 만들기(S3 앞) → 파일 검사(S3·S4). 차례 기다림·빠진 글자 다시 그리기도 같은 틀.
 // 막대·퍼센트는 그린 글자 수만 뜻하고(DESIGN 2-2 먹 길 + 민트 채움), 다 그린 뒤에는 막대 대신 체크 + 단계 줄을 둔다.
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CheckCircle, CheckMark, DisplayTitle, PrimaryButton, Receipt, SecondaryButton, SecondaryLink, TextButton, TextLink, Ticket, ticketTime } from "@/components/ds";
-import {
-  GLYPH_TOTAL,
-  GlyphMap,
-  GlyphTile,
-  PendingTile,
-  ProgressBar,
-  SheetMap,
-  agoText,
-  decodeDrawn,
-  useCountdown,
-  useLastDrawnAt,
-  useNow,
-} from "@/components/fonts/MakingMeter";
+import { GLYPH_TOTAL, GlyphTile, PendingTile, ProgressBar, agoText, useCountdown, useLastDrawnAt, useNow } from "@/components/fonts/MakingMeter";
 import { InlineConfirm } from "@/components/InlineConfirm";
 import { CheckIcon, Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
@@ -353,18 +341,17 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
   const queued = !!view.build?.queued;
   const rebuilding = view.rebuilding;
   const draw = view.build?.stages.find((s) => s.key === "draw");
-  const bits = useMemo(() => decodeDrawn(view.drawnMap), [view.drawnMap]);
   const refs = view.review?.items ?? [];
+  // 그린 글자 수: 서버의 drawnCount(기준 글자 + 나머지 + 직접 그린 글자). 예전 서버는 그리기 단계 개수에서 어림한다.
   const drawn =
     view.phase === "drawing"
       ? refs.filter((i) => i.status === "ready").length
-      : bits
-        ? bits.reduce((a, b) => a + (b ? 1 : 0), 0)
+      : typeof view.drawnCount === "number"
+        ? view.drawnCount
         : draw
           ? Math.max(0, GLYPH_TOTAL - draw.total + draw.done)
           : 0;
   const recent = view.recent.slice(0, 30);
-  const recentSet = useMemo(() => new Set(view.recent.slice(0, 30).map((g) => g.char)), [view.recent]);
   const now = useNow();
   const lastAt = useLastDrawnAt(view.phase === "drawing" ? null : view.lastSheetAt, rebuilding ? (draw?.done ?? 0) : drawn);
   const left = useCountdown(view.remainingSeconds);
@@ -443,7 +430,6 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
   );
 
   const last = lastAt !== null ? `마지막으로 그린 때 ${agoText(lastAt, now)}` : null;
-  const summary = `글자 지도: ${GLYPH_TOTAL.toLocaleString()}자 가운데 ${drawn.toLocaleString()}자를 그렸어요. 지금 단계: ${info.label}.`;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -452,8 +438,7 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
         <div className="mx-auto grid w-full max-w-page gap-x-10 px-5 pt-8 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,33rem)] lg:px-10 lg:pt-[4.25rem] lg:pb-14">
           <div className="flex min-w-0 flex-col">
             <span className="text-15 font-bold">
-              {view.storeName}
-              {rebuilding && " · 완성한 폰트 있음"}
+              {[view.storeName, rebuilding ? "완성한 폰트 있음" : null].filter(Boolean).join(" · ")}
             </span>
             <div className="mt-3 lg:mt-4">
               <HeroTitle lines={title} />
@@ -535,23 +520,6 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
                     )}
                   </>
                 )}
-              </section>
-            )}
-            {bits && !rebuilding && !notStarted && stage >= 2 && (
-              <section aria-label="글자 지도" className="flex flex-col gap-5">
-                <SectionHead
-                  title="글자 지도"
-                  size="md"
-                  desc={null}
-                />
-                <p className="-mt-2 text-13 leading-normal text-text-secondary max-lg:hidden">한 칸이 한 글자예요. 까만 칸은 다 그린 글자, 민트 칸(먹 테두리)은 그중 방금 그린 30자, 회색 칸은 아직 그릴 글자예요.</p>
-                <p className="-mt-2 text-13 leading-normal text-text-secondary lg:hidden">한 칸이 30자 한 장, 칸 안 글자는 그 장의 첫 글자예요. 까만 칸 다 그림 · 민트 방금 끝남 · 점선 그리는 중(아래 줄이 그린 만큼)</p>
-                <div className="max-lg:hidden">
-                  <GlyphMap drawn={bits} recent={recentSet} summary={summary} />
-                </div>
-                <div className="lg:hidden">
-                  <SheetMap drawn={bits} recent={recentSet} summary={summary} />
-                </div>
               </section>
             )}
             {!rebuilding && <StageList current={stage} />}

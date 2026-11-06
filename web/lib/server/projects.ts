@@ -695,6 +695,7 @@ async function summaryOf(p: Stored): Promise<{ summary: ProjectSummary; build: B
   };
 }
 
+
 /** 이 사람의 작업, 최근 것부터 */
 async function ownedProjects(owner: string): Promise<Stored[]> {
   const names = await fs.readdir(DIR).catch(() => [] as string[]);
@@ -748,15 +749,15 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
   }
   let recent: ProjectView["recent"] = [];
   const edited = p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [];
-  // 11/6: 만드는 중·멈춤 화면의 글자 지도(drawnMap)와 '마지막으로 그린 때'(lastSheetAt). 멈춤 화면도 '마지막으로 그린 글자'를 보이므로 recent를 같이 준다.
-  let drawnMap: string | null = null;
+  // 11/6: 만드는 중·멈춤 화면의 그린 글자 수(drawnCount)와 '마지막으로 그린 때'(lastSheetAt). 멈춤 화면도 '마지막으로 그린 글자'를 보이므로 recent를 같이 준다.
+  let drawnCount: number | null = null;
   let lastSheetAt: number | null = null;
   if ((p.phase === "building" || p.phase === "failed") && p.glyphJobId) {
     const jobId = p.glyphJobId;
     const rest = await restDrawnState(jobId).catch(() => ({ chars: [] as string[], lastSheetAt: null }));
     recent = rest.chars.slice(0, 60).map((char) => ({ char, imageUrl: `/api/glyphs/jobs/${jobId}/rest/${char.codePointAt(0)!.toString(16)}` }));
     const refs = (await getGlyphJob(jobId).catch(() => null))?.items.filter((i) => i.status === "ready").map((i) => i.char) ?? [];
-    drawnMap = drawnBits(new Set([...refs, ...rest.chars, ...edited]));
+    drawnCount = [...new Set([...refs, ...rest.chars, ...edited])].filter((c) => FONT_CHARS.has(c)).length;
     lastSheetAt = rest.lastSheetAt;
   }
   const upload: Partial<UploadInput> = { ...p.upload };
@@ -778,21 +779,13 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     revision: p.updatedAt,
     slogans: cleanSlogans(p.style?.slogans),
     record: p.record,
-    drawnMap,
+    drawnCount,
     lastSheetAt,
   };
 }
 
-/** 11/6 글자 지도 순서: 한글 2,350자(KS X 1001 순서) 다음 숫자·문장부호·영문 82자(EXTRA_CHARS). 화면(MakingMeter의 GLYPH_ORDER)과 같아야 한다. */
-const GLYPH_ORDER = [...KSX1001_HANGUL, ...EXTRA_CHARS];
-/** 그린 글자를 GLYPH_ORDER 순서의 비트(앞 글자가 높은 비트)로 묶어 base64로. 2,432칸 → 304바이트 → 408자 */
-function drawnBits(drawn: Set<string>): string {
-  const bytes = Buffer.alloc(Math.ceil(GLYPH_ORDER.length / 8));
-  GLYPH_ORDER.forEach((c, i) => {
-    if (drawn.has(c)) bytes[i >> 3] |= 0x80 >> (i & 7);
-  });
-  return bytes.toString("base64");
-}
+/** 폰트에 들어가는 글자: 한글 2,350자(KS X 1001) + 숫자·문장부호·영문 82자(EXTRA_CHARS). 그린 글자 수(drawnCount)는 이 안에서 센다. */
+const FONT_CHARS = new Set([...KSX1001_HANGUL, ...EXTRA_CHARS]);
 
 // ---------- 바꾸기 ----------
 

@@ -7,7 +7,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { Stopped } from "@/app/fonts/[id]/FontView";
 import { Choose } from "@/components/fonts/Choose";
 import { Making } from "@/components/fonts/Making";
-import { GLYPH_ORDER, useNow } from "@/components/fonts/MakingMeter";
+import { useNow } from "@/components/fonts/MakingMeter";
 import { Review } from "@/components/fonts/Review";
 import { CHECKS } from "@/lib/constants";
 import { HANGUL_BY_FREQUENCY } from "@/lib/hangulOrder";
@@ -39,15 +39,10 @@ const sampleSvg = (text: string, weight: number) =>
   `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#fff"/><text x="200" y="175" font-size="80" font-weight="${weight}" text-anchor="middle" font-family="sans-serif">${text}</text></svg>`)}`;
 const LOGO = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150"><circle cx="75" cy="75" r="72" fill="#141414"/><circle cx="75" cy="75" r="62" fill="none" stroke="#fff" stroke-width="2"/><text x="75" y="80" font-size="34" font-weight="800" fill="#fff" text-anchor="middle" font-family="sans-serif">한결</text><text x="75" y="112" font-size="16" fill="#fff" text-anchor="middle" font-family="sans-serif">국 수</text></svg>')}`;
 
-/** 서버처럼 자주 쓰는 글자부터 그렸다고 보고 drawnMap을 만든다(lib/server/projects.ts drawnBits와 같은 방식) */
-function drawnMapOf(n: number, extras = 0): { bits: string; recent: string[] } {
+/** 서버처럼 자주 쓰는 글자부터 그렸다고 보고 그린 글자 수(drawnCount)와 방금 그린 글자(늦게 그린 것부터 60자)를 만든다 */
+function drawnOf(n: number, extras = 0): { count: number; recent: string[] } {
   const order = [...HANGUL_BY_FREQUENCY].slice(0, n);
-  const set = new Set([...order, ...GLYPH_ORDER.slice(2350, 2350 + extras)]);
-  const bytes = new Uint8Array(Math.ceil(GLYPH_ORDER.length / 8));
-  GLYPH_ORDER.forEach((c, i) => {
-    if (set.has(c)) bytes[i >> 3] |= 0x80 >> (i & 7);
-  });
-  return { bits: btoa(String.fromCharCode(...bytes)), recent: order.slice(-60).reverse() };
+  return { count: order.length + extras, recent: order.slice(-60).reverse() };
 }
 
 function baseView(): ProjectView {
@@ -143,8 +138,8 @@ function directions(states: ChooseDirection["status"][]): ChooseDirection[] {
 function viewFor(state: State, t: number, now: number): ProjectView {
   const v = baseView();
   const withDrawn = (n: number, extras = 0, lastAgo = 12) => {
-    const m = drawnMapOf(n, extras);
-    v.drawnMap = m.bits;
+    const m = drawnOf(n, extras);
+    v.drawnCount = m.count;
     v.lastSheetAt = now - lastAgo * 1000;
     v.recent = m.recent.map((char) => ({ char, imageUrl: glyphSvg(char) }));
   };
@@ -186,7 +181,7 @@ function viewFor(state: State, t: number, now: number): ProjectView {
     }
     case "queued":
       v.build = build([stage("draw", "active", 0, 2402), stage("trace", "pending", 0, 2432), stage("save", "pending"), stage("check", "pending", 0, 7), stage("ocr", "pending")], { queued: true });
-      v.drawnMap = drawnMapOf(0).bits;
+      v.drawnCount = 0;
       v.remainingSeconds = null;
       return v;
     case "rebuild":
@@ -206,7 +201,7 @@ function viewFor(state: State, t: number, now: number): ProjectView {
         error: state === "stopped-user" ? "직접 멈췄어요. 그린 글자는 남아 있어요. 이어서 만들거나 그만둘 수 있어요." : "서버에서 문제가 생겨 멈췄어요.",
       };
     case "analysis-failed":
-      return { ...v, phase: "failed", remainingSeconds: null, drawnMap: null, error: "로고에서 서체 느낌을 정하지 못했어요. 잠시 뒤 다시 만들어 주세요." };
+      return { ...v, phase: "failed", remainingSeconds: null, drawnCount: null, error: "로고에서 서체 느낌을 정하지 못했어요. 잠시 뒤 다시 만들어 주세요." };
     case "choose":
       return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "ready"]), again: false } };
     case "choose-drawing":

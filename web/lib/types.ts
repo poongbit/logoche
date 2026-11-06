@@ -484,12 +484,11 @@ export interface ProjectView extends ProjectSummary {
   slogans: string[]; // AI가 쓴 브랜드 맞춤 문장(없으면 빈 배열). 견본·목업의 문장
   record: RecordEvent[];
   /**
-   * 11/6 글자 지도: 서체에 들어갈 그림이 있는 글자(기준 글자 · 나머지 글자 · 직접 그려 넣은 글자)를 2,432칸 비트로 묶어 base64로(앞 글자가 높은 비트).
-   * 칸 순서는 한글 2,350자(KS X 1001 순서, lib/hangul KSX1001_HANGUL) 다음 EXTRA_CHARS 82자(lib/constants). 만드는 중(building)·멈춤(failed)에만 있고,
+   * 11/6 저녁: 서체에 들어갈 그림이 있는 글자 수(기준 글자 · 나머지 글자 · 직접 그려 넣은 글자, 한글 2,350 + 82자 안에서). 만드는 중(building)·멈춤(failed)에만 있고,
    * 글자 작업이 아직 없으면(로고 읽기·느낌 고르기에서 멈춤) null. 이 값을 모르는 예전 서버는 키가 없다(undefined).
+   * (11/6 오후의 글자 지도 비트 drawnMap은 지도를 지우면서 뺐다. 화면에는 그린 개수만 필요하다.)
    */
-  drawnMap?: string | null;
-  /** 11/6: 나머지 글자표 한 장을 마지막으로 다 그린 시각(epoch ms). 아직 없으면 null. drawnMap과 같은 때에만 */
+  drawnCount?: number | null;
   lastSheetAt?: number | null;
 }
 

@@ -7,13 +7,13 @@
 // 11/6 멈춤 화면(흰 바탕, 피그마 17 '남은 상태 ②' 486:6215 · 486:6292 · 486:6369, 20 '로고 읽기 실패' 482:197 · 482:251):
 // 직접 멈춤 / 오류로 멈춤은 같은 틀에 제목·첫 줄만 다르다. 로고 읽기에서 멈췄으면 오른쪽에 받아 둔 것(로고·답)만 보인다. 그만두기 확인 문구는 단계별로.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CheckMark, DisplayTitle, PrimaryButton, SecondaryButton, TextButton } from "@/components/ds";
 import { Choose } from "@/components/fonts/Choose";
 import { Making } from "@/components/fonts/Making";
-import { GLYPH_TOTAL, GlyphTile, ProgressBar, decodeDrawn } from "@/components/fonts/MakingMeter";
+import { GLYPH_TOTAL, GlyphTile, ProgressBar } from "@/components/fonts/MakingMeter";
 import { Review } from "@/components/fonts/Review";
 import { InlineConfirm } from "@/components/InlineConfirm";
 import { isWorking } from "@/components/fonts/shared";
@@ -66,10 +66,9 @@ export function Stopped({ view, onChanged }: { view: ProjectView; onChanged: () 
   const { data: session } = authClient.useSession();
   const email = session?.user.email;
   const byUser = !!view.error?.startsWith(USER_STOP);
-  // 글자 작업이 아직 없으면(drawnMap === null) 로고 읽기·느낌 고르기에서 멈춘 것이다. 예전 서버(키 없음)는 글자 쪽 틀로 본다.
-  const early = view.drawnMap === null;
-  const bits = useMemo(() => decodeDrawn(view.drawnMap), [view.drawnMap]);
-  const drawn = bits ? bits.reduce((a, b) => a + (b ? 1 : 0), 0) : 0;
+  // 글자 작업이 아직 없으면(drawnCount === null) 로고 읽기·느낌 고르기에서 멈춘 것이다. 예전 서버(키 없음)는 글자 쪽 틀로 본다.
+  const early = view.drawnCount === null;
+  const drawn = view.drawnCount ?? 0;
 
   function resume() {
     setResuming(true);
