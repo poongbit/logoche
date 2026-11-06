@@ -125,7 +125,7 @@ export default function HomePage() {
             {STEPS.map((step, i) => (
               <li
                 key={step.title}
-                className="relative grid grid-cols-[3rem_minmax(0,1fr)] border-b border-border-active pt-[1.125rem] pb-5 lg:grid-cols-[5rem_17.5rem_minmax(0,35rem)] lg:pt-6 lg:pb-5"
+                className="relative grid grid-cols-[3rem_minmax(0,1fr)] border-b border-border-active pt-[1.125rem] pb-5 lg:grid-cols-[5rem_13rem_minmax(0,35rem)] lg:pt-6 lg:pb-5"
               >
                 <span aria-hidden className="row-span-2 font-display text-[1.875rem] leading-[1.25] tracking-[-0.03em] lg:row-span-1 lg:pt-1 lg:text-[2.75rem]">
                   {String(i + 1).padStart(2, "0")}
@@ -137,7 +137,7 @@ export default function HomePage() {
                   </h3>
                   <WhoTag who={step.who} />
                 </div>
-                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[31.25rem]" : ""}`}>{step.body}</p>
+                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[16.5rem] xl:max-w-[23.5rem]" : ""}`}>{step.body}</p>
                 {step.who === "wait" && (
                   <>
                     {/* '약 15분' 번호표: 글자 그리기 줄 오른쪽(데스크톱 256px · 10°, 모바일 152px · 10°) */}
