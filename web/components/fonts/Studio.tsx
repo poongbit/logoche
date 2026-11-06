@@ -389,7 +389,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
 
   // 완성 시각: 서버에 따로 없어서 마지막 제작 기록 시각(없으면 만든 시각)
   const doneAt = view.record.reduce((t, e) => (Date.parse(e.at) > Date.parse(t) ? e.at : t), view.createdAt);
-  const summaryLine = [whenDone(doneAt).replace(/ 오[전후] .*/, "") + " 완성", `한글 ${glyphCount.toLocaleString()}자 + ${view.extras.length}자`, allPass ? "검사 7항목 통과" : null].filter(Boolean).join(" · ");
+  const summaryLine = [view.feelName, whenDone(doneAt).replace(/ 오[전후] .*/, "") + " 완성", `한글 ${glyphCount.toLocaleString()}자 + ${view.extras.length}자`, allPass ? "검사 7항목 통과" : null].filter(Boolean).join(" · ");
 
   // ---------- 머리: 이름 고치기 · 링크 ----------
   const renameForm = (
@@ -490,7 +490,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
             {/* 견본 카드 + 완성 도장(카드 오른쪽 위 모서리에 걸침) */}
             <div className="relative lg:col-start-2 lg:row-span-2 lg:row-start-1">
               <div className="flex h-60 flex-col overflow-hidden rounded-[1.125rem] bg-bg-canvas px-5 pt-4 text-text-primary lg:h-[27.5rem] lg:rounded-[1.375rem] lg:px-8 lg:pt-7">
-                <p className="text-xs font-bold text-text-secondary lg:text-sm">{view.name}</p>
+                <p className="truncate text-xs font-bold text-text-secondary lg:text-sm">{[view.name, view.feelName].filter(Boolean).join(" · ")}</p>
                 <p className="mt-1 truncate text-[4.5rem] leading-[1.25] lg:mt-2 lg:text-[7.5rem]" style={{ fontFamily: family }}>
                   {view.storeName}
                 </p>

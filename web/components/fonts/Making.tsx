@@ -438,7 +438,7 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
         <div className="mx-auto grid w-full max-w-page gap-x-10 px-5 pt-8 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,33rem)] lg:px-10 lg:pt-[4.25rem] lg:pb-14">
           <div className="flex min-w-0 flex-col">
             <span className="text-15 font-bold">
-              {[view.storeName, rebuilding ? "완성한 폰트 있음" : null].filter(Boolean).join(" · ")}
+              {[view.storeName, view.feelName, rebuilding ? "완성한 폰트 있음" : null].filter(Boolean).join(" · ")}
             </span>
             <div className="mt-3 lg:mt-4">
               <HeroTitle lines={title} />

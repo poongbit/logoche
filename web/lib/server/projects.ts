@@ -691,10 +691,18 @@ async function summaryOf(p: Stored): Promise<{ summary: ProjectSummary; build: B
       progress,
       remainingSeconds,
       error: p.error,
+      feelName: feelNameOf(p),
     },
   };
 }
 
+/** 11/6 저녁: 고른 느낌의 이름(느낌 고르기 카드와 같은 계열 이름). 고른 안(choose.picked)이 있으면 그 방향, 없으면 고른 방향을 적용한 서체 계열(style.family).
+ * 느낌 고르기가 없던 예전 작업이나 아직 고르기 전이면 null. */
+function feelNameOf(p: Stored): string | null {
+  const picked = p.choose?.picked;
+  const family = (typeof picked === "number" ? p.style?.directions?.[picked]?.family : undefined) ?? p.style?.family;
+  return family ? (FAMILY_LABEL[family] ?? null) : null;
+}
 
 /** 이 사람의 작업, 최근 것부터 */
 async function ownedProjects(owner: string): Promise<Stored[]> {

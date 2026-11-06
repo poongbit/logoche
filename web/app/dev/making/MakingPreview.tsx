@@ -62,6 +62,7 @@ function baseView(): ProjectView {
     progress: null,
     remainingSeconds: 540,
     error: null,
+    feelName: "둥근 손글씨", // 아래 느낌 고르기 목업의 B안(고른 느낌)
     upload: {
       logoFileName: "한결국수_로고.png",
       logoHash: "x",
@@ -164,7 +165,7 @@ function viewFor(state: State, t: number, now: number): ProjectView {
       return v;
     }
     case "analyzing":
-      return { ...v, phase: "analyzing", remainingSeconds: null };
+      return { ...v, phase: "analyzing", remainingSeconds: null, feelName: null };
     case "s1":
       return { ...v, phase: "drawing", remainingSeconds: 900, review: { held: false, continueAt: null, items: refs(12) } };
     case "s2":
@@ -201,15 +202,15 @@ function viewFor(state: State, t: number, now: number): ProjectView {
         error: state === "stopped-user" ? "직접 멈췄어요. 그린 글자는 남아 있어요. 이어서 만들거나 그만둘 수 있어요." : "서버에서 문제가 생겨 멈췄어요.",
       };
     case "analysis-failed":
-      return { ...v, phase: "failed", remainingSeconds: null, drawnCount: null, error: "로고에서 서체 느낌을 정하지 못했어요. 잠시 뒤 다시 만들어 주세요." };
+      return { ...v, phase: "failed", remainingSeconds: null, drawnCount: null, feelName: null, error: "로고에서 서체 느낌을 정하지 못했어요. 잠시 뒤 다시 만들어 주세요." };
     case "choose":
-      return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "ready"]), again: false } };
+      return { ...v, phase: "choosing", remainingSeconds: null, feelName: null, choose: { directions: directions(["ready", "ready", "ready"]), again: false } };
     case "choose-drawing":
-      return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "drawing", "drawing"]), again: false } };
+      return { ...v, phase: "choosing", remainingSeconds: null, feelName: null, choose: { directions: directions(["ready", "drawing", "drawing"]), again: false } };
     case "choose-failed":
-      return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "failed"]), again: false } };
+      return { ...v, phase: "choosing", remainingSeconds: null, feelName: null, choose: { directions: directions(["ready", "ready", "failed"]), again: false } };
     case "choose-again":
-      return { ...v, phase: "choosing", remainingSeconds: null, choose: { directions: directions(["ready", "ready", "ready"]), again: true, previous: 1 } };
+      return { ...v, phase: "choosing", remainingSeconds: null, feelName: null, choose: { directions: directions(["ready", "ready", "ready"]), again: true, previous: 1 } };
     case "review": {
       const items = refs(30);
       items[6] = { ...items[6], status: "failed", imageUrl: null, problem: "검사 탈락" };

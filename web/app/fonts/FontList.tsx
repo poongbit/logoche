@@ -172,6 +172,8 @@ function describe(font: ProjectSummary): string {
   const p = font.progress;
   switch (font.phase) {
     case "done":
+      // 고른 느낌 이름이 있으면 피그마 550:471대로 '느낌 · 날짜 완성', 없으면(예전 작업) 들어 있는 글자 수
+      if (font.feelName) return `${font.feelName} · ${shortDate(font.createdAt)} 완성`;
       return [
         font.glyphCount != null ? `한글 ${font.glyphCount.toLocaleString()}자` : "",
         font.extraCount ? `숫자·문장부호·영문 ${font.extraCount}자` : "",
@@ -188,7 +190,7 @@ function describe(font: ProjectSummary): string {
     case "drawing":
     case "building": {
       const count = p && p.done < p.total ? `글자 ${p.done.toLocaleString()} / ${p.total.toLocaleString()}자` : p ? "글자를 다 그렸어요 · 파일을 만들고 검사하는 중" : "글자를 그리기 시작했어요";
-      return [count, remainingText(font.remainingSeconds)].filter(Boolean).join(" · ");
+      return [font.feelName, count, remainingText(font.remainingSeconds)].filter(Boolean).join(" · ");
     }
     case "failed":
       return p && p.done > 0 ? "글자를 그리다 멈췄어요 · 그린 글자는 남아 있어요" : font.error || "만들다가 멈췄어요";

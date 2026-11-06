@@ -109,7 +109,7 @@ export function Stopped({ view, onChanged }: { view: ProjectView; onChanged: () 
     <div className="mx-auto grid w-full max-w-page flex-1 content-start gap-8 px-5 pt-8 pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,33.5rem)] lg:gap-12 lg:px-10 lg:pt-20 lg:pb-24">
       <div className="ds-motion flex min-w-0 animate-ds-enter flex-col">
         <span className="text-15 font-bold text-text-secondary">
-          {view.storeName} · {where}
+          {[view.storeName, view.feelName, where].filter(Boolean).join(" · ")}
         </span>
         <DisplayTitle className="mt-3 text-[2.5rem] lg:mt-4 lg:text-[4rem]">
           {title[0]}

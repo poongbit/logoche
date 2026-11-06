@@ -436,6 +436,9 @@ export interface ProjectSummary {
   progress: { done: number; total: number } | null; // 그리는 중이면 그린 글자 수
   remainingSeconds: number | null;
   error: string | null;
+  /** 11/6 저녁: 고른 느낌의 이름(느낌 고르기 카드의 계열 이름, 예: '둥근 고딕'). 만드는 중 머리 줄·멈춤·스튜디오·목록 줄에 보인다.
+   * 느낌을 고르기 전이거나 느낌 고르기가 없던 예전 작업이면 null, 이 값을 모르는 예전 서버는 키가 없다(undefined). 없으면 화면은 지금 문구 그대로. */
+  feelName?: string | null;
 }
 
 /** reviewing: 참고 글자 30자 확인. continueAt이 지나면 서버가 저절로 다음 단계로 간다. held면 사용자가 '계속'을 누를 때까지 기다린다. */
