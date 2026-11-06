@@ -9,6 +9,7 @@
 /* Primitive: 값 보관용. :root에만 두어 Tailwind 유틸리티(bg-mint-400 등)가 생기지 않게 한다 — 화면에는 Semantic만 쓴다. */
 :root {
   --color-white: #ffffff;
+  --color-black: #000000; /* B3 주 버튼 호버(피그마 441:35 '올렸을 때 #000')에만 */
   --color-neutral-50: #f6f6f5;
   --color-neutral-100: #ececea;
   --color-neutral-200: #ddddda;
@@ -82,10 +83,12 @@
   --color-bg-canvas: var(--color-white);
   --color-bg-surface: var(--color-neutral-50);
   --color-bg-surface-strong: var(--color-neutral-100);
-  --color-bg-theme: var(--color-mint-100); /* 11/5 사이트 테마 바탕: 화면 전체 바탕. 흰색(bg/canvas)은 입력칸·카드·무대에만 쓴다. */
-  --color-bg-theme-strong: var(--color-mint-200); /* 제목 띠: 테마 바탕(mint/100)보다 한 단계 진한 mint/200 */
+  /* 11/6 A 규칙으로 거둠(DESIGN.md 2-4): 화면 바탕은 흰색, 큰 민트 면은 bg-bg-brand. 아직 쓰는 화면이 있어 값만 남긴다 — 새 코드에 쓰지 않는다. */
+  --color-bg-theme: var(--color-mint-100);
+  --color-bg-theme-strong: var(--color-mint-200);
   --color-bg-inverse: var(--color-neutral-950);
   --color-bg-inverse-hover: var(--color-neutral-800); /* 11/5 DESIGN.md: 먹 주 버튼 호버 */
+  --color-bg-inverse-strong: var(--color-black); /* 11/6 B3 주 버튼 호버(먹보다 한 단계 짙게) */
   --color-bg-brand: var(--color-mint-400);
   --color-bg-brand-hover: var(--color-mint-500);
   --color-bg-brand-subtle: var(--color-mint-100);
@@ -227,6 +230,38 @@
   --text-32: 2rem;
   --text-36: 2.25rem;
   --shadow-float: 0 12px 32px rgba(20, 20, 20, 0.16); /* 떠 있는 층(떠오르는 막대·받기 메뉴·모달)에만 */
+
+  /* 11/6 저녁 화면 폭(DESIGN.md 4장): 머리줄과 모든 화면 본문이 같은 폭 max-w-page + 옆 여백 lg:px-10을 써서 로고와 본문 왼쪽 끝이 맞는다.
+     1,024px부터 1rem = 18px이라 1,440에서 본문 1,200px · 왼쪽 끝 120px(피그마와 같음). 215/3rem = 본문 200/3rem(1,200px) + 양옆 2.5rem. */
+  --container-page: calc(215rem / 3);
+
+  /* 11/6 모션 곡선(motion.md 3절). ease-standard·ease-enter·ease-exit 유틸리티가 생긴다. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* 11/6 등장 모션 유틸리티(animate-ds-*). 클래스에 ds-motion을 같이 붙이면 움직임 줄이기에서도 투명도 변화는 남는다(아래 @media). */
+  --animate-ds-stick: ds-stick 240ms var(--ease-enter) both; /* 스티커 '붙기' — 처음 나타날 때 한 번 */
+  --animate-ds-enter: ds-enter var(--dur-base) var(--ease-enter) both; /* 바뀐 안쪽 내용 들어오기(6px 위로) */
+  --animate-ds-check: ds-check var(--dur-check) var(--ease-enter) both; /* 고르기 체크 원 톡 150ms */
+  --animate-ds-roll: ds-roll var(--dur-base) var(--ease-enter) both; /* 번호표 숫자 바뀔 때 세로로 넘김 */
+  --animate-ds-pop-glyph: ds-pop var(--dur-move) var(--ease-enter) both; /* 만드는 중 방금 그린 글자(옛 ds-pop 260ms) */
+  --animate-ds-pop-menu: ds-pop var(--dur-base) var(--ease-enter) both; /* 받기 메뉴(옛 ds-pop 160ms) */
+  --animate-ds-rise: ds-rise var(--dur-base) var(--ease-enter) both; /* 떠오르는 막대(옛 ds-rise 160ms) */
+}
+
+/* 11/6 모션 시간 토큰(motion.md 3절). 쓰는 곳: duration-(--dur-fast) 처럼. */
+:root {
+  --dur-fast: 100ms; /* 버튼 누름, 체크 */
+  --dur-base: 200ms; /* 질문 내용 들어오기, 닫힘, 숫자 넘김, 떠오르는 막대 */
+  --dur-move: 300ms; /* 막대 너비, 지도 칸, 아래 창·서랍 열림 */
+  --dur-moment: 600ms; /* 완성 도장 반짝임 한 번(여기에만) */
+  --dur-check: 150ms; /* 고르기 체크 원 톡(motion.md '그 밖에 넣을 것') */
+
+  /* 스티커 칼선 층 그림자(피그마 12 스티커 팩 3차, filter 값). 스티커에만 — 카드·무대에는 쓰지 않는다(DESIGN.md 6장). */
+  --sticker-shadow: drop-shadow(0 2px 6px rgb(20 20 20 / 0.16));
+  --burst-shadow: drop-shadow(0 0.5px 1px rgb(20 20 20 / 0.28)) drop-shadow(0 1.5px 3.5px rgb(20 20 20 / 0.2));
+  --stamp-shadow: drop-shadow(0 6px 13px rgb(20 20 20 / 0.22));
 }
 
 html {
@@ -264,7 +299,7 @@ html {
 }
 
 body {
-  background-color: var(--color-bg-theme); /* 11/5 테마 바탕(연한 민트) */
+  background-color: var(--color-bg-canvas); /* 11/6 A 규칙: 화면 바탕은 흰색. 큰 민트 면(bg-bg-brand)은 접수·만드는 중·완성 순간에만 */
   color: var(--ink);
   caret-color: var(--ink);
   word-break: keep-all;
@@ -277,12 +312,15 @@ body {
   color: var(--bg);
 }
 
-/* 키보드 포커스: border/focus(mint/700, 흰 바탕 5.7:1) 2px + 2px 흰 틈. 질문 줄(summary)도 같다. */
-:where(button, a, input, textarea, summary, [role="button"], [tabindex]):focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--bg),
-    0 0 0 4px var(--color-border-focus);
+/* 키보드 포커스: border/focus(mint/700, 흰 바탕 5.7:1) 2px + 2px 흰 틈. 질문 줄(summary)도 같다.
+   11/6: @layer base에 둔다 — 층 밖에 두면 화면 코드의 focus-visible:* 유틸리티(B3의 3px 먹 테두리 등)를 늘 이겨 버린다. */
+@layer base {
+  :where(button, a, input, textarea, summary, [role="button"], [tabindex]):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 4px var(--color-border-focus);
+  }
 }
 
 /* 슬라이더(C States): 길 4px #DADAD6, 채움 #111, 손잡이 20px 흰 바탕 + 2px #111 테두리. --fill에 채운 비율을 넣는다. */
@@ -390,64 +428,167 @@ body {
   }
 }
 
-/* 화면 1 묶음 모핑(10/29): 열린 묶음이 한 줄 요약으로 줄고 다음 묶음이 펼쳐진다(document.startViewTransition, app/page.tsx).
-   묶음마다 이름(group-0~2)을 붙여 크기와 자리를 잇고, 안의 그림은 위쪽에 붙인 채 겹쳐 바꾼다(늘어나 보이지 않게). */
-::view-transition-group(*) {
-  animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-::view-transition-group(group-0),
-::view-transition-group(group-1),
-::view-transition-group(group-2) {
-  overflow: clip;
-  border-radius: 16px;
-}
-::view-transition-old(group-0),
-::view-transition-old(group-1),
-::view-transition-old(group-2),
-::view-transition-new(group-0),
-::view-transition-new(group-1),
-::view-transition-new(group-2) {
-  height: 100%;
-  width: 100%;
-  object-fit: none;
-  object-position: top left;
-}
-::view-transition-old(group-0),
-::view-transition-old(group-1),
-::view-transition-old(group-2) {
-  animation: 160ms ease-out both ds-vt-out;
-}
-::view-transition-new(group-0),
-::view-transition-new(group-1),
-::view-transition-new(group-2) {
-  animation: 240ms 80ms ease-out both ds-vt-in;
-}
-@keyframes ds-vt-out {
-  to {
+/* ---------- 11/6 모션(motion.md 'Claude Code로 넘길 때' 1·2·8) ----------
+   쓰는 법: animate-ds-stick·animate-ds-enter·animate-ds-check·animate-ds-roll 유틸리티(@theme의 --animate-*).
+   움직이는 건 transform·opacity만. 같은 요소에 ds-motion을 붙이면 움직임 줄이기에서 아래 '투명도만' 키프레임으로 바뀌어 남는다. */
+
+/* 스티커 '붙기': 살짝 크게(1.06배)·원래 각도보다 2° 덜 돈 데서 제자리(1배·원래 각도)로 240ms 감속. 원래 각도는 --sticker-rot(요소의 transform에도 같은 값). */
+@keyframes ds-stick {
+  0% {
     opacity: 0;
+    transform: rotate(var(--stick-from, calc(var(--sticker-rot, 0deg) - 2deg))) scale(1.06);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(var(--sticker-rot, 0deg)) scale(1);
   }
 }
-@keyframes ds-vt-in {
+
+/* 바뀐 안쪽 내용만 들어오기: 아래에서 6px 올라오며 나타남(200ms). 틀(접수증·번호표)은 움직이지 않는다. */
+@keyframes ds-enter {
   from {
     opacity: 0;
     transform: translateY(6px);
   }
 }
 
-/* 움직임 줄이기: 옮겨 가거나 커지는 움직임은 끈다. 도는 표시(animate-spin)는 '아직 하는 중'을 알리는 신호라 천천히 남긴다(11/2 점검). */
+/* 고르기 체크 원 톡(150ms) */
+@keyframes ds-check {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* 번호표 남은 시간 숫자가 바뀔 때 세로로 넘김(200ms) */
+@keyframes ds-roll {
+  from {
+    opacity: 0;
+    transform: translateY(35%);
+  }
+}
+
+/* 완성 도장 위 비스듬한 밝은 띠가 한 번 지나감(600ms, 끝나면 멈춤). 완성 도장에만 쓴다. */
+@keyframes ds-shine {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* 접수증 절취선 양쪽 홈: 위 칸은 아래 두 모서리, 아래 칸은 위 두 모서리를 반원(--notch 반지름)으로 뚫는다. 뒤 바탕(민트 면 등)이 그대로 비친다. */
+.ds-notch-bottom {
+  --notch: var(--notch-size, 14px);
+  mask:
+    radial-gradient(circle at 0 100%, transparent var(--notch), black calc(var(--notch) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent var(--notch), black calc(var(--notch) + 0.5px)) right / 51% 100% no-repeat;
+}
+.ds-notch-top {
+  --notch: var(--notch-size, 14px);
+  mask:
+    radial-gradient(circle at 0 0, transparent var(--notch), black calc(var(--notch) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 0, transparent var(--notch), black calc(var(--notch) + 0.5px)) right / 51% 100% no-repeat;
+}
+/* 절취선 홈: 휴대폰 지름 28, 데스크톱 36(피그마 428:123 · 427:9). 화면이 --notch-size로 바꿀 수 있다. */
+@media (min-width: 1024px) {
+  .ds-notch-bottom,
+  .ds-notch-top {
+    --notch: var(--notch-size, 18px);
+  }
+}
+/* 절취선 점선(2px). 색은 currentColor, 점선 길이는 --dash·--gap */
+.ds-perforation {
+  height: 2px;
+  background-image: linear-gradient(to right, currentColor 0 var(--dash, 8px), transparent var(--dash, 8px) calc(var(--dash, 8px) + var(--gap, 6px)));
+  background-size: calc(var(--dash, 8px) + var(--gap, 6px)) 2px;
+  background-repeat: repeat-x;
+}
+
+/* 완성 도장 빛: 한 번 지나가는 띠(.ds-shine-band)와, 마우스가 있는 기기에서만 포인터를 따라가는 빛(.ds-sheen). */
+.ds-shine-band {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--color-bg-canvas) 70%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(100%);
+}
+.ds-shine-band[data-play="true"] {
+  animation: ds-shine var(--dur-moment) var(--ease-standard) 240ms both;
+}
+.ds-sheen {
+  opacity: 0;
+  background: linear-gradient(
+    var(--sheen-a, 110deg),
+    transparent calc(var(--sheen-x, 50%) - 22%),
+    color-mix(in srgb, var(--color-bg-canvas) 55%, transparent) var(--sheen-x, 50%),
+    transparent calc(var(--sheen-x, 50%) + 22%)
+  );
+  transition: opacity var(--dur-base) var(--ease-standard);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ds-stamp:hover .ds-sheen {
+    opacity: 1;
+  }
+}
+
+/* 움직임 줄이기(motion.md 3절·8): 옮겨 가거나 커지는 움직임(변환)은 끄고 색·투명도 변화만 남긴다. 반짝임은 멈춘 그림으로.
+   도는 표시(animate-spin)는 '아직 하는 중'을 알리는 로딩 표시라 천천히 남긴다(11/2 점검, WCAG 2.2.2 예외).
+   ds-motion을 붙인 요소는 시간을 그대로 두고 키프레임만 '투명도만'으로 바꾼다. 나머지는 예전처럼 거의 0으로. */
 @media (prefers-reduced-motion: reduce) {
   .animate-spin {
     animation-duration: 2.4s !important;
   }
-  *:not(.animate-spin),
+  *:not(.animate-spin, .ds-motion),
   *::before,
-  *::after,
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
+  *::after {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+  }
+  @keyframes ds-stick {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes ds-enter {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes ds-check {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes ds-roll {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes ds-pop {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes ds-rise {
+    from {
+      opacity: 0;
+    }
+  }
+  /* 반짝임은 멈춘 그림: 띠를 도장 위 한 자리에 그대로 둔다 */
+  .ds-shine-band[data-play="true"],
+  .ds-shine-band[data-static="true"] {
+    animation: none !important;
+    transform: translateX(12%);
+  }
+  .ds-sheen {
+    display: none;
   }
 }

@@ -1,5 +1,5 @@
 // 폰트 만들기 질문 페이지의 순서(11/4). 주소는 /make/<step>. 건너뛰기는 없다: 각 단계는 값을 정해야 다음으로 간다.
-import { attributesComplete, BUSINESS_MIN } from "./rules";
+import { attributesComplete, BUSINESS_MIN, isImitationRequest } from "./rules";
 import type { UploadInput } from "./types";
 
 export const MAKE_STEPS = ["industry", "business", "style", "rights"] as const;
@@ -11,7 +11,8 @@ export function stepDone(step: MakeStep, u: UploadInput): boolean {
     case "industry":
       return !!u.industry && (u.industry !== "other" || u.industryOther.trim().length > 0);
     case "business":
-      return u.desiredFeel.trim().length >= BUSINESS_MIN;
+      // 특정 폰트를 따라 해 달라는 요청이면 이 단계는 끝나지 않은 것으로 본다(11/6: 칸 아래 알림 + 다음 버튼 끔과 같은 규칙).
+      return u.desiredFeel.trim().length >= BUSINESS_MIN && !isImitationRequest(u.desiredFeel);
     case "style":
       return attributesComplete(u.attributes);
     case "rights":

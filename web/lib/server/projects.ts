@@ -42,7 +42,7 @@ import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
 import { chooseGuideFont, guideFontEnabled } from "./guidefont";
 import { chooseMail, doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
-import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
+import { restDrawnChars, restDrawnState, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
 import { analyzeStyle, applyDirection, cleanSlogans } from "./style";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
@@ -70,7 +70,7 @@ interface Stored {
   error: string | null;
   review: { readyAt: number | null; held: boolean; continued: boolean };
   // 느낌 고르기(11/4). 견본 그림은 방향마다 한 장. 서버를 다시 켜도 이어 가려고 파일에 둔다(그리는 일꾼은 메모리에 있다).
-  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null; again?: boolean };
+  choose?: { samples: { sampleId: string | null; status: "drawing" | "ready" | "failed" }[]; readyAt: number | null; held: boolean; picked: number | null; again?: boolean; previous?: number | null };
   draftNotified?: boolean; // 30자 초안 알림 메일을 보냈다(결정을 기다리는 단계에 들어갈 때 한 번)
   chooseNotified?: boolean; // 느낌 고르기 알림 메일을 보냈다(견본이 다 그려졌을 때 한 번)
   result: { build: BuildJob; missing: string[]; extras: string[] } | null;
@@ -444,7 +444,7 @@ export async function guardRefs(p: Stored, firstJobId: string): Promise<GuardOut
     const score = await measure(id);
     if (score !== null && score < best.score) best = { jobId: id, score, style: req.style };
   }
-  return { jobId: best.jobId, style: best.style, note: `참고 글자 닮음 검사: 무료 폰트와 최대 ${first.toFixed(2)} → 기준 ${GUARD_THRESHOLD.toFixed(2)}를 넘어 ${redone}번 다시 그림, 최종 ${best.score.toFixed(2)}${best.score >= GUARD_THRESHOLD ? " (그래도 기준 이상, 가장 덜 닮은 것을 씀)" : ""}` };
+  return { jobId: best.jobId, style: best.style, note: `기준 글자 닮음 검사: 무료 폰트와 최대 ${first.toFixed(2)} → 기준 ${GUARD_THRESHOLD.toFixed(2)}를 넘어 ${redone}번 다시 그림, 최종 ${best.score.toFixed(2)}${best.score >= GUARD_THRESHOLD ? " (그래도 기준 이상, 가장 덜 닮은 것을 씀)" : ""}` };
 }
 
 async function waitRefs(p: Stored) {
@@ -455,7 +455,7 @@ async function waitRefs(p: Stored) {
     job = await getGlyphJob(id);
   }
   let ready = job.items.filter((i) => i.status === "ready").length;
-  if (ready === 0) throw new Error("참고 글자를 하나도 그리지 못했어요");
+  if (ready === 0) throw new Error("기준 글자를 하나도 그리지 못했어요");
   if ((await read(p.id)).phase !== "drawing") return; // 그리는 동안 사용자가 중단했다
   // 떨어진 글자를 자동으로 다시 그린다(글자 하나씩, 최대 AUTO_RETRY_ROUNDS번). 사용자에게는 보이지 않는다.
   let retried = 0;
@@ -499,8 +499,8 @@ async function waitRefs(p: Stored) {
       if (r.phase !== "drawing") return; // 시작하는 사이 사용자가 중단했다
       r.phase = "building";
       r.buildJobId = buildJobId;
-      for (const m of job.models) r.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
-      r.record.push(event("check", `참고 글자 ${job.items.length}자 중 ${ready}자 통과${retried ? ` (떨어진 글자를 자동으로 ${retried}번 다시 그림)` : ""}${failedLeft ? `, ${failedLeft}자는 빼고 그림` : ""}`));
+      for (const m of job.models) r.record.push(event("ai_model", `기준 글자 그리기·검사: ${m}`));
+      r.record.push(event("check", `기준 글자 ${job.items.length}자 중 ${ready}자 통과${retried ? ` (떨어진 글자를 자동으로 ${retried}번 다시 그림)` : ""}${failedLeft ? `, ${failedLeft}자는 빼고 그림` : ""}`));
       if (guardNote) r.record.push(event("check", guardNote));
       r.record.push(event("check", "통과한 글자가 충분해 확인 없이 나머지 글자를 이어서 그림"));
     });
@@ -510,8 +510,8 @@ async function waitRefs(p: Stored) {
   await update(p.id, (q) => {
     q.phase = "reviewing";
     q.review = { readyAt: Date.now(), held: false, continued: false };
-    for (const m of job.models) q.record.push(event("ai_model", `참고 글자 그리기·검사: ${m}`));
-    q.record.push(event("check", `참고 글자 ${job.items.length}자 중 ${ready}자만 통과해 사용자 확인을 기다림${retried ? ` (자동으로 ${retried}번 다시 그렸음)` : ""}`));
+    for (const m of job.models) q.record.push(event("ai_model", `기준 글자 그리기·검사: ${m}`));
+    q.record.push(event("check", `기준 글자 ${job.items.length}자 중 ${ready}자만 통과해 사용자 확인을 기다림${retried ? ` (자동으로 ${retried}번 다시 그렸음)` : ""}`));
   });
   void notify(p.id, "draft");
 }
@@ -535,7 +535,7 @@ async function waitReview(p: Stored): Promise<boolean | void> {
   await update(p.id, (r) => {
     r.phase = "building";
     r.buildJobId = buildJobId;
-    r.record.push(event("selection", "참고 글자 30자를 보고 나머지 글자를 이어서 그리기로 함"));
+    r.record.push(event("selection", "기준 글자 30자를 보고 나머지 글자를 이어서 그리기로 함"));
   });
 }
 
@@ -691,8 +691,17 @@ async function summaryOf(p: Stored): Promise<{ summary: ProjectSummary; build: B
       progress,
       remainingSeconds,
       error: p.error,
+      feelName: feelNameOf(p),
     },
   };
+}
+
+/** 11/6 저녁: 고른 느낌의 이름(느낌 고르기 카드와 같은 계열 이름). 고른 안(choose.picked)이 있으면 그 방향, 없으면 고른 방향을 적용한 서체 계열(style.family).
+ * 느낌 고르기가 없던 예전 작업이나 아직 고르기 전이면 null. */
+function feelNameOf(p: Stored): string | null {
+  const picked = p.choose?.picked;
+  const family = (typeof picked === "number" ? p.style?.directions?.[picked]?.family : undefined) ?? p.style?.family;
+  return family ? (FAMILY_LABEL[family] ?? null) : null;
 }
 
 /** 이 사람의 작업, 최근 것부터 */
@@ -743,14 +752,21 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
         recommended: i === 0,
       })),
       again: !!c.again,
+      previous: c.again && typeof c.previous === "number" ? c.previous : null,
     };
   }
   let recent: ProjectView["recent"] = [];
-  if (p.phase === "building" && p.glyphJobId) {
+  const edited = p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [];
+  // 11/6: 만드는 중·멈춤 화면의 그린 글자 수(drawnCount)와 '마지막으로 그린 때'(lastSheetAt). 멈춤 화면도 '마지막으로 그린 글자'를 보이므로 recent를 같이 준다.
+  let drawnCount: number | null = null;
+  let lastSheetAt: number | null = null;
+  if ((p.phase === "building" || p.phase === "failed") && p.glyphJobId) {
     const jobId = p.glyphJobId;
-    recent = (await restDrawnChars(jobId))
-      .slice(0, 60)
-      .map((char) => ({ char, imageUrl: `/api/glyphs/jobs/${jobId}/rest/${char.codePointAt(0)!.toString(16)}` }));
+    const rest = await restDrawnState(jobId).catch(() => ({ chars: [] as string[], lastSheetAt: null }));
+    recent = rest.chars.slice(0, 60).map((char) => ({ char, imageUrl: `/api/glyphs/jobs/${jobId}/rest/${char.codePointAt(0)!.toString(16)}` }));
+    const refs = (await getGlyphJob(jobId).catch(() => null))?.items.filter((i) => i.status === "ready").map((i) => i.char) ?? [];
+    drawnCount = [...new Set([...refs, ...rest.chars, ...edited])].filter((c) => FONT_CHARS.has(c)).length;
+    lastSheetAt = rest.lastSheetAt;
   }
   const upload: Partial<UploadInput> = { ...p.upload };
   delete upload.logoImage;
@@ -766,20 +782,25 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     extras: p.result?.extras ?? [],
     recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
     tweaks: p.glyphJobId ? await readTweakTable(p.glyphJobId) : {},
-    edited: p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [],
+    edited,
     rebuilding: p.phase === "building" && !!p.fontId && !!p.result,
     revision: p.updatedAt,
     slogans: cleanSlogans(p.style?.slogans),
     record: p.record,
+    drawnCount,
+    lastSheetAt,
   };
 }
+
+/** 폰트에 들어가는 글자: 한글 2,350자(KS X 1001) + 숫자·문장부호·영문 82자(EXTRA_CHARS). 그린 글자 수(drawnCount)는 이 안에서 센다. */
+const FONT_CHARS = new Set([...KSX1001_HANGUL, ...EXTRA_CHARS]);
 
 // ---------- 바꾸기 ----------
 
 /** 확인 단계에서의 동작: 고르는 중(hold)·고른 것을 다 풀기(release)·계속(continue)·고른 글자 다시 그리기(redraw) */
 export async function reviewProject(owner: string, id: string, action: ReviewAction): Promise<void> {
   const p = await readOwned(owner, id);
-  if (p.phase !== "reviewing") throw new RouteError(409, "참고 글자를 확인하는 단계가 아니에요");
+  if (p.phase !== "reviewing") throw new RouteError(409, "기준 글자를 확인하는 단계가 아니에요");
   if (action.action === "redraw") {
     const req = await glyphRequest(p);
     const job = await getGlyphJob(p.glyphJobId!);
@@ -790,7 +811,7 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
     }
     await update(id, (q) => {
       q.review.held = true;
-      q.record.push(event("selection", `참고 글자 다시 그리기: ${chars.join(", ")}`));
+      q.record.push(event("selection", `기준 글자 다시 그리기: ${chars.join(", ")}`));
     });
   } else if (action.action === "restyle") {
     // 30자를 보고 마음에 들지 않으면 다른 느낌을 다시 고른다(견본은 그대로 남아 있어 비용이 거의 안 든다). 그린 30자는 지운다.
@@ -801,9 +822,9 @@ export async function reviewProject(owner: string, id: string, action: ReviewAct
       q.glyphJobId = null;
       q.review = { readyAt: null, held: false, continued: false };
       q.draftNotified = false;
-      if (q.choose) q.choose = { ...q.choose, picked: null, again: true };
+      if (q.choose) q.choose = { ...q.choose, previous: q.choose.picked, picked: null, again: true }; // 11/6: 다시 고르는 화면에 '전에 고른 느낌' 표시
       q.chooseNotified = false; // 다시 고를 때도 견본이 준비돼 있다고 알린다
-      q.record.push(event("selection", "참고 글자 30자를 보고 다른 느낌으로 다시 고르기로 함"));
+      q.record.push(event("selection", "기준 글자 30자를 보고 다른 느낌으로 다시 고르기로 함"));
     });
   } else {
     await update(id, (q) => {
@@ -836,7 +857,7 @@ export async function cancelProject(owner: string, id: string): Promise<void> {
     } else {
       q.phase = "failed";
       q.error = "직접 멈췄어요. 그린 글자는 남아 있어요. 이어서 만들거나 그만둘 수 있어요.";
-      q.record.push(event("selection", `만드는 도중 직접 멈춤 (${was === "analyzing" ? "로고 읽는 중" : was === "drawing" ? "참고 글자 그리는 중" : "글자 그리는 중"})`));
+      q.record.push(event("selection", `만드는 도중 직접 멈춤 (${was === "analyzing" ? "로고 읽는 중" : was === "drawing" ? "기준 글자 그리는 중" : "글자 그리는 중"})`));
     }
   });
 }
@@ -891,7 +912,7 @@ export async function rebuildProject(owner: string, id: string): Promise<void> {
       q.phase = "reviewing";
       q.error = null;
       q.review = { readyAt: Date.now(), held: false, continued: false };
-      q.record.push(event("selection", "멈춘 곳부터 이어서 만듦 (참고 글자 확인 단계로)"));
+      q.record.push(event("selection", "멈춘 곳부터 이어서 만듦 (기준 글자 확인 단계로)"));
     });
   } else {
     const buildJobId = await startBuild(await buildRequest(p));

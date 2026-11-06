@@ -436,6 +436,9 @@ export interface ProjectSummary {
   progress: { done: number; total: number } | null; // 그리는 중이면 그린 글자 수
   remainingSeconds: number | null;
   error: string | null;
+  /** 11/6 저녁: 고른 느낌의 이름(느낌 고르기 카드의 계열 이름, 예: '둥근 고딕'). 만드는 중 머리 줄·멈춤·스튜디오·목록 줄에 보인다.
+   * 느낌을 고르기 전이거나 느낌 고르기가 없던 예전 작업이면 null, 이 값을 모르는 예전 서버는 키가 없다(undefined). 없으면 화면은 지금 문구 그대로. */
+  feelName?: string | null;
 }
 
 /** reviewing: 참고 글자 30자 확인. continueAt이 지나면 서버가 저절로 다음 단계로 간다. held면 사용자가 '계속'을 누를 때까지 기다린다. */
@@ -461,6 +464,7 @@ export interface ChooseDirection {
 export interface ProjectChoose {
   directions: ChooseDirection[];
   again: boolean; // 30자를 보고 다른 느낌을 다시 고르는 중
+  previous?: number | null; // 11/6: 다시 고를 때 전에 고른 안의 순서(again일 때만). 화면이 '전에 고른 느낌' 꼬리표를 붙인다
 }
 
 // 11/4 사용자 결정: 느낌은 저절로 고르지 않는다. 고를 때까지 서버가 기다린다.
@@ -472,7 +476,7 @@ export interface ProjectView extends ProjectSummary {
   review: ProjectReview | null;
   choose: ProjectChoose | null; // 느낌 고르는 단계(11/4)
   build: BuildJob | null;
-  recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자(그리는 중)
+  recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자, 늦게 그린 것부터 최대 60자(그리는 중·11/6부터 멈춤에도)
   missing: string[]; // 서체에 없는 한글(다 만든 뒤)
   extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
   recheck: string[]; // 다시 볼 글자: 획 두께·크기가 기준에서 가장 많이 벗어난 나머지 글자(다 만든 뒤, 최대 30자)
@@ -482,6 +486,13 @@ export interface ProjectView extends ProjectSummary {
   revision: number; // 폰트 파일이 바뀔 때마다 달라지는 값. 글자를 고치면 파일이 바뀌어 폰트를 다시 불러오는 열쇠로 쓴다
   slogans: string[]; // AI가 쓴 브랜드 맞춤 문장(없으면 빈 배열). 견본·목업의 문장
   record: RecordEvent[];
+  /**
+   * 11/6 저녁: 서체에 들어갈 그림이 있는 글자 수(기준 글자 · 나머지 글자 · 직접 그려 넣은 글자, 한글 2,350 + 82자 안에서). 만드는 중(building)·멈춤(failed)에만 있고,
+   * 글자 작업이 아직 없으면(로고 읽기·느낌 고르기에서 멈춤) null. 이 값을 모르는 예전 서버는 키가 없다(undefined).
+   * (11/6 오후의 글자 지도 비트 drawnMap은 지도를 지우면서 뺐다. 화면에는 그린 개수만 필요하다.)
+   */
+  drawnCount?: number | null;
+  lastSheetAt?: number | null;
 }
 
 export type ReviewAction = { action: "hold" } | { action: "release" } | { action: "continue" } | { action: "redraw"; indices: number[] } | { action: "restyle" }; // restyle: 30자를 보고 다른 느낌으로 다시 고른다(11/4)

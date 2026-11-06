@@ -27,7 +27,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="stylesheet" href={NOTO_CSS} precedence="default" />
         <link rel="stylesheet" href={DISPLAY_CSS} precedence="default" />
       </head>
-      <body className="flex min-h-full flex-col">
+      {/* 11/6 A 규칙: 화면 바탕은 흰색(bg/canvas). 큰 민트 면(bg-bg-brand)은 접수·만드는 중·완성 순간 화면이 직접 깐다(DESIGN.md 2-4). */}
+      <body className="flex min-h-full flex-col bg-bg-canvas text-text-primary">
         <AppProvider>
           <AppHeader />
           <main className="flex w-full flex-1 flex-col">{children}</main>

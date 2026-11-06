@@ -1,52 +1,35 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { BurstSticker, CheckCircle, DisplayTitle, Highlight, PrimaryLink, SpeechBubble, Ticket } from "@/components/ds";
+import { ExampleFont } from "@/components/home/ExampleFont";
 import { Hero } from "@/components/home/Hero";
-import { HeroStage } from "@/components/home/HeroStage";
 import { EXTRA_CHARS, RIGHTS } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
 
-// 메인 화면(11/5 후보 A '무대 옆 입력' 시안: 왼쪽 제목 · 별 스티커 · 로고 올리기 · 가게 이름 / 오른쪽 예시 폰트 무대 → 만드는 법 · 받는 것 · 질문).
-// 배경 장식(흐린 글자·모눈·지도)은 쓰지 않는다(11/2 사용자 결정). YoFont의 문구·모델 이름·색 값은 가져오지 않았다.
-// 위에서 아래로: 제목 · 첫 칸(로고 → 질문 페이지) · 한 줄 요약 · 로고체로 만든 폰트 · 이렇게 만들어요 · 받는 것 · 자주 묻는 질문 · 아래 줄.
+// 메인 화면 — 11/6 R1 + B3(피그마 16 페이지 427:9 데스크톱 · 428:123 모바일, docs/design-1106/flow-1105.md).
+// 위에서 아래로: 첫 화면(민트 면 + 흰 접수증 = '접수') → (a) 만드는 순서 → (b) 로고체로 만든 폰트 → (c) 받는 것 + 쓸 수 있는 범위 → (d) 자주 묻는 질문 → 마무리(민트) → 바닥(먹).
+// 리듬 R1: 흰 띠 사이를 1px 먹 선으로 나누고, 큰 민트 면은 시작(접수)과 끝(마무리)에만. 스티커(말풍선·번호표·별 터짐)는 사실을 말하고, 처음 한 번 '붙기'만 한다.
+// 문구(11/6 결정): 시간은 '약 15분'(스티커·접수증) / '느낌을 고른 뒤 12~17분'(질문). 글자는 '한글 약 2,350자 + 숫자·문장부호·영문 대소문자 82자'. '무료'를 파는 말로 쓰지 않는다.
 // 자주 묻는 질문의 답은 실제 동작과 맞춘다(로고는 서버에 저장된다, 폰트는 OFL이라 독점이 아니다). 권리 문구는 RIGHTS에서 가져와 권리 카드와 어긋나지 않게 한다.
 
 const HANGUL = KSX1001_HANGUL.size.toLocaleString();
+const EXTRA = EXTRA_CHARS.length;
 
-const STEPS: { title: string; body: string }[] = [
-  {
-    title: "로고 올리기",
-    body: "로고 이미지와 가게 이름을 적어요. 로고 글자를 그대로 옮기지 않고 느낌만 참고해요.",
-  },
-  {
-    title: "느낌 고르기",
-    body: "AI가 가게 이름을 세 가지 느낌으로 그려 보여 드려요. 마음에 드는 하나를 골라요.",
-  },
-  {
-    title: "글자 그리기",
-    body: `같은 느낌으로 한글 ${HANGUL}자를 그려요. 창을 닫아도 계속 만들어요.`,
-  },
-  {
-    title: "받아서 쓰기",
-    body: "간판·메뉴판 시안으로 미리 보고, 컴퓨터에 설치하거나 홈페이지에 바로 써요.",
-  },
+const STEPS: { title: string; who: "owner" | "wait"; body: string }[] = [
+  { title: "로고와 질문", who: "owner", body: "로고와 가게 이름을 올리고, 업종·가게 이야기·글씨 취향·로고 권리를 답해요." },
+  { title: "견본 고르기", who: "owner", body: "가게 이름으로 그린 견본 세 가지를 보고 하나를 골라요." },
+  { title: "글자 그리기", who: "wait", body: `고른 느낌으로 한글 약 ${HANGUL}자와 영문·숫자·문장부호를 그려요. 창을 닫아도 계속 그려요.` },
+  { title: "받기", who: "owner", body: "무료 폰트와 닮지 않았는지 검사한 뒤 폰트 파일을 드려요." },
 ];
 
-const DELIVERABLES: { title: string; body: string }[] = [
-  {
-    title: "폰트 파일",
-    body: "컴퓨터·인쇄용 TTF, 디자인 프로그램용 OTF, 홈페이지용 WOFF2 가운데 필요한 것을 골라 받아요.",
-  },
-  {
-    title: "간판·메뉴판 시안",
-    body: "간판, 메뉴판, 인스타그램 게시물에 내 폰트를 쓴 모습을 미리 봐요.",
-  },
-  {
-    title: "권리 카드와 제작 기록",
-    body: "할 수 있는 일과 없는 일을 권리 카드로, 무엇을 골라 만들었는지 제작 기록으로 남겨요.",
-  },
+const USES: { title: string; body: string; files: string }[] = [
+  { title: "컴퓨터에 설치해 쓰기", body: "워드·한글·포토샵·캔바 같은 프로그램에서", files: "TTF" },
+  { title: "홈페이지·쇼핑몰에 쓰기", body: "웹사이트에 바로 올리는 형식, CSS 코드도 복사해 가요", files: "WOFF2 · CSS" },
+  { title: "간판·인쇄 업체에 보내기", body: "업체에 그대로 넘기는 묶음", files: "ZIP · OTF · 라이선스" },
+  { title: "제작 기록", body: "어떤 로고로 어떻게 만들었는지, 닮음 검사 결과까지", files: "묶음에 함께" },
 ];
 
-const FAQ: { q: string; a: ReactNode }[] = [
+const FAQ: { q: string; a: ReactNode; open?: boolean }[] = [
   {
     q: "간판이나 메뉴판에 써도 되나요?",
     a: (
@@ -65,13 +48,10 @@ const FAQ: { q: string; a: ReactNode }[] = [
     a: (
       <p>
         아니요. 폰트는{" "}
-        <a
-          href={RIGHTS.licenseUrl}
-          className="font-semibold text-text-primary underline underline-offset-4"
-        >
+        <a href={RIGHTS.licenseUrl} className="font-semibold text-text-primary underline underline-offset-4">
           {RIGHTS.license}
         </a>
-        로 드려요. {RIGHTS.openNote} 다만 폰트 파일만 따로 파는 건 안 돼요.
+        로 드려요. {RIGHTS.openNote} 다만 {RIGHTS.summary.no}.
       </p>
     ),
   },
@@ -79,157 +59,222 @@ const FAQ: { q: string; a: ReactNode }[] = [
     q: "다른 사람과 같은 서체가 나올 수 있나요?",
     a: (
       <p>
-        같은 로고와 같은 선택으로 다시 만들어도 매번 새로 그려서 똑같은 파일은
-        나오지 않아요. 다만 비슷한 느낌을 고르면 닮은 서체가 나올 수 있어요.
-        로고체가 약속하는 건 &quot;세상에 하나뿐&quot;이 아니라, 내 로고를
-        바탕으로 새로 그렸고, 무료 폰트와 닮았는지 검사했고, 만든 과정이
-        기록으로 남는다는 거예요.
+        같은 로고와 같은 선택으로 다시 만들어도 매번 새로 그려서 똑같은 파일은 나오지 않아요. 다만 비슷한 느낌을 고르면 닮은 서체가 나올 수 있어요. 로고체가 약속하는 건
+        &quot;세상에 하나뿐&quot;이 아니라, 내 로고를 바탕으로 새로 그렸고, 무료 폰트와 닮았는지 검사했고, 만든 과정이 기록으로 남는다는 거예요.
       </p>
     ),
   },
-  {
-    q: "얼마나 걸리나요?",
-    a: (
-      <p>
-        느낌을 고른 뒤 약 8분이에요(기준 글자 1~2분, 나머지 약 6분). 창을 닫아도
-        서버에서 계속하고 메일로 알려 드려요.
-      </p>
-    ),
-  },
+  { q: "얼마나 걸리나요?", open: true, a: <p>느낌을 고른 뒤 12~17분쯤 걸려요. 창을 닫아도 계속 그려요.</p> },
   {
     q: "어떤 글자가 들어가나요?",
+    open: true,
     a: (
       <p>
-        자주 쓰는 한글 {HANGUL}자와 숫자·문장부호·영문 {EXTRA_CHARS.length}자예요.
-        영문 알파벳은 아직 들어가지 않아요. 그리지 못한 글자가 있으면 폰트
-        화면에서 알려 드리고, 다시 그릴 수 있어요.
+        자주 쓰는 한글 약 {HANGUL}자와 숫자·문장부호·영문 대소문자 {EXTRA}자를 함께 그려요.
       </p>
     ),
   },
   {
     q: "올린 로고는 어떻게 쓰이나요?",
-    a: (
-      <p>
-        AI가 로고를 읽고 그 느낌을 참고해 글자를 그려요. 로고 글자를 그대로
-        폰트로 옮기지는 않아요. 올린 로고는 내 폰트 화면에 함께 보여 드리려고
-        저장해요.
-      </p>
-    ),
+    a: <p>AI가 로고를 읽고 그 느낌을 참고해 글자를 그려요. 로고 글자를 그대로 폰트로 옮기지는 않아요. 올린 로고는 내 폰트 화면에 함께 보여 드리려고 저장해요.</p>,
   },
-  {
-    q: "로고에 상용 폰트를 썼다면요?",
-    a: <p>로고체는 무료 폰트와 닮았는지만 검사해요. {RIGHTS.screening}</p>,
-  },
+  { q: "로고에 상용 폰트를 썼다면요?", a: <p>로고체는 무료 폰트와 닮았는지만 검사해요. {RIGHTS.screening}</p> },
 ];
+
+// 모든 띠가 같은 폭·옆 여백을 쓴다(DESIGN.md 4장: 머리줄과 같은 max-w-page, 휴대폰 16px · lg 2.5rem)
+const WRAP = "mx-auto w-full max-w-page px-4 lg:px-10";
 
 export default function HomePage() {
   return (
     <>
-      <div className="bg-bg-theme-strong">
-        <div className="mx-auto w-full max-w-[76rem] px-5 py-8 lg:px-10 lg:py-10">
-          <section
-            aria-labelledby="home-title"
-            className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-14"
-          >
-            <div className="relative flex flex-col gap-5">
-              <h1
-                id="home-title"
-                className="text-[clamp(2rem,1.2rem+2.6vw,3.25rem)] leading-[1.25] font-display font-normal tracking-[-0.01em] text-balance"
-              >
-                로고 한 장으로 우리 가게 한글 서체
-              </h1>
-              <p className="max-w-[34rem] text-17 leading-relaxed text-text-secondary">
-                로고 느낌 그대로 한글 {HANGUL}자를 그려 드려요. 무료 폰트와
-                닮지 않았는지 검사하고, 만든 과정은 기록으로 남겨요.
-              </p>
-              <div className="mt-2 w-full">
-                <Hero />
-              </div>
+      {/* 첫 화면: 큰 민트 면은 여기(접수)와 마무리에만(A 규칙) */}
+      <section aria-labelledby="home-title" className="overflow-x-clip bg-bg-brand">
+        <div className={`${WRAP} grid items-start gap-7 pt-6 pb-10 lg:grid-cols-[minmax(0,26fr)_minmax(0,30fr)] lg:gap-x-[clamp(2.5rem,5.5vw,5rem)] lg:py-20`}>
+          <div className="flex flex-col lg:pt-10">
+            <DisplayTitle className="text-[1.875rem] whitespace-nowrap lg:text-[clamp(2.5rem,4.45vw,4rem)]">
+              <span id="home-title">
+                로고 한 장으로
+                <br />
+                우리 가게 <Highlight>한글 서체</Highlight>
+              </span>
+            </DisplayTitle>
+            <p className="mt-4 hidden max-w-[32.5rem] text-[1.1875rem] leading-normal font-medium lg:block">
+              로고를 올리면 그 느낌으로 한글 약 {HANGUL}자와
+              <br />
+              영문·숫자를 그려 폰트 파일로 드려요.
+            </p>
+            {/* 데스크톱 말풍선(피그마 427:21, 280px · 4°). 모바일은 접수증 모서리(Hero) */}
+            <div aria-hidden className="mt-11 hidden lg:block">
+              <SpeechBubble width={280} rotate={4} />
             </div>
-            <div className="relative">
-            <HeroStage />
-            <Image
-              src="/sticker-2350.png"
-              alt={`한글 ${HANGUL}자 들어 있음`}
-              width={374}
-              height={374}
-              priority
-              className="pointer-events-none absolute -top-5 -right-2 h-auto w-20 sm:w-24 lg:-top-8 lg:-right-5 lg:w-32"
-            />
+            <p className="mt-5 hidden text-base leading-normal lg:block">
+              로고와 가게 이름만 있으면 돼요.
+              <br />
+              업종과 가게 이야기는 다음 화면에서 물어볼게요.
+            </p>
           </div>
-          </section>
+          <Hero />
         </div>
-      </div>
-      <div className="mx-auto flex w-full max-w-[76rem] flex-col gap-20 px-5 pt-16 lg:gap-28 lg:px-10 lg:pt-24">
-        <Section
-          id="how"
-          title="이렇게 만들어요"
-          lead="로고를 올리고 받기까지 한 화면씩 이어져요."
-        >
-          <ol className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+      </section>
+
+      {/* (a) 만드는 순서 */}
+      <section id="how" aria-labelledby="how-title" className="scroll-mt-4">
+        <div className={`${WRAP} pt-12 pb-14 lg:pt-16 lg:pb-[4.5rem]`}>
+          <SectionHead id="how-title" eyebrow="만드는 순서" title="이렇게 만들어요" lead="사장님은 답하고 고르기만 하면 돼요." />
+          <ol className="mt-8 border-t border-border-active lg:mt-[3.25rem]">
             {STEPS.map((step, i) => (
-              <Step key={step.title} number={i + 1} {...step} />
+              <li
+                key={step.title}
+                className="relative grid grid-cols-[3rem_minmax(0,1fr)] border-b border-border-active pt-[1.125rem] pb-5 lg:grid-cols-[5rem_17.5rem_minmax(0,35rem)] lg:pt-6 lg:pb-5"
+              >
+                <span aria-hidden className="row-span-2 font-display text-[1.875rem] leading-[1.25] tracking-[-0.03em] lg:row-span-1 lg:pt-1 lg:text-[2.75rem]">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 lg:flex-col lg:items-start">
+                  <h3 className="text-17 leading-normal font-bold lg:text-xl">
+                    <span className="sr-only">{i + 1}단계: </span>
+                    {step.title}
+                  </h3>
+                  <WhoTag who={step.who} />
+                </div>
+                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[31.25rem]" : ""}`}>{step.body}</p>
+                {step.who === "wait" && (
+                  <>
+                    {/* '약 15분' 번호표: 글자 그리기 줄 오른쪽(데스크톱 256px · 10°, 모바일 152px · 10°) */}
+                    <div className="col-span-2 -mb-9 flex justify-end pt-2 pr-1 lg:hidden">
+                      <Ticket prefix="약" value="15" unit="분" width={152} rotate={10} />
+                    </div>
+                    <div className="absolute top-1/2 right-0 hidden -translate-y-1/2 lg:block">
+                      <Ticket prefix="약" value="15" unit="분" width={256} rotate={10} />
+                    </div>
+                  </>
+                )}
+              </li>
             ))}
           </ol>
-        </Section>
+        </div>
+      </section>
 
-        <Section id="deliverables" title="받는 것">
-          <ul className="grid gap-x-5 gap-y-8 sm:grid-cols-3">
-            {DELIVERABLES.map((item) => (
-              <Deliverable key={item.title} {...item} />
+      {/* (b) 로고체로 만든 폰트 */}
+      <section aria-labelledby="example-title">
+        <div className={`${WRAP} pt-12 pb-12 lg:pt-16 lg:pb-[3.625rem]`}>
+          <ExampleFont
+            header={
+              <SectionHead
+                id="example-title"
+                eyebrow="예시 폰트"
+                title="로고체로 만든 폰트"
+                lead={
+                  <>
+                    같은 폰트를 간판처럼<span className="hidden lg:inline"> 크게</span>, 가격표처럼, 안내문처럼 써 봤어요.
+                  </>
+                }
+              />
+            }
+          />
+        </div>
+      </section>
+
+      {/* (c) 받는 것 + 쓸 수 있는 범위(요약 C: 한 줄 + ✓ × ! 세 줄 + 전문 링크) */}
+      <section id="deliverables" aria-labelledby="deliverables-title">
+        <div className={`${WRAP} relative pt-12 pb-14 lg:pt-16 lg:pb-[4.5rem]`}>
+          <div className="pointer-events-none absolute top-7 right-3 lg:top-7 lg:right-10">
+            <div className="lg:hidden">
+              <BurstSticker size={96} rotate={-8} />
+            </div>
+            <div className="hidden lg:block">
+              <BurstSticker size={150} rotate={-8} />
+            </div>
+          </div>
+          <SectionHead id="deliverables-title" eyebrow="받는 것" title="받아서 이렇게 써요" lead="쓸 곳을 고르면 맞는 파일로 드려요." />
+          <ul className="mt-8 border-t border-border-active lg:mt-[2.6875rem]">
+            {USES.map((u) => (
+              <li
+                key={u.title}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border-b border-border-active pt-[1.125rem] pb-5 lg:grid-cols-[27.5rem_minmax(0,1fr)_12.5rem] lg:gap-0 lg:py-[1.3125rem]"
+              >
+                <h3 className="col-start-1 row-start-1 text-17 font-bold lg:text-[1.1875rem]">{u.title}</h3>
+                <p className="col-span-2 col-start-1 row-start-2 text-sm text-text-secondary lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:text-base">{u.body}</p>
+                <span className="col-start-2 row-start-1 lg:col-start-3 inline-flex h-6 items-center justify-center justify-self-end rounded-full border-[1.5px] border-border-active px-2.5 text-xs font-bold whitespace-nowrap lg:h-10 lg:w-full lg:text-sm">
+                  <span className="sr-only">파일: </span>
+                  {u.files}
+                </span>
+              </li>
             ))}
           </ul>
-        </Section>
 
-        <Section id="faq" title="자주 묻는 질문">
-          <div className="flex flex-col divide-y divide-border-default border-y border-border-default">
+          <div className="mt-12 grid gap-5 border-b border-border-active pb-9 lg:mt-16 lg:grid-cols-[32.5rem_minmax(0,1fr)] lg:gap-0 lg:pb-12">
+            <div className="flex flex-col gap-2 lg:gap-3">
+              <p className="text-13 font-bold text-text-secondary lg:text-sm">쓸 수 있는 범위</p>
+              <h3 id="rights-title" className="font-display text-[1.75rem] leading-[1.25] font-normal tracking-[-0.03em] lg:text-[2.5rem]">
+                가게 일에는 <br className="hidden lg:block" />다 써도 돼요
+              </h3>
+            </div>
+            <div className="flex flex-col lg:pt-[1.875rem]">
+              <ul className="flex flex-col gap-3 lg:gap-[1.125rem]">
+                {/* 스튜디오 줄 표(RightsCard)와 같은 사실의 세 줄 요약: RIGHTS.rows · RIGHTS.summary */}
+                {RIGHTS.rows.map((row) => (
+                  <RightsLine key={row.mark} mark={row.mark} label={row.title}>
+                    {RIGHTS.summary[row.mark]}
+                  </RightsLine>
+                ))}
+              </ul>
+              <a
+                href={RIGHTS.licenseUrl}
+                className="mt-3 ml-8 self-start py-1 text-sm text-text-secondary underline underline-offset-4 hover:text-text-primary lg:mt-[1.375rem] lg:ml-10"
+              >
+                자세히 보기 · {RIGHTS.licenseName}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* (d) 자주 묻는 질문: '얼마나 걸리나요'와 '어떤 글자'는 펼쳐 둔다 */}
+      <section id="faq" aria-labelledby="faq-title">
+        <div className={`${WRAP} pt-12 pb-12 lg:pt-16 lg:pb-20`}>
+          <SectionHead id="faq-title" eyebrow="궁금한 점" title="자주 묻는 질문" />
+          <div className="mt-3.5 flex flex-col divide-y divide-border-default border-t-2 border-b border-t-border-active border-b-border-default lg:mt-7">
             {FAQ.map((item) => (
-              <details key={item.q} className="group">
-                <summary className="-mx-2 flex min-h-[3.75rem] cursor-pointer list-none items-center gap-4 rounded-[0.625rem] px-2 py-4 text-17 font-bold focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+              <details key={item.q} open={item.open} className="group">
+                <summary className="flex min-h-[3.75rem] cursor-pointer list-none items-center gap-4 py-[1.125rem] text-base font-bold lg:min-h-[4.375rem] lg:py-[1.375rem] lg:text-lg [&::-webkit-details-marker]:hidden">
                   {item.q}
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 16 16"
-                    className="ml-auto h-4 w-4 shrink-0 text-text-secondary group-open:hidden"
-                  >
-                    <path
-                      d="M8 3v10M3 8h10"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 16 16"
-                    className="ml-auto hidden h-4 w-4 shrink-0 text-text-secondary group-open:block"
-                  >
-                    <path
-                      d="M3 8h10"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <PlusMinus />
                 </summary>
-                <div className="max-w-[48rem] pb-5 text-15 leading-relaxed text-text-secondary">
-                  {item.a}
-                </div>
+                <div className="-mt-2 max-w-[56.25rem] pb-5 text-sm leading-relaxed text-text-secondary lg:-mt-3 lg:pb-[1.375rem] lg:text-base">{item.a}</div>
               </details>
             ))}
           </div>
-        </Section>
-      </div>
+        </div>
+      </section>
 
-      <footer className="mt-24 border-t border-border-default lg:mt-32">
-        <div className="mx-auto flex max-w-[76rem] flex-col gap-3 px-5 py-8 text-13 text-text-secondary sm:flex-row sm:items-center sm:justify-between lg:px-10">
-          <span>로고체 · /eli30 · 2026 청년취업사관학교 해커톤</span>
-          <a
-            href={RIGHTS.licenseUrl}
-            className="font-semibold hover:text-text-primary hover:underline"
-          >
+      {/* 마무리: 민트 면(끝) */}
+      <section aria-labelledby="closing-title" className="bg-bg-brand">
+        <div className={`${WRAP} pt-14 pb-14 lg:pt-[5.75rem] lg:pb-[6.5rem]`}>
+          <DisplayTitle as="h2" className="text-[2rem] lg:text-[3rem]">
+            <span id="closing-title">
+              로고와 가게 이름만 있으면 <br className="lg:hidden" />
+              시작해요.
+            </span>
+          </DisplayTitle>
+          {/* 접수증으로 올라가기: B3 모양, 화살표는 위로 */}
+          <PrimaryLink href="/#make" block className="mt-6 lg:mt-11 lg:w-auto lg:min-w-80 [&_svg]:-rotate-90 [&_svg]:translate-x-0!">
+            접수증으로 올라가기
+          </PrimaryLink>
+        </div>
+      </section>
+
+      <footer className="bg-bg-inverse">
+        <div className={`${WRAP} flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between lg:py-7`}>
+          {/* 로고 기본판(흰 스티커): 어두운 바탕이라 먹 로고 둘레에 흰 칼선을 둘러 붙인다 */}
+          <Image
+            src="/logo.png"
+            alt="로고체"
+            width={962}
+            height={350}
+            className="h-8 w-auto self-start [filter:drop-shadow(1.5px_0_0_#fff)_drop-shadow(-1.5px_0_0_#fff)_drop-shadow(0_1.5px_0_#fff)_drop-shadow(0_-1.5px_0_#fff)_drop-shadow(1.5px_1.5px_0_#fff)_drop-shadow(-1.5px_-1.5px_0_#fff)] lg:h-[2.125rem]"
+          />
+          <a href={RIGHTS.licenseUrl} className="self-start py-2 text-sm text-text-disabled hover:text-text-inverse hover:underline sm:self-auto">
             폰트 라이선스(OFL)
           </a>
         </div>
@@ -238,70 +283,63 @@ export default function HomePage() {
   );
 }
 
-function Section({
-  id,
-  title,
-  lead,
-  aside,
-  children,
-}: {
-  id: string;
-  title: string;
-  lead?: string;
-  aside?: string;
-  children: ReactNode;
-}) {
+function SectionHead({ id, eyebrow, title, lead }: { id: string; eyebrow: string; title: string; lead?: ReactNode }) {
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="flex scroll-mt-8 flex-col gap-6"
-    >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 id={`${id}-title`} className="text-22 font-extrabold lg:text-26">
-            {title}
-          </h2>
-          {aside && (
-            <p className="shrink-0 text-13 font-semibold text-text-secondary">
-              {aside}
-            </p>
-          )}
-        </div>
-        {lead && <p className="text-15 text-text-secondary">{lead}</p>}
-      </div>
-      {children}
-    </section>
+    <div className="flex flex-col">
+      <p className="text-13 font-bold text-text-secondary lg:text-sm">{eyebrow}</p>
+      <DisplayTitle as="h2" className="mt-1 text-[2rem] lg:mt-1.5 lg:text-[3rem]">
+        <span id={id}>{title}</span>
+      </DisplayTitle>
+      {lead && <p className="mt-2 text-15 text-text-secondary lg:text-lg">{lead}</p>}
+    </div>
   );
 }
 
-/** 만드는 순서 한 칸: 번호는 순서가 실제 정보라 남긴다 */
-function Step({
-  number,
-  title,
-  body,
-}: {
-  number: number;
-  title: string;
-  body: string;
-}) {
+/** 만드는 순서 꼬리표: 사장님이 할 일(외곽선) / 기다리기(먹 채움) */
+function WhoTag({ who }: { who: "owner" | "wait" }) {
+  return who === "owner" ? (
+    <span className="inline-flex h-6 items-center rounded-full border-[1.5px] border-border-active px-3 text-xs font-bold lg:h-7 lg:px-3.5 lg:text-13">사장님</span>
+  ) : (
+    <span className="inline-flex h-6 items-center rounded-full bg-bg-inverse px-3 text-xs font-bold text-text-inverse lg:h-7 lg:px-3.5 lg:text-13">기다리기</span>
+  );
+}
+
+function RightsLine({ mark, label, children }: { mark: "ok" | "no" | "note"; label: string; children: ReactNode }) {
   return (
-    <li className="flex flex-col gap-1.5 border-t-2 border-border-active pt-4">
-      <span aria-hidden className="text-13 font-semibold text-text-secondary">
-        {number}
+    <li className="flex items-start gap-2.5 text-base leading-normal lg:gap-4 lg:text-17">
+      <span className="mt-px shrink-0 lg:mt-0">
+        {mark === "ok" ? <CheckCircle size={22} className="lg:size-6!" /> : <OutlineMark kind={mark} />}
       </span>
-      <h3 className="text-17 font-extrabold">{title}</h3>
-      <p className="text-15 leading-normal text-text-secondary">{body}</p>
+      <span>
+        <span className="sr-only">{label}: </span>
+        {children}
+      </span>
     </li>
   );
 }
 
-/** 받는 것 한 칸: 순서가 없으므로 번호 없이 제목과 설명만 */
-function Deliverable({ title, body }: { title: string; body: string }) {
+/** × · ! 표시: 먹 선 동그라미(피그마 556:174 · 556:179) */
+function OutlineMark({ kind }: { kind: "no" | "note" }) {
   return (
-    <li className="flex flex-col gap-1.5 border-t-2 border-border-active pt-4">
-      <h3 className="text-17 font-extrabold">{title}</h3>
-      <p className="text-15 leading-normal text-text-secondary">{body}</p>
-    </li>
+    <svg aria-hidden viewBox="0 0 24 24" className="size-[1.375rem] lg:size-6">
+      <circle cx="12" cy="12" r="10.25" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      {kind === "no" ? (
+        <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      ) : (
+        <>
+          <path d="M12 6.8v6.4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <circle cx="12" cy="16.9" r="1.3" fill="currentColor" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function PlusMinus() {
+  return (
+    <svg aria-hidden viewBox="0 0 16 16" className="ml-auto size-4 shrink-0 text-text-primary">
+      <path d="M3 8h10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 3v10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="group-open:hidden" />
+    </svg>
   );
 }

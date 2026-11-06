@@ -42,6 +42,7 @@ interface RestIndex {
   sheets: number;
   off?: Record<string, number>; // 남긴 그림이 기준(획 두께·크기 1)에서 벗어난 정도(로그 값). 다시 그린 그림과 견줄 때 쓴다
   styleRedrawn?: number; // 스타일 검사로 다시 그린 글자 수(누적)
+  lastSheetAt?: number; // 11/6: 마지막으로 글자표 한 장을 다 그린 시각(epoch ms). 만드는 중 화면 '마지막으로 그린 때'
 }
 
 /** 진행 중이거나 끝난 그리기(참고 글자 작업마다 하나) */
@@ -54,6 +55,7 @@ export interface RestRun {
   sheetSeconds: number[];
   error: string | null;
   aborted: boolean; // 사용자가 중단했다(11/4). 아직 시작하지 않은 장은 그리지 않는다. 이미 그리는 중인 장은 끝까지 간다.
+  lastSheetAt: number | null; // 11/6: 이번 그리기에서 마지막으로 장을 다 그린 시각(epoch ms)
   promise: Promise<void>;
 }
 
@@ -130,6 +132,15 @@ export async function restDrawnChars(jobId: string): Promise<string[]> {
   return Object.entries(index.drawn)
     .sort((a, b) => b[1] - a[1])
     .map(([char]) => char);
+}
+
+/** 11/6 만드는 중 화면용: 그린 글자(그린 차례가 늦은 것부터)와 마지막으로 장을 다 그린 시각. index.json을 한 번만 읽는다. */
+export async function restDrawnState(jobId: string): Promise<{ chars: string[]; lastSheetAt: number | null }> {
+  const index = await readIndex(jobId);
+  const chars = Object.entries(index.drawn)
+    .sort((a, b) => b[1] - a[1])
+    .map(([char]) => char);
+  return { chars, lastSheetAt: index.lastSheetAt ?? null };
 }
 
 export const restGlyphFile = restFile;
@@ -213,6 +224,7 @@ async function drawSheet(
       }),
     );
     run.sheetSeconds.push((Date.now() - startedAt) / 1000);
+    run.lastSheetAt = index.lastSheetAt = Date.now(); // 11/6: 화면 '마지막으로 그린 때'(index에도 적어 서버를 다시 켜도 남는다)
   } catch (err) {
     if (err instanceof Aborted) {
       for (const c of chars) failed.set(c, "중단"); // drawAll이 중단을 보고 이 글자들을 떨어진 글자로 적지 않는다
@@ -287,7 +299,7 @@ export async function ensureRest(jobId: string, req: StartBuildJobRequest): Prom
   const force = new Set((req.redraw ?? []).filter((c) => c in index.drawn).slice(0, RECHECK_COUNT));
   const chars = req.skipDraw ? [] : [...byShape([...force]), ...plan(job, index, req.upload.storeName, new Set(await listEdits(jobId)))];
   const ctx = await jobContext(job, req);
-  const run: RestRun = { total: chars.length, done: 0, failed: 0, startedAt: Date.now(), finishedAt: null, sheetSeconds: [], error: null, aborted: false, promise: Promise.resolve() };
+  const run: RestRun = { total: chars.length, done: 0, failed: 0, startedAt: Date.now(), finishedAt: null, sheetSeconds: [], error: null, aborted: false, lastSheetAt: null, promise: Promise.resolve() };
   run.promise = (async () => {
     try {
       if (chars.length) await drawAll(job, ctx, chars, run, force);
