@@ -139,7 +139,7 @@
 |---|---|---|
 | `--dur-fast` | 100ms | 버튼 누름(0.97배), 체크 |
 | `--dur-base` | 200ms | 바뀐 안쪽 내용 들어오기, 닫힘, 번호표 숫자 넘김, 떠오르는 막대 |
-| `--dur-move` | 300ms | 막대 너비, 글자 지도 칸, 아래 창·서랍 열림 |
+| `--dur-move` | 300ms | 막대 너비, 아래 창·서랍 열림 |
 | `--dur-moment` | 600ms | 완성 도장 빛 한 번(여기에만) |
 | `--ease-standard` | `cubic-bezier(0.2, 0, 0, 1)` | 기본 (`ease-standard` 유틸리티) |
 | `--ease-enter` | `cubic-bezier(0.05, 0.7, 0.1, 1)` | 나타나기·열기 (`ease-enter`) |
@@ -186,7 +186,7 @@
 | 부품 | 파일 | 규칙 |
 |---|---|---|
 | `PrimaryButton` · `PrimaryLink` 주 버튼 B3 '체 태그' | `Button.tsx` | 먹 알약 56 + 오른쪽 민트 동그라미 44 안 먹 화살표(441:35). 올렸을 때 `bg/inverse-strong`(#000) + 화살표 오른쪽 2px, 누름 0.97배, 키보드 초점 3px 먹 테두리를 2px 띄워서. 꺼짐: 점선 + 회색. `block`이면 폭 전체(글자 왼쪽, `labelAlign="center"`면 가운데). 화면마다 하나. |
-| `SecondaryButton` · `SecondaryLink` 보조 버튼 | `Button.tsx` | 흰 알약 + 2px 먹 테두리. `md` 52·16(441:40), `sm` 40·14(목록 줄·받기 줄). 꺼짐 점선. |
+| `SecondaryButton` · `SecondaryLink` 보조 버튼 | `Button.tsx` | 흰 알약 + 2px 먹 테두리. `md` 52·16(441:40), `sm` 40·14(목록 줄). 꺼짐 점선. |
 | `TextButton` · `TextLink` 글자 링크 | `Button.tsx` | 15 굵게 보조 글자색 밑줄, 위아래 12px(441:47). |
 | `SelectChip` 고르는 칩 | `SelectChip.tsx` | 중간 강도: 고름 = 회색 바탕 + 2px 먹 테두리 + 체크 + 굵게, 안 고름 = 옅은 테두리 + 보통, 꺼짐 = 점선(463:115). `mode="toggle"`(aria-pressed) / `"radio"`(role=radio, `rovingTab`·`onRadioKeys`와 함께). `size="sm"`은 글자 다듬기 프리셋(높이 36·글자 13, 데스크톱은 좌우 10·사이 4로 서랍 안 일곱 개 한 줄). `ui.tsx`의 `Chip`도 이 모양을 쓴다. |
 | `SegmentedPair` 양쪽 고르기 | `SegmentedPair.tsx` | 3/4 글씨 취향 B안(552:608). 두 칸을 한 줄로 붙이고 고른 쪽만 중간 강도 + 오른쪽 위 체크 원. 쌍마다 radiogroup. |
@@ -206,7 +206,7 @@
 | `SelectionBar` 떠오르는 막대 | 참고 글자 확인 | 하나라도 고르면 화면 아래 가운데에 뜬다. 먹 알약, 고른 글자 · '고르기 취소' · 흰 알약 '고른 글자 다시 그리기 (n)'. 그림자 6장. |
 | `CompareSlider` 밀어서 비교 | 스튜디오 시안 | 같은 시안 두 장(만든 폰트·기본 고딕)을 겹치고 위 장을 `clip-path`로 자른다. 손잡이 48px, 화살표 키로 5%씩. 휴대폰은 누르고 있는 동안 기본 고딕. |
 | `MockupTabs` | 스튜디오 첫 화면 | 간판·메뉴판·인스타를 탭으로 하나씩. 고른 탭은 2px 먹 테두리. 무대 높이는 탭을 바꿔도 같게. |
-| `DownloadMenu` (쓸 곳으로) | 스튜디오 '받기' | 내 컴퓨터에 설치(TTF) · 홈페이지에 쓰기(WOFF2와 CSS 복사) · 간판·인쇄 업체에 보내기(zip). 맨 아래 '파일 형식 골라 받기'. |
+| `DownloadMenu` (쓸 곳으로) | 스튜디오 완성 띠·머리 줄 '폰트 받기', 내 폰트 줄 '받기'(11/6 저녁: 스튜디오 받기 섹션은 지우고 이 메뉴 하나로) | 내 컴퓨터에 설치(TTF) · 홈페이지에 쓰기(WOFF2와 CSS 복사) · 간판·인쇄 업체에 보내기(zip). 맨 아래 '파일 형식 골라 받기'. |
 
 ## 9. 어두운 모드
 
