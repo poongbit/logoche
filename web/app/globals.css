@@ -428,11 +428,11 @@ body {
    쓰는 법: animate-ds-stick·animate-ds-enter·animate-ds-check·animate-ds-roll 유틸리티(@theme의 --animate-*).
    움직이는 건 transform·opacity만. 같은 요소에 ds-motion을 붙이면 움직임 줄이기에서 아래 '투명도만' 키프레임으로 바뀌어 남는다. */
 
-/* 스티커 '붙기': 살짝 크게(1.06배)·기울기 −2°에서 제자리(1배·원래 각도)로 240ms 감속. 원래 각도는 --sticker-rot(요소의 transform에도 같은 값). */
+/* 스티커 '붙기': 살짝 크게(1.06배)·원래 각도보다 2° 덜 돈 데서 제자리(1배·원래 각도)로 240ms 감속. 원래 각도는 --sticker-rot(요소의 transform에도 같은 값). */
 @keyframes ds-stick {
   0% {
     opacity: 0;
-    transform: rotate(var(--stick-from, -2deg)) scale(1.06);
+    transform: rotate(var(--stick-from, calc(var(--sticker-rot, 0deg) - 2deg))) scale(1.06);
   }
   35% {
     opacity: 1;
