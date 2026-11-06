@@ -27,7 +27,9 @@ function Mark({ kind }: { kind: "ok" | "no" | "note" }) {
 export function RightsCard({ className = "", id }: { className?: string; id?: string }) {
   return (
     <section id={id} aria-labelledby="rights-title" className={`flex flex-col ${className}`}>
-      <div className="flex flex-col items-start gap-x-6 sm:flex-row sm:items-baseline sm:justify-between">
+      {/* 11/6 밤: 다른 스튜디오 섹션('써 보기' · '시안' · '글자')처럼 작은 이름 '권리'(Studio.tsx Section과 같은 글자·간격) */}
+      <p className="text-13 font-bold text-text-secondary lg:text-sm">권리</p>
+      <div className="mt-1.5 flex flex-col items-start gap-x-6 sm:flex-row sm:items-baseline sm:justify-between lg:mt-2.5">
         <h2 id="rights-title" className="font-display text-[1.75rem] leading-[1.25] tracking-[-0.03em] lg:text-[2.75rem]">
           쓸 수 있는 범위
         </h2>
