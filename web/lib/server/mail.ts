@@ -58,7 +58,7 @@ export async function sendMail(mail: Mail): Promise<boolean> {
 // 11/6 디자인 반영: 로고 → (완성은 초록 띠) → 이름·상태 → 제목 그림 → 본문 → 검은 알약 버튼 → 안내 → 바닥글.
 // 메일 앱은 웹폰트를 못 써서 제목은 Black Han Sans로 미리 그린 그림(public/mail/head-*.png, 2배 크기)을 넣는다. 고치려면 그림을 다시 만든다.
 type Kind = "done" | "failed" | "choose" | "draft";
-const HEAD: Record<Kind, [number, number]> = { done: [217, 42], failed: [216, 42], choose: [227, 42], draft: [261, 42] };
+const HEAD: Record<Kind, [number, number]> = { done: [217, 42], failed: [216, 42], choose: [227, 42], draft: [429, 42] };
 const GREEN = "#35e0b2";
 const FONT = "-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
 
@@ -165,7 +165,7 @@ export async function failedMail(to: string, name: string, id: string): Promise<
 /**
  * 기준 글자 30자를 확인해 달라는 알림(11/6 피그마 21 페이지 497:87).
  * 처음 흐름에는 30자 초안 단계가 없다. 기준 글자를 그리다 멈춘 폰트를 '이어서 만들기'로 다시 시작해 기준 글자 30자를 그렸을 때만 온다(reviewing).
- * 제목 그림(public/mail/head-draft.png, 글자 버전에서만 씀)은 아직 옛 문구라 다시 그려야 한다.
+ * 제목 그림 public/mail/head-draft.png(글자 버전에서만 씀)은 11/6 새 문구로 다시 그렸다(Black Han Sans, 2배).
  */
 export async function draftMail(to: string, name: string, id: string): Promise<Mail> {
   const b: Body = {
