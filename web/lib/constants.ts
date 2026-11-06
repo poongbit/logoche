@@ -222,8 +222,8 @@ export const CHECKS: { key: CheckKey; label: string; criterion: string }[] = [
 
 /** 화면 4 진행 단계(순서대로). unit이 있으면 개수를 보인다. live면 끝낸 개수가 실시간으로 늘고, 아니면 전체 개수만 보인다. */
 export const BUILD_STAGES: { key: BuildStageKey; label: string; description: string; unit?: string; live?: boolean }[] = [
-  { key: "send", label: "참고 글자 보내기", description: "AI가 그린 참고 글자를 보내요" },
-  { key: "draw", label: "나머지 글자 그리기", description: "참고 글자와 같은 글씨로 30자씩 그리고 검사해요", unit: "자", live: true },
+  { key: "send", label: "기준 글자 보내기", description: "AI가 그린 기준 글자를 보내요" },
+  { key: "draw", label: "나머지 글자 그리기", description: "기준 글자와 같은 글씨로 30자씩 그리고 검사해요", unit: "자", live: true },
   { key: "trace", label: "외곽선 따기", description: "굵기·너비·기울기·자간을 맞춰 글자마다 외곽선을 따요", unit: "자", live: true },
   { key: "save", label: "TTF 파일 만들기", description: "외곽선을 글꼴 파일로 묶어요" },
   { key: "check", label: "상업용 검사 7항목", description: "글자 수, 깨진 글자, 이름 정보, 유사도 등을 확인해요", unit: "항목", live: true },
