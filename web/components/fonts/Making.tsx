@@ -138,11 +138,11 @@ function Analyzing({ view }: { view: ProjectView }) {
             내 폰트로 가기
           </TextLink>
         </div>
+        {/* 접수증 틀은 질문 화면에서 이어지는 물건이라 움직이지 않고, 안쪽 내용만 들어온다(motion.md '로고 권리 → 로고 읽는 중') */}
         <Receipt
-          className="ds-motion animate-ds-enter"
           aria-label="접수증"
           top={
-            <div className="flex flex-col">
+            <div className="ds-motion flex animate-ds-enter flex-col">
               <div className="relative h-[8.5rem] rounded-[1.25rem] bg-bg-surface-strong lg:h-[13.75rem]">
                 {/* eslint-disable-next-line @next/next/no-img-element -- 사용자가 올린 로고 */}
                 <img src={view.logoUrl} alt={`${view.storeName} 로고`} className="absolute inset-0 m-auto h-[70%] w-[70%] object-contain" />
