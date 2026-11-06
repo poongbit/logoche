@@ -139,7 +139,7 @@ export default function HomePage() {
                   </h3>
                   <WhoTag who={step.who} />
                 </div>
-                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[31.25rem]" : ""}`}>
+                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[31.25rem] lg:pr-[12.5rem] xl:pr-0" : ""}`}>
                   {step.body.map((sentence) => (
                     <span key={sentence} className="block text-pretty">
                       {sentence}
@@ -149,12 +149,16 @@ export default function HomePage() {
                 {step.who === "wait" && (
                   <>
                     {/* '약 15분' 번호표: 글자 그리기 줄 오른쪽(모바일 152px · 10°). 데스크톱은 1,440에서 피그마와 같은 실제 폭 256px(228/16rem × 18px):
-                        큰 화면 rem(18px)으로 키우면 288px가 되어 03 첫 문장 끝에 닿았다(11/6 밤). */}
+                        큰 화면 rem(18px)으로 키우면 288px가 되어 03 첫 문장 끝에 닿았다(11/6 밤). 그 뒤 212(1,440에서 약 238px)로 조금 줄이고 오른쪽으로 0.75rem 내 글과 띄웠다. */}
                     <div className="col-span-2 -mb-9 flex justify-end pt-2 pr-1 lg:hidden">
                       <Ticket prefix="약" value="15" unit="분" width={152} rotate={10} />
                     </div>
-                    <div className="absolute top-1/2 right-0 hidden -translate-y-1/2 lg:block">
-                      <Ticket prefix="약" value="15" unit="분" width={228} rotate={10} />
+                    {/* 1,024~1,279는 글 칸이 좁아 번호표를 작게(160) 두고 글에 오른쪽 여백을 줘서 닿지 않게 한다 */}
+                    <div className="absolute top-1/2 -right-3 hidden -translate-y-1/2 lg:block xl:hidden">
+                      <Ticket prefix="약" value="15" unit="분" width={160} rotate={10} />
+                    </div>
+                    <div className="absolute top-1/2 -right-3 hidden -translate-y-1/2 xl:block">
+                      <Ticket prefix="약" value="15" unit="분" width={212} rotate={10} />
                     </div>
                   </>
                 )}
@@ -268,12 +272,6 @@ export default function HomePage() {
           </DisplayTitle>
           {/* 접수증으로 올라가기: B3 모양, 화살표는 위로. 같은 화면의 접수증으로 부드럽게 올라가 첫 칸에 초점 */}
           <BackToReceipt className="mt-6 lg:mt-11 lg:w-auto lg:min-w-80" />
-          {/* 11/6 밤: 오른쪽이 비어 보여서 첫 화면과 같은 말풍선(280 · 4°)을 오른쪽에. 꼬리(왼쪽 아래)가 버튼 쪽을 가리킨다. 움직이지 않는다.
-              1,280px부터만: 그보다 좁으면 한 줄 제목 끝과 겹친다. 휴대폰은 뺐다 — 두 줄 제목과 폭 전체 버튼 사이에 자리가 없고(끼우면 버튼을 누른다),
-              첫 화면 접수증 모서리에 같은 말풍선이 이미 있다. */}
-          <div aria-hidden className="pointer-events-none absolute top-1/2 right-[clamp(2.5rem,9vw,8.5rem)] hidden -translate-y-[38%] xl:block">
-            <SpeechBubble width={280} rotate={4} />
-          </div>
         </div>
       </section>
 
