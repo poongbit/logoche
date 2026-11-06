@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { isPlainClick, scrollToId } from "@/components/home/scrollTo";
 import { InAppNotice, useGoogleSignIn } from "@/components/GoogleSignIn";
 import { Notice } from "@/components/ui";
 import { authClient } from "@/lib/authClient";
@@ -54,9 +55,19 @@ function ListLink({ current, mobile }: { current: boolean; mobile: boolean }) {
   );
 }
 
+// 11/6 밤: 메인에서는 '만드는 순서'(#how)로 부드럽게 내려가고(움직임 줄이기면 바로) 주소에 #how를 남긴다.
+// 다른 화면에서는 /#how로 이동하고, 라우터가 그 섹션(scroll-mt)으로 내려 준다.
 function HowLink() {
   return (
-    <Link href="/#how" className={`hidden lg:flex ${NAV_LINK}`}>
+    <Link
+      href="/#how"
+      className={`hidden lg:flex ${NAV_LINK}`}
+      onClick={(e) => {
+        if (location.pathname !== "/" || !isPlainClick(e) || !scrollToId("how")) return;
+        e.preventDefault();
+        history.pushState(null, "", "/#how");
+      }}
+    >
       만드는 법
     </Link>
   );

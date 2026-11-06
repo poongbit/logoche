@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { BurstSticker, CheckCircle, DisplayTitle, Highlight, PrimaryLink, SpeechBubble, Ticket } from "@/components/ds";
+import { BurstSticker, CheckCircle, DisplayTitle, Highlight, SpeechBubble, Ticket } from "@/components/ds";
+import { BackToReceipt } from "@/components/home/BackToReceipt";
 import { ExampleFont } from "@/components/home/ExampleFont";
 import { Hero } from "@/components/home/Hero";
 import { EXTRA_CHARS, RIGHTS } from "@/lib/constants";
@@ -8,18 +9,19 @@ import { KSX1001_HANGUL } from "@/lib/hangul";
 
 // 메인 화면 — 11/6 R1 + B3(피그마 16 페이지 427:9 데스크톱 · 428:123 모바일, docs/design-1106/flow-1105.md).
 // 위에서 아래로: 첫 화면(민트 면 + 흰 접수증 = '접수') → (a) 만드는 순서 → (b) 로고체로 만든 폰트 → (c) 받는 것 + 쓸 수 있는 범위 → (d) 자주 묻는 질문 → 마무리(민트) → 바닥(먹).
-// 리듬 R1: 흰 띠 사이를 1px 먹 선으로 나누고, 큰 민트 면은 시작(접수)과 끝(마무리)에만. 스티커(말풍선·번호표·별 터짐)는 사실을 말하고, 처음 한 번 '붙기'만 한다.
+// 리듬 R1: 흰 띠 사이를 1px 먹 선으로 나누고, 큰 민트 면은 시작(접수)과 끝(마무리)에만. 스티커(말풍선·번호표·별 터짐)는 사실을 말하고 움직이지 않는다(11/6 밤: 등장 모션 뺌).
 // 문구(11/6 결정): 시간은 '약 15분'(스티커·접수증) / '느낌을 고른 뒤 12~17분'(질문). 글자는 '한글 약 2,350자 + 숫자·문장부호·영문 대소문자 82자'. '무료'를 파는 말로 쓰지 않는다.
 // 자주 묻는 질문의 답은 실제 동작과 맞춘다(로고는 서버에 저장된다, 폰트는 OFL이라 독점이 아니다). 권리 문구는 RIGHTS에서 가져와 권리 카드와 어긋나지 않게 한다.
 
 const HANGUL = KSX1001_HANGUL.size.toLocaleString();
 const EXTRA = EXTRA_CHARS.length;
 
-const STEPS: { title: string; who: "owner" | "wait"; body: string }[] = [
-  { title: "로고와 질문", who: "owner", body: "로고와 가게 이름을 올리고, 업종·가게 이야기·글씨 취향·로고 권리를 답해요." },
-  { title: "견본 고르기", who: "owner", body: "가게 이름으로 그린 견본 세 가지를 보고 하나를 골라요." },
-  { title: "글자 그리기", who: "wait", body: `고른 느낌으로 한글 약 ${HANGUL}자와 영문·숫자·문장부호를 그려요. 창을 닫아도 계속 그려요.` },
-  { title: "받기", who: "owner", body: "무료 폰트와 닮지 않았는지 검사한 뒤 폰트 파일을 드려요." },
+// body는 문장 단위. 문장마다 한 줄로 시작한다(11/6 밤: 03의 '창을 닫아도 계속 그려요.'가 첫 문장 중간에서 이어 붙던 것).
+const STEPS: { title: string; who: "owner" | "wait"; body: string[] }[] = [
+  { title: "로고와 질문", who: "owner", body: ["로고와 가게 이름을 올리고, 업종·가게 이야기·글씨 취향·로고 권리를 답해요."] },
+  { title: "견본 고르기", who: "owner", body: ["가게 이름으로 그린 견본 세 가지를 보고 하나를 골라요."] },
+  { title: "글자 그리기", who: "wait", body: [`고른 느낌으로 한글 약 ${HANGUL}자와 영문·숫자·문장부호를 그려요.`, "창을 닫아도 계속 그려요."] },
+  { title: "받기", who: "owner", body: ["무료 폰트와 닮지 않았는지 검사한 뒤 폰트 파일을 드려요."] },
 ];
 
 const USES: { title: string; body: string; files: string }[] = [
@@ -29,7 +31,8 @@ const USES: { title: string; body: string; files: string }[] = [
   { title: "제작 기록", body: "어떤 로고로 어떻게 만들었는지, 닮음 검사 결과까지", files: "묶음에 함께" },
 ];
 
-const FAQ: { q: string; a: ReactNode; open?: boolean }[] = [
+// 11/6 밤: 모두 닫힌 채로 시작한다(예전에는 '얼마나 걸리나요'·'어떤 글자'를 펼쳐 뒀다).
+const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: "간판이나 메뉴판에 써도 되나요?",
     a: (
@@ -64,10 +67,9 @@ const FAQ: { q: string; a: ReactNode; open?: boolean }[] = [
       </p>
     ),
   },
-  { q: "얼마나 걸리나요?", open: true, a: <p>느낌을 고른 뒤 12~17분쯤 걸려요. 창을 닫아도 계속 그려요.</p> },
+  { q: "얼마나 걸리나요?", a: <p>느낌을 고른 뒤 12~17분쯤 걸려요. 창을 닫아도 계속 그려요.</p> },
   {
     q: "어떤 글자가 들어가나요?",
-    open: true,
     a: (
       <p>
         자주 쓰는 한글 약 {HANGUL}자와 숫자·문장부호·영문 대소문자 {EXTRA}자를 함께 그려요.
@@ -118,7 +120,7 @@ export default function HomePage() {
       </section>
 
       {/* (a) 만드는 순서 */}
-      <section id="how" aria-labelledby="how-title" className="scroll-mt-4">
+      <section id="how" aria-labelledby="how-title" tabIndex={-1} className="scroll-mt-4 outline-none">
         <div className={`${WRAP} pt-12 pb-14 lg:pt-16 lg:pb-[4.5rem]`}>
           <SectionHead id="how-title" eyebrow="만드는 순서" title="이렇게 만들어요" lead="사장님은 답하고 고르기만 하면 돼요." />
           <ol className="mt-8 border-t border-border-active lg:mt-[3.25rem]">
@@ -137,15 +139,22 @@ export default function HomePage() {
                   </h3>
                   <WhoTag who={step.who} />
                 </div>
-                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[31.25rem]" : ""}`}>{step.body}</p>
+                <p className={`mt-1.5 text-15 leading-[1.6] lg:mt-0 lg:pt-1 lg:text-17 lg:leading-[1.65] ${step.who === "wait" ? "lg:max-w-[31.25rem]" : ""}`}>
+                  {step.body.map((sentence) => (
+                    <span key={sentence} className="block text-pretty">
+                      {sentence}
+                    </span>
+                  ))}
+                </p>
                 {step.who === "wait" && (
                   <>
-                    {/* '약 15분' 번호표: 글자 그리기 줄 오른쪽(데스크톱 256px · 10°, 모바일 152px · 10°) */}
+                    {/* '약 15분' 번호표: 글자 그리기 줄 오른쪽(모바일 152px · 10°). 데스크톱은 1,440에서 피그마와 같은 실제 폭 256px(228/16rem × 18px):
+                        큰 화면 rem(18px)으로 키우면 288px가 되어 03 첫 문장 끝에 닿았다(11/6 밤). */}
                     <div className="col-span-2 -mb-9 flex justify-end pt-2 pr-1 lg:hidden">
                       <Ticket prefix="약" value="15" unit="분" width={152} rotate={10} />
                     </div>
                     <div className="absolute top-1/2 right-0 hidden -translate-y-1/2 lg:block">
-                      <Ticket prefix="약" value="15" unit="분" width={256} rotate={10} />
+                      <Ticket prefix="약" value="15" unit="분" width={228} rotate={10} />
                     </div>
                   </>
                 )}
@@ -230,13 +239,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* (d) 자주 묻는 질문: '얼마나 걸리나요'와 '어떤 글자'는 펼쳐 둔다 */}
+      {/* (d) 자주 묻는 질문: 모두 닫힌 채로 시작 */}
       <section id="faq" aria-labelledby="faq-title">
         <div className={`${WRAP} pt-12 pb-12 lg:pt-16 lg:pb-20`}>
           <SectionHead id="faq-title" eyebrow="궁금한 점" title="자주 묻는 질문" />
           <div className="mt-3.5 flex flex-col divide-y divide-border-default border-t-2 border-b border-t-border-active border-b-border-default lg:mt-7">
             {FAQ.map((item) => (
-              <details key={item.q} open={item.open} className="group">
+              <details key={item.q} className="group">
                 <summary className="flex min-h-[3.75rem] cursor-pointer list-none items-center gap-4 py-[1.125rem] text-base font-bold lg:min-h-[4.375rem] lg:py-[1.375rem] lg:text-lg [&::-webkit-details-marker]:hidden">
                   {item.q}
                   <PlusMinus />
@@ -249,18 +258,22 @@ export default function HomePage() {
       </section>
 
       {/* 마무리: 민트 면(끝) */}
-      <section aria-labelledby="closing-title" className="bg-bg-brand">
-        <div className={`${WRAP} pt-14 pb-14 lg:pt-[5.75rem] lg:pb-[6.5rem]`}>
+      <section aria-labelledby="closing-title" className="overflow-x-clip bg-bg-brand">
+        <div className={`${WRAP} relative pt-14 pb-14 lg:pt-[5.75rem] lg:pb-[6.5rem]`}>
           <DisplayTitle as="h2" className="text-[2rem] lg:text-[3rem]">
             <span id="closing-title">
               로고와 가게 이름만 있으면 <br className="lg:hidden" />
               시작해요.
             </span>
           </DisplayTitle>
-          {/* 접수증으로 올라가기: B3 모양, 화살표는 위로 */}
-          <PrimaryLink href="/#make" block className="mt-6 lg:mt-11 lg:w-auto lg:min-w-80 [&_svg]:-rotate-90 [&_svg]:translate-x-0!">
-            접수증으로 올라가기
-          </PrimaryLink>
+          {/* 접수증으로 올라가기: B3 모양, 화살표는 위로. 같은 화면의 접수증으로 부드럽게 올라가 첫 칸에 초점 */}
+          <BackToReceipt className="mt-6 lg:mt-11 lg:w-auto lg:min-w-80" />
+          {/* 11/6 밤: 오른쪽이 비어 보여서 첫 화면과 같은 말풍선(280 · 4°)을 오른쪽에. 꼬리(왼쪽 아래)가 버튼 쪽을 가리킨다. 움직이지 않는다.
+              1,280px부터만: 그보다 좁으면 한 줄 제목 끝과 겹친다. 휴대폰은 뺐다 — 두 줄 제목과 폭 전체 버튼 사이에 자리가 없고(끼우면 버튼을 누른다),
+              첫 화면 접수증 모서리에 같은 말풍선이 이미 있다. */}
+          <div aria-hidden className="pointer-events-none absolute top-1/2 right-[clamp(2.5rem,9vw,8.5rem)] hidden -translate-y-[38%] xl:block">
+            <SpeechBubble width={280} rotate={4} />
+          </div>
         </div>
       </section>
 
