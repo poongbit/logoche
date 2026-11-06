@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { UnderlineTabs, tabId, tabPanelId } from "@/components/ds";
 import { BASE_GOTHIC_STACK } from "@/lib/preview";
 
 // 화면 5 시안(Claude Design 'Logoche Final' 3k·3l·3s). 로고 색 [대표색, 어두운 색, 밝은 색]을 입힌다.
@@ -469,49 +470,24 @@ export function CompareSlider({ top, bottom, topLabel, bottomLabel }: { top: Rea
   );
 }
 
-/** 시안 탭: 간판·메뉴판·인스타를 하나씩. 무대 높이는 탭을 바꿔도 같다. '기본 고딕과 비교'를 켜면 밀어서 비교로 바뀐다. */
+/** 시안 탭(11/6 ST2 v2 '시안 — 가게에 걸어 봐요', 549:402 · 561:513): 간판·메뉴판·인스타 밑줄 탭 + 늘 켜진 기본 고딕 비교 손잡이.
+ * 무대는 코드의 사진 장면(PhotoStage) 그대로. 높이는 탭을 바꿔도 같다(데스크톱 440 · 휴대폰 240). */
 export function MockupTabs({ fontName, ...props }: MockupProps & { fontName: string }) {
   const [kind, setKind] = useState<SceneKey>("sign");
-  const [compare, setCompare] = useState(false);
-  const chip = (on: boolean) =>
-    `inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-15 transition-colors ${
-      on ? "border-2 border-border-active bg-bg-canvas pl-3 font-bold" : "border-[1.5px] border-border-default font-semibold hover:border-border-active hover:bg-bg-surface"
-    }`;
-  const check = (
-    <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0">
-      <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="시안 종류" className="flex flex-wrap gap-2">
-          {SCENES.map((t) => (
-            <button key={t.key} type="button" aria-pressed={kind === t.key} onClick={() => setKind(t.key)} className={chip(kind === t.key)}>
-              {kind === t.key && check}
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <button type="button" aria-pressed={compare} onClick={() => setCompare(!compare)} className={`${chip(compare)} sm:ml-auto`}>
-          {compare && check}
-          기본 고딕과 비교
-        </button>
-      </div>
-      <div className="@container/mock">
-        <div className="h-[22.5rem] @2xl/mock:h-[30rem]">
-          {compare ? (
-            <CompareSlider
-              topLabel={fontName}
-              bottomLabel="기본 고딕"
-              top={<Scene kind={kind} {...props} />}
-              bottom={<Scene kind={kind} {...props} fontStyle={BASE_GOTHIC_STYLE} />}
-            />
-          ) : (
-            <Scene kind={kind} {...props} />
-          )}
+    <div className="flex flex-col gap-4 lg:gap-5">
+      <UnderlineTabs label="시안 종류" idPrefix="mockup" tabs={SCENES.map((t) => ({ value: t.key, label: t.label }))} value={kind} onChange={setKind} />
+      <div id={tabPanelId("mockup", kind)} role="tabpanel" aria-labelledby={tabId("mockup", kind)} className="@container/mock">
+        <div className="h-[15rem] sm:h-[22.5rem] lg:h-[27.5rem]">
+          <CompareSlider
+            topLabel={fontName}
+            bottomLabel="기본 고딕"
+            top={<Scene kind={kind} {...props} />}
+            bottom={<Scene kind={kind} {...props} fontStyle={BASE_GOTHIC_STYLE} />}
+          />
         </div>
       </div>
+      <p className="text-13 text-text-secondary lg:text-sm">손잡이를 밀면 기본 고딕과 비교돼요.</p>
     </div>
   );
 }

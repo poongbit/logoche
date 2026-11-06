@@ -7,7 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ModalPortal } from "@/components/ModalPortal";
-import { Button, Notice, Spinner } from "@/components/ui";
+import { PrimaryButton, SecondaryButton, TextButton } from "@/components/ds";
+import { Notice, Spinner } from "@/components/ui";
 import { errorMessage } from "@/lib/api";
 import type { GlyphGuides } from "@/lib/types";
 
@@ -612,6 +613,32 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
   const cursorStyle = tool === "select" ? (cursor && inFloating(cursor) ? "move" : "crosshair") : PAINT_TOOLS.has(tool) && tool !== "line" ? "none" : "crosshair";
   const toolLabel = TOOLS.find((t) => t.key === tool)!.label;
 
+  const segment = (on: boolean) =>
+    `-m-[1.5px] rounded-full text-sm transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:text-text-disabled ${on ? "border-2 border-border-active bg-bg-surface-strong font-bold" : "font-medium text-text-secondary hover:text-text-primary"}`;
+  const toolButton = (on: boolean) =>
+    `flex shrink-0 items-center gap-1.5 rounded-full px-4 text-sm transition-[background-color,border-color] duration-(--dur-fast) max-lg:h-10 lg:w-full lg:flex-col lg:gap-1 lg:rounded-[0.875rem] lg:px-1.5 lg:py-2.5 lg:text-13 ${
+      on ? "border-2 border-border-active bg-bg-surface-strong font-bold" : "border-[1.5px] border-border-default font-medium hover:bg-bg-surface lg:border-transparent"
+    }`;
+  const undoRedo = (className: string) => (
+    <>
+      <button type="button" onClick={doUndo} disabled={history.undo === 0} title="되돌리기 (⌘Z)" className={className}>
+        <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5 max-lg:hidden">
+          <path d="M7 4.5L3.5 8 7 11.5M4 8h8a4 4 0 010 8H8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        되돌리기
+      </button>
+      <button type="button" onClick={doRedo} disabled={history.redo === 0} title="다시 하기 (⇧⌘Z)" className={className}>
+        <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5 max-lg:hidden">
+          <path d="M13 4.5L16.5 8 13 11.5M16 8H8a4 4 0 000 8h4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        다시 하기
+      </button>
+    </>
+  );
+  const status = `${toolLabel} · ${tool === "select" ? (floating ? "끌어서 옮기고 Enter로 내려놓기 · Delete로 지우기" : "옮길 부분을 네모로 둘러싸기") : `굵기 ${size}px`}`;
+
+  // 11/6 그림판(피그마 데스크톱 563:731 · 모바일 564:708): 왼쪽 도구 · 가운데 그림 · 오른쪽 굵기·칠할 색·도형·겹쳐 보기·단축키, 아래 줄은 'AI가 만든 그대로 돌리기' + 저장.
+  // 닫기는 오른쪽 위 X · Esc · 바깥 누르기 하나로(아래 '닫기'·'취소'는 X와 같은 일이라 지웠다). 고친 게 있으면 '저장하지 않고 닫을까요?'를 묻는다.
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 lg:items-center lg:p-6" onPointerDown={(e) => e.target === e.currentTarget && requestClose()}>
@@ -621,310 +648,274 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="flex max-h-full w-full flex-col overflow-hidden bg-bg-canvas outline-none lg:max-w-[70rem] lg:rounded-[1.25rem] lg:shadow-float"
+        className="ds-motion flex max-h-full w-full animate-ds-enter flex-col overflow-hidden bg-bg-canvas outline-none lg:max-h-[52.5rem] lg:max-w-[70rem] lg:rounded-[1.5rem] lg:shadow-float"
       >
-        <div className="flex items-center gap-3 border-b border-border-default px-5 py-3.5 lg:px-6">
-          <h2 className="text-lg font-extrabold lg:text-xl">{title}</h2>
-          <span className="hidden text-sm font-medium text-text-secondary lg:inline">
-            {toolLabel} · {tool === "select" ? (floating ? "끌어서 옮기고 Enter로 내려놓기 · Delete로 지우기" : "옮길 부분을 네모로 둘러싸기") : `굵기 ${size}px`}
-          </span>
-          <button type="button" onClick={requestClose} aria-label="닫기" className="ml-auto grid h-10 w-10 place-items-center rounded-full text-xl hover:bg-bg-surface-strong">
+        <div className="flex shrink-0 items-start gap-3 border-b border-border-default px-4 pt-4 pb-3.5 lg:items-center lg:px-8 lg:py-[1.125rem]">
+          <div className="flex min-w-0 flex-1 flex-col gap-1 lg:flex-row lg:items-baseline lg:gap-4">
+            <h2 className="font-display text-2xl leading-[1.3] tracking-[-0.03em] lg:text-[1.875rem]">{title}</h2>
+            <span className="truncate text-13 text-text-secondary lg:text-15">{status}</span>
+          </div>
+          <button type="button" onClick={requestClose} aria-label="닫기" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-bg-surface-strong hover:bg-bg-disabled">
             <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4">
               <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[6rem_minmax(0,1fr)_15rem] lg:overflow-hidden">
-          {/* 도구 */}
-          <div role="toolbar" aria-label="도구" className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border-default px-4 py-2.5 lg:flex-col lg:overflow-y-auto lg:border-r lg:border-b-0 lg:px-2.5 lg:py-3">
-            {TOOLS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                aria-pressed={tool === t.key}
-                title={`${t.label} (${t.key2})`}
-                onClick={() => {
-                  commitFloating();
-                  setTool(t.key);
-                }}
-                className={`flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-xs font-bold transition-colors duration-150 ${
-                  tool === t.key ? "bg-bg-inverse text-text-inverse" : "text-text-primary hover:bg-bg-surface-strong"
-                }`}
-              >
-                <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  {t.icon}
-                </svg>
-                <span className="whitespace-nowrap">{t.label}</span>
-              </button>
-            ))}
-            <span aria-hidden className="mx-1 w-px shrink-0 bg-border-default lg:mx-0 lg:my-1 lg:h-px lg:w-auto" />
-            <button
-              type="button"
-              onClick={doUndo}
-              disabled={history.undo === 0}
-              title="되돌리기 (⌘Z)"
-              className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-xs font-bold hover:bg-bg-surface-strong disabled:text-text-disabled disabled:hover:bg-transparent"
-            >
-              <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5">
-                <path d="M7 4.5L3.5 8 7 11.5M4 8h8a4 4 0 010 8H8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              되돌리기
-            </button>
-            <button
-              type="button"
-              onClick={doRedo}
-              disabled={history.redo === 0}
-              title="다시 하기 (⇧⌘Z)"
-              className="flex min-w-[4rem] shrink-0 flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-xs font-bold hover:bg-bg-surface-strong disabled:text-text-disabled disabled:hover:bg-transparent"
-            >
-              <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5">
-                <path d="M13 4.5L16.5 8 13 11.5M16 8H8a4 4 0 000 8h4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              다시 하기
-            </button>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[8rem_minmax(0,1fr)_20rem] lg:grid-rows-[minmax(0,1fr)_auto] lg:overflow-hidden">
+          {/* 그림 */}
+          <div className="flex shrink-0 flex-col px-4 pt-4 lg:col-start-2 lg:row-start-1 lg:min-h-0 lg:overflow-auto lg:px-10 lg:pt-10 lg:pb-6">
+            <div className="mx-auto w-full" style={{ width: `min(${560 * zoom}px, ${100 * zoom}%)` }}>
+              {!source ? (
+                <div className="grid aspect-square w-full place-items-center border border-border-strong bg-bg-canvas">
+                  {loadError ? <Notice tone="error">글자를 불러오지 못했어요: {loadError}</Notice> : <Spinner label="글자를 불러오는 중" />}
+                </div>
+              ) : (
+                <div
+                  ref={wrapRef}
+                  className="relative aspect-square w-full touch-none overflow-hidden border border-border-strong bg-bg-canvas select-none"
+                  style={{ cursor: cursorStyle }}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerUp}
+                  onPointerLeave={() => setCursor(null)}
+                >
+                  {showGhost && source.ghost && (
+                    // eslint-disable-next-line @next/next/no-img-element -- 엔진이 준 data URL
+                    <img src={source.ghost} alt="" className="pointer-events-none absolute inset-0 h-full w-full opacity-25" draggable={false} />
+                  )}
+                  <canvas ref={canvasRef} width={n} height={n} className="pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]" aria-label={`${title} 그림`} />
+                  <canvas ref={floatRef} width={n} height={n} className="pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]" />
+                  <svg viewBox={`0 0 ${n} ${n}`} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
+                    {showGuides && guides && (
+                      <g stroke="#8A8A8A" strokeWidth={n / 512} strokeDasharray={`${n / 85} ${n / 85}`} fill="none">
+                        <line x1={0} x2={n} y1={guides.ascender} y2={guides.ascender} />
+                        <line x1={0} x2={n} y1={guides.descender} y2={guides.descender} />
+                        <line y1={0} y2={n} x1={guides.left} x2={guides.left} />
+                        <line y1={0} y2={n} x1={guides.right} x2={guides.right} />
+                        <line y1={0} y2={n} x1={(guides.left + guides.right) / 2} x2={(guides.left + guides.right) / 2} opacity={0.5} />
+                        <line x1={0} x2={n} y1={(guides.ascender + guides.descender) / 2} y2={(guides.ascender + guides.descender) / 2} opacity={0.5} />
+                      </g>
+                    )}
+                    {shapePreview?.kind === "line" && (
+                      <line
+                        x1={shapePreview.x0}
+                        y1={shapePreview.y0}
+                        x2={shapePreview.x1}
+                        y2={shapePreview.y1}
+                        stroke={color ? "#111" : "#fff"}
+                        strokeOpacity={0.6}
+                        strokeWidth={size}
+                        strokeLinecap="round"
+                      />
+                    )}
+                    {shapePreview?.kind === "rect" && (
+                      <rect
+                        x={shapePreview.x + (filled ? 0 : size / 2)}
+                        y={shapePreview.y + (filled ? 0 : size / 2)}
+                        width={Math.max(0, shapePreview.w - (filled ? 0 : size))}
+                        height={Math.max(0, shapePreview.h - (filled ? 0 : size))}
+                        fill={filled ? (color ? "#111" : "#fff") : "none"}
+                        fillOpacity={0.6}
+                        stroke={filled ? "none" : color ? "#111" : "#fff"}
+                        strokeOpacity={0.6}
+                        strokeWidth={size}
+                      />
+                    )}
+                    {shapePreview?.kind === "ellipse" && (
+                      <ellipse
+                        cx={shapePreview.x + shapePreview.w / 2}
+                        cy={shapePreview.y + shapePreview.h / 2}
+                        rx={Math.max(0, shapePreview.w / 2 - (filled ? 0 : size / 2))}
+                        ry={Math.max(0, shapePreview.h / 2 - (filled ? 0 : size / 2))}
+                        fill={filled ? (color ? "#111" : "#fff") : "none"}
+                        fillOpacity={0.6}
+                        stroke={filled ? "none" : color ? "#111" : "#fff"}
+                        strokeOpacity={0.6}
+                        strokeWidth={size}
+                      />
+                    )}
+                    {(selectRect || floating) && (
+                      <rect
+                        x={selectRect ? Math.min(selectRect.x0, selectRect.x1) : floating!.x}
+                        y={selectRect ? Math.min(selectRect.y0, selectRect.y1) : floating!.y}
+                        width={selectRect ? Math.abs(selectRect.x1 - selectRect.x0) : floating!.w}
+                        height={selectRect ? Math.abs(selectRect.y1 - selectRect.y0) : floating!.h}
+                        fill="none"
+                        stroke="#111"
+                        strokeWidth={n / 340}
+                        strokeDasharray={`${n / 100} ${n / 100}`}
+                        className="motion-safe:animate-[ds-ants_0.6s_linear_infinite]"
+                      />
+                    )}
+                    {brushCursor && (
+                      <circle cx={cursor.x} cy={cursor.y} r={Math.max(1, size / 2)} fill="none" stroke={tool === "eraser" || !ink ? "#B3261E" : "#111"} strokeWidth={n / 400} />
+                    )}
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 그림 */}
-          <div className="flex shrink-0 flex-col items-center gap-3 bg-bg-surface-strong px-4 py-4 lg:min-h-0 lg:shrink lg:px-6">
-            <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-semibold">
-              <label className="flex items-center gap-2">
-                굵기
-                <input
-                  type="range"
-                  min={2}
-                  max={120}
-                  value={size}
-                  onChange={(e) => setSize(Number(e.target.value))}
-                  className="ds-range w-28"
-                  style={{ ["--fill" as string]: `${((size - 2) / 118) * 100}%` }}
-                  aria-label="붓 굵기"
-                />
-                <span className="w-12 tabular-nums">{size}px</span>
-              </label>
-              <div role="radiogroup" aria-label="칠할 색" className="flex items-center gap-1 rounded-full bg-bg-canvas p-1" title="색 바꾸기 (X)">
+          {/* 도구: 휴대폰은 옆으로 미는 한 줄, 데스크톱은 왼쪽 세로 줄 */}
+          <div className="shrink-0 px-4 pt-4 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:overflow-y-auto lg:border-r lg:border-border-default lg:px-3 lg:py-4">
+            <div role="toolbar" aria-label="도구" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0">
+              {TOOLS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  aria-pressed={tool === t.key}
+                  title={`${t.label} (${t.key2})`}
+                  onClick={() => {
+                    commitFloating();
+                    setTool(t.key);
+                  }}
+                  className={toolButton(tool === t.key)}
+                >
+                  <svg viewBox="0 0 20 20" className="h-5 w-5 max-lg:hidden" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    {t.icon}
+                  </svg>
+                  <span className="whitespace-nowrap">{t.label}</span>
+                </button>
+              ))}
+              <span aria-hidden className="my-1 h-px shrink-0 bg-border-default max-lg:hidden" />
+              <div className="flex flex-col gap-1 max-lg:hidden">
+                {undoRedo("flex w-full flex-col items-center gap-1 rounded-[0.875rem] px-1.5 py-2 text-13 font-medium hover:bg-bg-surface disabled:text-text-disabled disabled:hover:bg-transparent")}
+              </div>
+            </div>
+            <p className="pt-1.5 text-xs text-text-secondary lg:hidden">옆으로 밀면 도구가 더 있어요</p>
+          </div>
+
+          {/* 굵기 · 칠할 색 · 도형 · 보기 */}
+          <div className="flex shrink-0 flex-col gap-4 px-4 pt-4 pb-5 lg:col-start-3 lg:row-start-1 lg:min-h-0 lg:gap-6 lg:overflow-y-auto lg:pt-10 lg:pr-8 lg:pb-6 lg:pl-0">
+            <label className="flex items-center gap-4 lg:flex-col lg:items-stretch lg:gap-2">
+              <span className="flex shrink-0 justify-between text-sm font-bold lg:text-15">
+                <span className="w-12 lg:w-auto">굵기</span>
+                <span className="tabular-nums max-lg:hidden">{size}px</span>
+              </span>
+              <input
+                type="range"
+                min={2}
+                max={120}
+                value={size}
+                onChange={(e) => setSize(Number(e.target.value))}
+                className="ds-range min-w-0 flex-1"
+                style={{ ["--fill" as string]: `${((size - 2) / 118) * 100}%` }}
+                aria-label="붓 굵기"
+              />
+              <span className="w-12 shrink-0 text-right text-sm font-bold tabular-nums lg:hidden">{size}px</span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch lg:gap-2">
+              <span className="text-15 font-bold max-lg:sr-only">칠할 색</span>
+              <div role="radiogroup" aria-label="칠할 색" title="색 바꾸기 (X)" className="grid h-10 w-[9.5rem] grid-cols-2 rounded-full border-[1.5px] border-border-strong lg:w-full">
                 {[
                   { on: true, label: "검정" },
                   { on: false, label: "흰색" },
                 ].map((c) => (
-                  <button
-                    key={c.label}
-                    type="button"
-                    role="radio"
-                    aria-checked={ink === c.on}
-                    onClick={() => setInk(c.on)}
-                    disabled={tool === "eraser" || tool === "select"}
-                    className={`flex h-8 items-center gap-1.5 rounded-full px-3 transition-colors disabled:text-text-disabled ${ink === c.on && tool !== "eraser" ? "bg-bg-surface-strong font-bold" : "font-medium"}`}
-                  >
-                    <span aria-hidden className={`h-3.5 w-3.5 rounded-full border-[1.5px] border-border-active ${c.on ? "bg-bg-inverse" : "bg-bg-canvas"}`} />
+                  <button key={c.label} type="button" role="radio" aria-checked={ink === c.on} onClick={() => setInk(c.on)} disabled={tool === "eraser" || tool === "select"} className={segment(ink === c.on && tool !== "eraser")}>
                     {c.label}
                   </button>
                 ))}
               </div>
-              {SHAPE_TOOLS.has(tool) && (
-                <div role="radiogroup" aria-label="도형" className="flex items-center gap-1 rounded-full bg-bg-canvas p-1">
-                  {[
-                    { on: true, label: "채우기" },
-                    { on: false, label: "선만" },
-                  ].map((c) => (
-                    <button
-                      key={c.label}
-                      type="button"
-                      role="radio"
-                      aria-checked={filled === c.on}
-                      onClick={() => setFilled(c.on)}
-                      className={`h-8 rounded-full px-3 transition-colors ${filled === c.on ? "bg-bg-surface-strong font-bold" : "font-medium"}`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="flex gap-2 lg:hidden">{undoRedo("h-10 rounded-full border-[1.5px] border-border-default px-3 text-sm font-medium disabled:text-text-disabled")}</div>
             </div>
-
-            <div className="w-full flex-1 overflow-auto lg:min-h-0">
-              <div className="mx-auto" style={{ width: `min(${560 * zoom}px, ${100 * zoom}%)` }}>
-                {!source ? (
-                  <div className="grid aspect-square w-full place-items-center rounded-[0.875rem] bg-bg-canvas">
-                    {loadError ? <Notice tone="error">글자를 불러오지 못했어요: {loadError}</Notice> : <Spinner label="글자를 불러오는 중" />}
-                  </div>
-                ) : (
-                  <div
-                    ref={wrapRef}
-                    className="relative aspect-square w-full touch-none overflow-hidden rounded-[0.875rem] bg-bg-canvas shadow-[0_0_0_1px_rgba(17,17,17,.08)] select-none"
-                    style={{ cursor: cursorStyle }}
-                    onPointerDown={onPointerDown}
-                    onPointerMove={onPointerMove}
-                    onPointerUp={onPointerUp}
-                    onPointerCancel={onPointerUp}
-                    onPointerLeave={() => setCursor(null)}
-                  >
-                    {showGhost && source.ghost && (
-                      // eslint-disable-next-line @next/next/no-img-element -- 엔진이 준 data URL
-                      <img src={source.ghost} alt="" className="pointer-events-none absolute inset-0 h-full w-full opacity-25" draggable={false} />
-                    )}
-                    <canvas ref={canvasRef} width={n} height={n} className="pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]" aria-label={`${title} 그림`} />
-                    <canvas ref={floatRef} width={n} height={n} className="pointer-events-none absolute inset-0 h-full w-full [image-rendering:pixelated]" />
-                    <svg viewBox={`0 0 ${n} ${n}`} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
-                      {showGuides && guides && (
-                        <g stroke="#8A8A8A" strokeWidth={n / 512} strokeDasharray={`${n / 85} ${n / 85}`} fill="none">
-                          <line x1={0} x2={n} y1={guides.ascender} y2={guides.ascender} />
-                          <line x1={0} x2={n} y1={guides.descender} y2={guides.descender} />
-                          <line y1={0} y2={n} x1={guides.left} x2={guides.left} />
-                          <line y1={0} y2={n} x1={guides.right} x2={guides.right} />
-                          <line y1={0} y2={n} x1={(guides.left + guides.right) / 2} x2={(guides.left + guides.right) / 2} opacity={0.5} />
-                          <line x1={0} x2={n} y1={(guides.ascender + guides.descender) / 2} y2={(guides.ascender + guides.descender) / 2} opacity={0.5} />
-                        </g>
-                      )}
-                      {shapePreview?.kind === "line" && (
-                        <line
-                          x1={shapePreview.x0}
-                          y1={shapePreview.y0}
-                          x2={shapePreview.x1}
-                          y2={shapePreview.y1}
-                          stroke={color ? "#111" : "#fff"}
-                          strokeOpacity={0.6}
-                          strokeWidth={size}
-                          strokeLinecap="round"
-                        />
-                      )}
-                      {shapePreview?.kind === "rect" && (
-                        <rect
-                          x={shapePreview.x + (filled ? 0 : size / 2)}
-                          y={shapePreview.y + (filled ? 0 : size / 2)}
-                          width={Math.max(0, shapePreview.w - (filled ? 0 : size))}
-                          height={Math.max(0, shapePreview.h - (filled ? 0 : size))}
-                          fill={filled ? (color ? "#111" : "#fff") : "none"}
-                          fillOpacity={0.6}
-                          stroke={filled ? "none" : color ? "#111" : "#fff"}
-                          strokeOpacity={0.6}
-                          strokeWidth={size}
-                        />
-                      )}
-                      {shapePreview?.kind === "ellipse" && (
-                        <ellipse
-                          cx={shapePreview.x + shapePreview.w / 2}
-                          cy={shapePreview.y + shapePreview.h / 2}
-                          rx={Math.max(0, shapePreview.w / 2 - (filled ? 0 : size / 2))}
-                          ry={Math.max(0, shapePreview.h / 2 - (filled ? 0 : size / 2))}
-                          fill={filled ? (color ? "#111" : "#fff") : "none"}
-                          fillOpacity={0.6}
-                          stroke={filled ? "none" : color ? "#111" : "#fff"}
-                          strokeOpacity={0.6}
-                          strokeWidth={size}
-                        />
-                      )}
-                      {(selectRect || floating) && (
-                        <rect
-                          x={selectRect ? Math.min(selectRect.x0, selectRect.x1) : floating!.x}
-                          y={selectRect ? Math.min(selectRect.y0, selectRect.y1) : floating!.y}
-                          width={selectRect ? Math.abs(selectRect.x1 - selectRect.x0) : floating!.w}
-                          height={selectRect ? Math.abs(selectRect.y1 - selectRect.y0) : floating!.h}
-                          fill="none"
-                          stroke="#111"
-                          strokeWidth={n / 340}
-                          strokeDasharray={`${n / 100} ${n / 100}`}
-                          className="motion-safe:animate-[ds-ants_0.6s_linear_infinite]"
-                        />
-                      )}
-                      {brushCursor && (
-                        <circle cx={cursor.x} cy={cursor.y} r={Math.max(1, size / 2)} fill="none" stroke={tool === "eraser" || !ink ? "#B3261E" : "#111"} strokeWidth={n / 400} />
-                      )}
-                    </svg>
-                  </div>
-                )}
+            <div className={`flex flex-col gap-2 ${SHAPE_TOOLS.has(tool) ? "" : "max-lg:hidden"}`}>
+              <span className="text-sm font-bold lg:text-15">도형</span>
+              <div role="radiogroup" aria-label="도형" className="grid h-10 grid-cols-2 rounded-full border-[1.5px] border-border-strong">
+                {[
+                  { on: true, label: "채우기" },
+                  { on: false, label: "선만" },
+                ].map((c) => (
+                  <button key={c.label} type="button" role="radio" aria-checked={filled === c.on} onClick={() => setFilled(c.on)} disabled={!SHAPE_TOOLS.has(tool)} className={segment(filled === c.on && SHAPE_TOOLS.has(tool))}>
+                    {c.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-
-          {/* 보기·미리보기 */}
-          <div className="flex shrink-0 flex-col gap-4 border-t border-border-default px-5 py-4 lg:shrink lg:overflow-y-auto lg:border-t-0 lg:border-l">
-            <section className="flex flex-col gap-2">
-              <h3 className="text-sm font-bold text-text-secondary">실제 크기</h3>
-              <div className="flex items-end gap-3 rounded-[0.875rem] bg-bg-surface px-3 py-3">
-                {[72, 40, 22].map((px) =>
-                  previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- 편집 중인 그림
-                    <img key={px} src={previewUrl} alt="" width={px} height={px} className="mix-blend-multiply" />
-                  ) : (
-                    <span key={px} style={{ width: px, height: px }} />
-                  ),
-                )}
-              </div>
-            </section>
-            <section className="flex flex-col gap-1.5">
-              <h3 className="text-sm font-bold text-text-secondary">보기</h3>
-              {guides && <Toggle checked={showGuides} onChange={setShowGuides} label="글자 틀" />}
+            <div className="flex flex-col gap-1">
               {source?.ghost && <Toggle checked={showGhost} onChange={setShowGhost} label={ghostLabel} />}
-              <div className="flex items-center gap-2 pt-1 text-sm font-semibold">
+              {guides && <Toggle checked={showGuides} onChange={setShowGuides} label="글자 틀" />}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold">
+              <span className="flex items-center gap-2">
                 확대
-                <div className="flex items-center rounded-full bg-bg-surface-strong p-1">
+                <span className="flex items-center rounded-full border-[1.5px] border-border-default p-0.5">
                   <button
                     type="button"
                     aria-label="축소"
                     disabled={zoom === ZOOMS[0]}
                     onClick={() => setZoom(ZOOMS[ZOOMS.indexOf(zoom) - 1])}
-                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg-canvas disabled:text-text-disabled disabled:hover:bg-transparent"
+                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg-surface disabled:text-text-disabled disabled:hover:bg-transparent"
                   >
                     −
                   </button>
-                  <span className="w-12 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+                  <span className="w-11 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
                   <button
                     type="button"
                     aria-label="확대"
                     disabled={zoom === ZOOMS[ZOOMS.length - 1]}
                     onClick={() => setZoom(ZOOMS[ZOOMS.indexOf(zoom) + 1])}
-                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg-canvas disabled:text-text-disabled disabled:hover:bg-transparent"
+                    className="grid h-8 w-8 place-items-center rounded-full hover:bg-bg-surface disabled:text-text-disabled disabled:hover:bg-transparent"
                   >
                     +
                   </button>
-                </div>
-              </div>
-            </section>
-            <section className="flex flex-col items-start gap-1.5">
-              <h3 className="text-sm font-bold text-text-secondary">처음으로</h3>
-              <Button variant="outline" size="sm" className="h-9 px-4 text-sm" onClick={resetToStart} disabled={!source}>
+                </span>
+              </span>
+              <button type="button" onClick={resetToStart} disabled={!source} className="py-1 underline decoration-1 underline-offset-[0.25em] disabled:text-text-disabled">
                 편집 전으로
-              </Button>
-              <Button variant="ghost" size="sm" className="h-9 px-2 text-sm" onClick={clearAll} disabled={!source}>
+              </button>
+              <button type="button" onClick={clearAll} disabled={!source} className="py-1 underline decoration-1 underline-offset-[0.25em] disabled:text-text-disabled">
                 모두 지우기
-              </Button>
-            </section>
-            <p className="mt-auto hidden text-13 leading-relaxed font-medium text-text-secondary lg:block">
-              B 붓 · E 지우개 · L 직선 · R 네모 · O 동그라미 · G 채우기 · M 선택 · X 색 바꾸기 · [ ] 굵기 · ⌘Z 되돌리기 · Shift 반듯하게
+              </button>
+            </div>
+            <div className="flex items-end gap-3 max-lg:hidden" aria-label="실제 크기" role="img">
+              {[56, 32, 18].map((px) =>
+                previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- 편집 중인 그림
+                  <img key={px} src={previewUrl} alt="" width={px} height={px} className="mix-blend-multiply" />
+                ) : (
+                  <span key={px} style={{ width: px, height: px }} />
+                ),
+              )}
+              <span className="text-13 text-text-secondary">실제 크기</span>
+            </div>
+            <p className="text-13 leading-relaxed text-text-secondary max-lg:hidden">
+              단축키
+              <br />B 붓 · E 지우개 · L 직선 · R 네모
+              <br />O 동그라미 · G 채우기 · M 선택
+              <br />X 색 바꾸기 · ⌘Z 되돌리기 · [ ] 굵기
             </p>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-2.5 border-t border-border-default px-5 py-3.5 lg:flex-row lg:items-center lg:px-6">
-          {confirmClose ? (
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="text-15 font-medium">고친 내용이 사라져요.</span>
-              <Button size="sm" onClick={onClose}>
-                저장하지 않고 닫기
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setConfirmClose(false)}>
-                계속 고치기
-              </Button>
-            </span>
-          ) : error ? (
-            <span role="alert" className="text-15 font-semibold text-text-error">
-              {error}
-            </span>
-          ) : (
-            onRevert && (
-              <Button variant="ghost" size="sm" className="self-start px-2" onClick={() => void revert()} disabled={saving !== null}>
-                {saving === "revert" ? "되돌리는 중" : revertLabel}
-              </Button>
-            )
-          )}
-          <div className="flex items-center gap-2.5 [&>*:last-child]:flex-1 lg:ml-auto lg:[&>*:last-child]:flex-none">
-            <Button variant="outline" onClick={requestClose} disabled={saving !== null}>
-              취소
-            </Button>
-            <Button size="md" className="h-12 px-7" onClick={() => void save()} disabled={!source || saving !== null}>
+          {/* 아래 줄: 휴대폰은 바닥에 붙는다 */}
+          <div className="sticky bottom-0 mt-auto flex shrink-0 flex-col-reverse items-center gap-1 border-t border-border-default bg-bg-canvas px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:static lg:col-span-2 lg:col-start-2 lg:row-start-2 lg:flex-row lg:justify-between lg:gap-4 lg:px-10 lg:py-5">
+            <div className="flex min-h-11 items-center">
+              {confirmClose ? (
+                <span className="flex flex-wrap items-center gap-2" role="group" aria-label="저장하지 않고 닫을까요?">
+                  <span className="text-15 font-medium">저장하지 않고 닫을까요? 고친 내용이 사라져요.</span>
+                  <SecondaryButton size="sm" onClick={onClose}>
+                    닫기
+                  </SecondaryButton>
+                  <SecondaryButton size="sm" onClick={() => setConfirmClose(false)}>
+                    계속 고치기
+                  </SecondaryButton>
+                </span>
+              ) : error ? (
+                <span role="alert" className="text-15 font-semibold text-text-error">
+                  {error}
+                </span>
+              ) : (
+                onRevert && (
+                  <TextButton tone="primary" onClick={() => void revert()} disabled={saving !== null}>
+                    {saving === "revert" ? "되돌리는 중" : revertLabel}
+                  </TextButton>
+                )
+              )}
+            </div>
+            <PrimaryButton block className="lg:w-auto" onClick={() => void save()} disabled={!source || saving !== null}>
               {saving === "save" ? "저장하는 중" : saveLabel}
-            </Button>
+            </PrimaryButton>
           </div>
         </div>
       </div>
