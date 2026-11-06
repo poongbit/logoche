@@ -28,13 +28,13 @@ export const PHASE_LABELS: Record<ProjectPhase, string> = {
 
 /**
  * 화면 아래에 붙는 막대(느낌 고르기). 휴대폰에서 내용이 길어 아래로 밀려도 결정 단추가 늘 보이게 한다.
- * 바탕과 위 선은 화면 폭 전체(피그마 452:56 · 453:148), 안쪽 내용은 화면 본문과 같은 폭(max-w-[72rem])에 맞춘다.
+ * 바탕과 위 선은 화면 폭 전체(피그마 452:56 · 453:148), 안쪽 내용은 화면 본문과 같은 폭(max-w-page)에 맞춘다.
  * 그래서 본문 틀(mx-auto max-w) 안이 아니라 그 바깥, main의 바로 아래 자식으로 둔다. 안쪽 배치는 className으로 정한다.
  */
 export function StickyBar({ className = "", children }: { className?: string; children: ReactNode }) {
   return (
     <div className="sticky bottom-0 z-10 mt-auto border-t border-border-default bg-bg-canvas">
-      <div className={`mx-auto w-full max-w-[72rem] px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:px-10 lg:pb-5 ${className}`}>{children}</div>
+      <div className={`mx-auto w-full max-w-page px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:px-10 lg:pb-5 ${className}`}>{children}</div>
     </div>
   );
 }

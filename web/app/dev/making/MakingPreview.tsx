@@ -258,7 +258,7 @@ export function MakingPreview() {
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-[72rem] flex-wrap items-center gap-2 px-5 py-3 text-13 font-bold lg:px-10" data-preview-bar>
+      <div className="mx-auto flex w-full max-w-page flex-wrap items-center gap-2 px-5 py-3 text-13 font-bold lg:px-10" data-preview-bar>
         <span className="rounded-full bg-bg-inverse px-3 py-1 text-text-inverse">목업</span>
         {STATES.map((s) => (
           <button key={s} type="button" onClick={() => go(s)} className={`h-8 rounded-full px-3 ${state === s ? "bg-bg-inverse text-text-inverse" : "border-[1.5px] border-border-strong"}`}>

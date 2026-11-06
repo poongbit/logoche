@@ -57,7 +57,7 @@ export function Review({ view, onChanged }: { view: ProjectView; onChanged: () =
       : "결과를 보고 정해 주세요. 정할 때까지 기다려요.";
 
   return (
-    <div className="mx-auto flex w-full max-w-[72rem] flex-1 flex-col px-5 pt-8 pb-14 lg:px-10 lg:pt-16 lg:pb-20">
+    <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-5 pt-8 pb-14 lg:px-10 lg:pt-16 lg:pb-20">
       <div className="ds-motion flex animate-ds-enter flex-col gap-2">
         <span className="text-13 font-bold text-text-secondary">{view.storeName}</span>
         <h1 className="font-display text-[1.75rem] leading-[1.25] tracking-[-0.03em] lg:text-[2.75rem]">기준 글자 30자를 그렸어요</h1>

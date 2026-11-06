@@ -16,7 +16,7 @@ export function PageBand({
   children?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-[76rem] flex-col px-4 pt-6 lg:px-10 lg:pt-10">
+    <div className="mx-auto flex w-full max-w-page flex-col px-4 pt-6 lg:px-10 lg:pt-10">
       <div className="flex items-center justify-between gap-6">
         <div className="flex min-w-0 flex-col gap-1.5 lg:gap-2">
           <h1 className="font-display text-[2.5rem] leading-[1.25] font-normal tracking-[-0.03em] lg:text-[3.5rem]">

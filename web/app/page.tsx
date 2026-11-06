@@ -81,8 +81,8 @@ const FAQ: { q: string; a: ReactNode; open?: boolean }[] = [
   { q: "로고에 상용 폰트를 썼다면요?", a: <p>로고체는 무료 폰트와 닮았는지만 검사해요. {RIGHTS.screening}</p> },
 ];
 
-// 모든 띠가 같은 폭·옆 여백을 쓴다(DESIGN.md 4장: 메인 76rem, 휴대폰 16px · lg 40px)
-const WRAP = "mx-auto w-full max-w-[76rem] px-4 lg:px-10";
+// 모든 띠가 같은 폭·옆 여백을 쓴다(DESIGN.md 4장: 머리줄과 같은 max-w-page, 휴대폰 16px · lg 2.5rem)
+const WRAP = "mx-auto w-full max-w-page px-4 lg:px-10";
 
 export default function HomePage() {
   return (

@@ -274,7 +274,7 @@ export function Choose({ view, onChanged }: { view: ProjectView; onChanged: () =
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-[72rem] flex-1 flex-col px-5 pt-4 pb-8 lg:px-10 lg:pt-8 lg:pb-10">
+      <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-5 pt-4 pb-8 lg:px-10 lg:pt-8 lg:pb-10">
         <Steps current={3} />
         <div className="ds-motion mt-6 flex animate-ds-enter flex-col gap-2 lg:mt-9">
           <span className="text-13 font-bold">{view.storeName}</span>

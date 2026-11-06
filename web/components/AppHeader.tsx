@@ -192,7 +192,7 @@ export function AppHeader() {
   const user = state.known ? state.user : null;
   return (
     <header className="border-b border-border-default bg-bg-canvas">
-      <div className="mx-auto flex h-14 max-w-[76rem] items-center gap-2 px-4 lg:h-[4.5rem] lg:gap-6 lg:px-10">
+      <div className="mx-auto flex h-14 max-w-page items-center gap-2 px-4 lg:h-[4.5rem] lg:gap-6 lg:px-10">
         <Link
           href="/"
           aria-label="로고체 처음으로"

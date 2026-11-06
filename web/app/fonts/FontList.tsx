@@ -94,7 +94,7 @@ export function FontList() {
     return (
       <>
         <PageBand title="내 폰트" lead={LEAD} />
-        <div className="mx-auto w-full max-w-[76rem] px-4 py-10 lg:px-10">
+        <div className="mx-auto w-full max-w-page px-4 py-10 lg:px-10">
           {error ? <Notice tone="error">내 폰트를 불러오지 못했어요: {error}</Notice> : <Spinner label="불러오는 중" />}
         </div>
       </>
@@ -134,7 +134,7 @@ export function FontList() {
         </div>
       </PageBand>
 
-      <div className="mx-auto flex w-full max-w-[76rem] flex-col px-4 pt-5 pb-16 lg:px-10 lg:pt-6 lg:pb-24">
+      <div className="mx-auto flex w-full max-w-page flex-col px-4 pt-5 pb-16 lg:px-10 lg:pt-6 lg:pb-24">
         {error && (
           <div className="mb-4">
             <Notice tone="warn">진행 상황을 새로 받지 못했어요: {error}</Notice>
@@ -295,7 +295,7 @@ function Empty() {
   return (
     <>
       <PageBand title="내 폰트" lead={LEAD} />
-      <div className="mx-auto flex w-full max-w-[76rem] flex-col px-4 pt-6 pb-16 lg:px-10 lg:pt-[3.25rem] lg:pb-24">
+      <div className="mx-auto flex w-full max-w-page flex-col px-4 pt-6 pb-16 lg:px-10 lg:pt-[3.25rem] lg:pb-24">
         {/* 만든 폰트가 쌓일 자리를 목록 줄과 같은 먹 선 사이에 미리 보여 준다(점선 견본 칸 + 빈 줄 두 개) */}
         <div aria-hidden className="flex items-center gap-5 border-y border-border-active py-5">
           <div className="grid h-14 w-[9.375rem] shrink-0 place-items-center rounded-[0.875rem] border-[1.5px] border-dashed border-border-strong text-15 font-medium text-text-tertiary lg:h-[6.9375rem] lg:w-[18.75rem] lg:rounded-xl">
@@ -331,7 +331,7 @@ function SignedOut() {
   return (
     <>
       <PageBand title="내 폰트" lead={LEAD} />
-      <div className="mx-auto flex w-full max-w-[76rem] flex-col px-4 pt-6 pb-16 lg:px-10 lg:pt-[3.25rem] lg:pb-24">
+      <div className="mx-auto flex w-full max-w-page flex-col px-4 pt-6 pb-16 lg:px-10 lg:pt-[3.25rem] lg:pb-24">
         <section aria-labelledby="signin-title" className="flex flex-col border-y border-border-active pt-9 pb-10 lg:pt-12 lg:pb-11">
           <h2 id="signin-title" className="font-display text-[1.625rem] leading-[1.25] font-normal tracking-[-0.03em] lg:text-[2rem]">
             로그인하면 내 폰트가 보여요

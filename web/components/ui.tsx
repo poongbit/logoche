@@ -198,7 +198,7 @@ export function Footer({ status, lead, children }: { status?: ReactNode; lead?: 
   return (
     <footer className="sticky bottom-0 z-10 mt-auto border-t border-border-default bg-bg-canvas">
       {/* 위 테두리 1px + 87px = 88px(디자인). 화면 4~6은 이 높이를 빼고 남는 높이를 채운다. */}
-      <div className="mx-auto flex max-w-[76rem] flex-col gap-2.5 px-5 pt-3 pb-5 lg:h-[5.4375rem] lg:flex-row lg:items-center lg:gap-3.5 lg:px-12 lg:py-0">
+      <div className="mx-auto flex max-w-page flex-col gap-2.5 px-5 pt-3 pb-5 lg:h-[5.4375rem] lg:flex-row lg:items-center lg:gap-3.5 lg:px-10 lg:py-0">
         {lead}
         <div className="text-sm leading-snug font-medium text-text-primary lg:text-15" aria-live="polite">
           {status}

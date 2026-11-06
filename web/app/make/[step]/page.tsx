@@ -23,7 +23,7 @@ export default function MakePage({ params }: { params: Promise<{ step: string }>
   return (
     <Suspense
       fallback={
-        <div className="mx-auto w-full max-w-[44rem] px-5 py-10">
+        <div className="mx-auto w-full max-w-page px-5 py-10 lg:px-10">
           <Spinner label="불러오는 중" />
         </div>
       }

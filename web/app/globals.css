@@ -231,6 +231,10 @@
   --text-36: 2.25rem;
   --shadow-float: 0 12px 32px rgba(20, 20, 20, 0.16); /* 떠 있는 층(떠오르는 막대·받기 메뉴·모달)에만 */
 
+  /* 11/6 저녁 화면 폭(DESIGN.md 4장): 머리줄과 모든 화면 본문이 같은 폭 max-w-page + 옆 여백 lg:px-10을 써서 로고와 본문 왼쪽 끝이 맞는다.
+     1,024px부터 1rem = 18px이라 1,440에서 본문 1,200px · 왼쪽 끝 120px(피그마와 같음). 215/3rem = 본문 200/3rem(1,200px) + 양옆 2.5rem. */
+  --container-page: calc(215rem / 3);
+
   /* 11/6 모션 곡선(motion.md 3절). ease-standard·ease-enter·ease-exit 유틸리티가 생긴다. */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);

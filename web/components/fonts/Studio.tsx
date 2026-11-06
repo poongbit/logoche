@@ -137,7 +137,7 @@ function Range({ label, value, min, max, step = 1, shown, onChange }: { label: s
 /** 섹션 머리: 작은 이름(써 보기) + Black Han Sans 제목 + 설명 */
 function Section({ id, eyebrow, title, desc, children }: { id: string; eyebrow: string; title: ReactNode; desc?: ReactNode; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="mx-auto w-full max-w-[76rem] scroll-mt-6 px-4 sm:px-5 lg:px-10">
+    <section id={id} aria-labelledby={`${id}-title`} className="mx-auto w-full max-w-page scroll-mt-6 px-4 sm:px-5 lg:px-10">
       <p className="text-13 font-bold text-text-secondary lg:text-sm">{eyebrow}</p>
       <h2 id={`${id}-title`} className="mt-1.5 font-display text-[1.75rem] leading-[1.25] tracking-[-0.03em] lg:mt-2.5 lg:text-[2.75rem]">
         {title}
@@ -463,7 +463,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
       {first ? (
         /* 완성 띠: 처음 들어올 때만 큰 민트 면(549:402 · 561:513) */
         <section aria-label="완성" className="bg-bg-brand text-text-on-brand">
-          <div className="mx-auto grid w-full max-w-[76rem] gap-6 px-4 pt-8 pb-8 sm:px-5 lg:grid-cols-[minmax(0,1fr)_37.5rem] lg:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-0 lg:px-10 lg:py-20">
+          <div className="mx-auto grid w-full max-w-page gap-6 px-4 pt-8 pb-8 sm:px-5 lg:grid-cols-[minmax(0,1fr)_37.5rem] lg:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-0 lg:px-10 lg:py-20">
             <div className="flex flex-col">
               <p className="text-sm font-bold lg:-mt-1 lg:text-15">완성 · {whenDone(doneAt)}</p>
               {renaming ? (
@@ -521,7 +521,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
       ) : (
         /* 다시 들어왔을 때: 흰 머리 줄로 접는다(564:769). 데스크톱은 오른쪽에 '이름 바꾸기'(보조) + '폰트 받기'(주), 아래 요약 줄 옆에 즐겨찾기.
            써 보기 섹션이 첫 화면에 바로 보여서 '써 보기' 바로가기는 완성 띠에만 둔다. */
-        <section aria-label="폰트 정보" className="mx-auto w-full max-w-[76rem] px-4 pt-2 sm:px-5 lg:px-10 lg:pt-4">
+        <section aria-label="폰트 정보" className="mx-auto w-full max-w-page px-4 pt-2 sm:px-5 lg:px-10 lg:pt-4">
           <TextLink href="/fonts">← 내 폰트</TextLink>
           {renaming ? (
             <div className="mt-2">{renameForm}</div>
@@ -552,7 +552,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
 
       <div className={`flex flex-col gap-[4.5rem] pb-24 lg:gap-24 ${first ? "pt-12 lg:pt-16" : "pt-10 lg:pt-14"}`}>
         {(error || fontState !== "ready") && (
-          <div className="mx-auto -mb-10 flex w-full max-w-[76rem] flex-col gap-3 px-4 sm:px-5 lg:px-10">
+          <div className="mx-auto -mb-10 flex w-full max-w-page flex-col gap-3 px-4 sm:px-5 lg:px-10">
             {error && <Notice tone="error">{error}</Notice>}
             {fontState === "loading" && <Spinner label="폰트 파일을 불러오는 중" />}
             {fontState === "unavailable" && (
@@ -723,7 +723,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
         </Section>
 
         {/* ---------- 쓸 수 있는 범위 ---------- */}
-        <div className="mx-auto -mt-6 w-full max-w-[76rem] px-4 sm:px-5 lg:-mt-6 lg:px-10">
+        <div className="mx-auto -mt-6 w-full max-w-page px-4 sm:px-5 lg:-mt-6 lg:px-10">
           <RightsCard id="rights" />
         </div>
 
@@ -861,7 +861,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
         </Section>
 
         {/* ---------- 기록 · 지우기 ---------- */}
-        <section aria-labelledby="record-title" className="mx-auto w-full max-w-[76rem] px-4 sm:px-5 lg:px-10">
+        <section aria-labelledby="record-title" className="mx-auto w-full max-w-page px-4 sm:px-5 lg:px-10">
           <div className="flex items-center justify-between gap-3 pb-4 lg:pb-5">
             <h2 id="record-title" className="text-xl font-bold">
               제작 기록

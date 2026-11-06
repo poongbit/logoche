@@ -107,7 +107,7 @@ export function Stopped({ view, onChanged }: { view: ProjectView; onChanged: () 
       : `${view.upload.notifyByEmail === false ? "" : `${email ? `${email}으로도` : "메일로도"} 알려 드렸어요. `}언제든 내 폰트에서 이어서 만들 수 있어요.`;
 
   return (
-    <div className="mx-auto grid w-full max-w-[72rem] flex-1 content-start gap-8 px-5 pt-8 pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,33.5rem)] lg:gap-12 lg:px-10 lg:pt-20 lg:pb-24">
+    <div className="mx-auto grid w-full max-w-page flex-1 content-start gap-8 px-5 pt-8 pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,33.5rem)] lg:gap-12 lg:px-10 lg:pt-20 lg:pb-24">
       <div className="ds-motion flex min-w-0 animate-ds-enter flex-col">
         <span className="text-15 font-bold text-text-secondary">
           {view.storeName} · {where}
@@ -247,7 +247,7 @@ export function FontView() {
 
   if (!view) {
     return (
-      <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-4 px-5 py-10 lg:px-10">
+      <div className="mx-auto flex w-full max-w-page flex-col gap-4 px-5 py-10 lg:px-10">
         {error?.signedOut ? (
           <SignInPrompt title="로그인하면 이 폰트를 볼 수 있어요" body="폰트는 만든 사람의 구글 계정에서만 열려요." callbackURL={`/fonts/${id}`} />
         ) : error ? (

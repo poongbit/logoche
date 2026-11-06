@@ -89,7 +89,7 @@ function Wizard({ step, initial }: { step: MakeStep; initial: NewDraft }) {
 
   return (
     <div className="flex flex-1 flex-col bg-bg-brand text-text-primary">
-      <div className="mx-auto grid w-full max-w-[76rem] gap-5 px-4 pt-7 pb-8 lg:grid-cols-2 lg:gap-0 lg:px-10 lg:pt-20 lg:pb-20">
+      <div className="mx-auto grid w-full max-w-page gap-5 px-4 pt-7 pb-8 lg:grid-cols-2 lg:gap-0 lg:px-10 lg:pt-20 lg:pb-20">
         <div className="flex flex-col lg:pr-10">
           <p className="text-sm font-bold lg:text-15">
             접수&nbsp;&nbsp;·&nbsp;&nbsp;{index + 1} / {MAKE_STEPS.length}

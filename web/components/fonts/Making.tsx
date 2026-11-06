@@ -123,7 +123,7 @@ function SectionHead({ kicker, title, size = "lg", desc, aside }: { kicker?: str
 function Analyzing({ view }: { view: ProjectView }) {
   return (
     <div className="flex flex-1 flex-col bg-bg-brand">
-      <div className="mx-auto grid w-full max-w-[72rem] gap-8 px-5 pt-8 pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,33.5rem)] lg:gap-12 lg:px-10 lg:pt-20 lg:pb-24">
+      <div className="mx-auto grid w-full max-w-page gap-8 px-5 pt-8 pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,33.5rem)] lg:gap-12 lg:px-10 lg:pt-20 lg:pb-24">
         <div className="flex flex-col">
           <span className="text-15 font-bold">접수 완료 · {view.storeName}</span>
           <div className="mt-3 lg:mt-4">
@@ -449,7 +449,7 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
     <div className="flex flex-1 flex-col">
       {/* 위: 큰 민트 면(서버가 일하는 중) */}
       <div className="bg-bg-brand">
-        <div className="mx-auto grid w-full max-w-[72rem] gap-x-10 px-5 pt-8 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,33rem)] lg:px-10 lg:pt-[4.25rem] lg:pb-14">
+        <div className="mx-auto grid w-full max-w-page gap-x-10 px-5 pt-8 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,33rem)] lg:px-10 lg:pt-[4.25rem] lg:pb-14">
           <div className="flex min-w-0 flex-col">
             <span className="text-15 font-bold">
               {view.storeName}
@@ -494,7 +494,7 @@ function Working({ view, onChanged }: { view: ProjectView; onChanged: () => void
       </div>
 
       {/* 아래: 흰 바탕 진행 내용 */}
-      <div className="mx-auto flex w-full max-w-[72rem] flex-col gap-14 px-5 pt-10 pb-16 lg:gap-20 lg:px-10 lg:pt-16 lg:pb-24">
+      <div className="mx-auto flex w-full max-w-page flex-col gap-14 px-5 pt-10 pb-16 lg:gap-20 lg:px-10 lg:pt-16 lg:pb-24">
         {stage === 4 && !rebuilding ? (
           <CheckList view={view} />
         ) : (
