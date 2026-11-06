@@ -57,6 +57,9 @@ export async function sendMail(mail: Mail): Promise<boolean> {
 type Kind = "done" | "failed" | "choose" | "draft";
 const HEAD: Record<Kind, [number, number]> = { done: [217, 42], failed: [216, 42], choose: [227, 42], draft: [261, 42] };
 const GREEN = "#35e0b2";
+// 다크모드에서도 흰 바탕 그대로(11/6): 메일 앱(특히 Gmail)은 background-color만 보고 색을 뒤집는다. 같은 색의 단색 그라디언트(background-image)를 함께 주면
+// 뒤집지 않는다. 글자색도 같이 뒤집히지 않도록 바탕과 글자를 늘 한 쌍으로 지정하고, 애플 메일 등은 color-scheme: light로 고정한다.
+const solid = (c: string) => `background-color:${c};background-image:linear-gradient(${c},${c})`;
 const FONT = "-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
 
 interface Body {
@@ -80,22 +83,22 @@ function layout(b: Body): { text: string; html: string } {
   const label = `<p style="font-size:13px;font-weight:700;color:#444;margin:0 0 10px">${escapeHtml(b.label)}</p>`;
   const top =
     b.kind === "done"
-      ? `<tr><td class="pad" style="padding:32px 40px 24px">${logo}</td></tr>
-<tr><td class="pad" style="background:${GREEN};padding:28px 40px 30px">${label}${head}</td></tr>
-<tr><td class="pad" style="padding:32px 40px 0">`
-      : `<tr><td class="pad" style="padding:32px 40px 0">${logo}<div style="border-top:1px solid #777;margin:24px 0 28px"></div>${label}<div style="margin:0 0 22px">${head}</div>`;
+      ? `<tr><td class="pad" bgcolor="#ffffff" style="${solid("#fff")};padding:32px 40px 24px">${logo}</td></tr>
+<tr><td class="pad band" bgcolor="${GREEN}" style="${solid(GREEN)};padding:28px 40px 30px">${label}${head}</td></tr>
+<tr><td class="pad" bgcolor="#ffffff" style="${solid("#fff")};padding:32px 40px 0">`
+      : `<tr><td class="pad" bgcolor="#ffffff" style="${solid("#fff")};padding:32px 40px 0">${logo}<div style="border-top:1px solid #777;margin:24px 0 28px"></div>${label}<div style="margin:0 0 22px">${head}</div>`;
   const button = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 22px"><tr>
-<td style="background:#111;border-radius:999px;padding:8px 8px 8px 26px;white-space:nowrap"><a href="${escapeHtml(b.button.href)}" style="color:#fff;text-decoration:none;font-weight:800;font-size:17px;font-family:${FONT}">${escapeHtml(b.button.label)}<span style="display:inline-block;width:40px;height:40px;line-height:40px;border-radius:20px;background:${GREEN};color:#111;text-align:center;font-weight:900;font-size:18px;margin-left:22px;vertical-align:middle">&rarr;</span></a></td>
+<td bgcolor="#111111" style="${solid("#111")};border-radius:999px;padding:8px 8px 8px 26px;white-space:nowrap"><a href="${escapeHtml(b.button.href)}" style="color:#ffffff;text-decoration:none;font-weight:800;font-size:17px;font-family:${FONT}">${escapeHtml(b.button.label)}<span style="display:inline-block;width:40px;height:40px;line-height:40px;border-radius:20px;${solid(GREEN)};color:#111111;text-align:center;font-weight:900;font-size:18px;margin-left:22px;vertical-align:middle">&rarr;</span></a></td>
 </tr></table>`;
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
-<style>:root{color-scheme:light}@media (max-width:520px){.pad{padding-left:22px!important;padding-right:22px!important}}</style></head><body style="margin:0;background:#fff">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff"><tr><td align="center">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;font-family:${FONT};color:#111;text-align:left">
+<style>:root{color-scheme:light}@media (prefers-color-scheme:dark){body,table,td,div{background-color:#fff!important}.band{background-color:#35e0b2!important}}[data-ogsc] .pad{color:#111111!important}@media (max-width:520px){.pad{padding-left:22px!important;padding-right:22px!important}}</style></head><body bgcolor="#ffffff" style="margin:0;${solid("#fff")}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="${solid("#fff")}"><tr><td align="center" bgcolor="#ffffff" style="${solid("#fff")}">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="${solid("#fff")};width:100%;max-width:600px;font-family:${FONT};color:#111111;text-align:left">
 ${top}
 ${b.lines.map(para).join("\n")}
 ${button}
 <p style="font-size:13.5px;line-height:1.6;color:#555;margin:0 0 28px;word-break:keep-all">${flat(b.note)}</p>
-<div style="border-top:1px solid #e5e5e5;padding:18px 0 36px;word-break:keep-all">
+<div style="${solid("#fff")};border-top:1px solid #e5e5e5;padding:18px 0 36px;word-break:keep-all">
 <p style="font-size:12.5px;line-height:1.6;color:#666;margin:0">로고체 · ${escapeHtml(SITE_URL.replace(/^https?:\/\//, ""))}<br>로고체에서 폰트를 만들 때 쓴 구글 계정으로 보내는 알림이에요.</p>
 </div>
 </td></tr></table>
