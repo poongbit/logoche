@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandLogoOnDark } from "@/components/BrandLogo";
 import type { ReactNode } from "react";
 import { BurstSticker, CheckCircle, DisplayTitle, Highlight, SpeechBubble, Ticket } from "@/components/ds";
 import { BackToReceipt } from "@/components/home/BackToReceipt";
@@ -277,14 +277,8 @@ export default function HomePage() {
 
       <footer className="bg-bg-inverse">
         <div className={`${WRAP} flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between lg:py-7`}>
-          {/* 로고 기본판(흰 스티커): 어두운 바탕이라 먹 로고 둘레에 흰 칼선을 둘러 붙인다 */}
-          <Image
-            src="/logo.png"
-            alt="로고체"
-            width={962}
-            height={350}
-            className="h-8 w-auto self-start [filter:drop-shadow(1.5px_0_0_#fff)_drop-shadow(-1.5px_0_0_#fff)_drop-shadow(0_1.5px_0_#fff)_drop-shadow(0_-1.5px_0_#fff)_drop-shadow(1.5px_1.5px_0_#fff)_drop-shadow(-1.5px_-1.5px_0_#fff)] lg:h-[2.125rem]"
-          />
+          {/* 어두운 바탕이라 로고 반전판(먹 스티커 + 흰 글자) */}
+          <BrandLogoOnDark className="h-[2.62rem] w-auto self-start lg:h-[2.78rem]" />
           <a href={RIGHTS.licenseUrl} className="self-start py-2 text-sm text-text-disabled hover:text-text-inverse hover:underline sm:self-auto">
             폰트 라이선스(OFL)
           </a>
