@@ -172,15 +172,8 @@ function describe(font: ProjectSummary): string {
   const p = font.progress;
   switch (font.phase) {
     case "done":
-      // 고른 느낌 이름이 있으면 피그마 550:471대로 '느낌 · 날짜 완성', 없으면(예전 작업) 들어 있는 글자 수
-      if (font.feelName) return `${font.feelName} · ${shortDate(font.createdAt)} 완성`;
-      return [
-        font.glyphCount != null ? `한글 ${font.glyphCount.toLocaleString()}자` : "",
-        font.extraCount ? `숫자·문장부호·영문 ${font.extraCount}자` : "",
-        shortDate(font.createdAt),
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      // 피그마 550:471: '느낌 · 날짜 완성'. 11/6 밤: 글자 수는 쓰지 않는다 — 느낌 이름이 없는 예전 작업은 '11월 6일 완성'만.
+      return [font.feelName, `${shortDate(font.createdAt)} 완성`].filter(Boolean).join(" · ");
     case "analyzing":
       return "로고와 가게 이야기를 읽고 있어요";
     case "choosing":
@@ -189,8 +182,10 @@ function describe(font: ProjectSummary): string {
       return "기준 글자 30자를 그렸어요 · 보고 정해 주세요";
     case "drawing":
     case "building": {
-      const count = p && p.done < p.total ? `글자 ${p.done.toLocaleString()} / ${p.total.toLocaleString()}자` : p ? "글자를 다 그렸어요 · 파일을 만들고 검사하는 중" : "글자를 그리기 시작했어요";
-      return [font.feelName, count, remainingText(font.remainingSeconds)].filter(Boolean).join(" · ");
+      // 11/6 밤: 그리는 중에는 아래 진행 막대가 그린 양을 보여 주므로 '글자 n / 2,432자'를 겹쳐 쓰지 않는다(숫자는 막대의 aria-valuetext로).
+      // 막대가 없는 때(다 그렸거나 아직 시작 전)만 상태 문장을 둔다. 남은 시간은 늘 둔다.
+      const count = !p ? "글자를 그리기 시작했어요" : p.done < p.total ? "" : "글자를 다 그렸어요 · 파일을 만들고 검사하는 중";
+      return [font.feelName, count, remainingText(font.remainingSeconds)].filter(Boolean).join(" · ") || "글자를 그리고 있어요";
     }
     case "failed":
       return p && p.done > 0 ? "글자를 그리다 멈췄어요 · 그린 글자는 남아 있어요" : font.error || "만들다가 멈췄어요";
@@ -272,6 +267,7 @@ function FontRow({ font, onChanged }: { font: ProjectSummary; onChanged: () => v
             aria-valuemin={0}
             aria-valuemax={font.progress.total}
             aria-valuenow={font.progress.done}
+            aria-valuetext={`글자 ${font.progress.done.toLocaleString()} / ${font.progress.total.toLocaleString()}자`}
             className="mt-3 h-3 w-full overflow-hidden rounded-full bg-bg-inverse p-0.5 lg:w-[22.5rem]"
           >
             <div
