@@ -1,26 +1,31 @@
 import { RECORD_CATEGORIES } from "@/lib/constants";
 import type { RecordEvent } from "@/lib/types";
 
-const shortTime = (iso: string) => {
+// 제작 기록 표(11/6 ST2 v2 549:402): '11월 6일 6:42 | 내용' 줄, 위 1px 먹 선 + 줄 사이 옅은 선. 갈래(창작 의도·AI 모델 등)는 내용 앞에 작게.
+// 받는 파일에는 갈래별로 묶어 적는다(lib/record.ts).
+
+const when = (iso: string) => {
   const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
 
-/** 제작 기록 표(Claude Design 'Logoche Final' 3m): 시각 · 갈래 · 내용, 일어난 차례대로. 받는 파일에는 갈래별로 묶어 적는다(lib/record.ts).
- * bare: 이미 테두리가 있는 카드 안에 둘 때 바깥 테두리 대신 위 구분선만 긋는다(상자 안 상자를 피한다). */
-export function RecordLog({ events, bare = false }: { events: RecordEvent[]; bare?: boolean }) {
+/** newestFirst: 최근 것부터(스튜디오). 아니면 일어난 차례대로. */
+export function RecordLog({ events, newestFirst = false }: { events: RecordEvent[]; newestFirst?: boolean }) {
   if (events.length === 0) {
-    return <p className="rounded-[0.875rem] border-[1.5px] border-border-strong px-4 py-3 text-15 font-medium text-text-secondary">아직 기록이 없어요.</p>;
+    return <p className="border-t border-border-active py-4 text-15 text-text-secondary">아직 기록이 없어요.</p>;
   }
+  const list = newestFirst ? [...events].reverse() : events;
   return (
-    <ol className={`min-h-0 flex-1 overflow-y-auto ${bare ? "border-t border-border-default" : "rounded-[0.875rem] border-[1.5px] border-border-strong"}`}>
-      {events.map((e, i) => (
-        <li key={i} className={`grid grid-cols-[2.75rem_5.25rem_1fr] gap-2.5 border-b border-border-default py-2 text-13 leading-[1.45] last:border-b-0 ${bare ? "" : "px-3.5"}`}>
-          <time dateTime={e.at} className="font-bold tabular-nums">
-            {shortTime(e.at)}
+    <ol className="border-t border-border-active">
+      {list.map((e, i) => (
+        <li key={`${e.at}-${i}`} className="grid grid-cols-[6.5rem_1fr] gap-x-3 border-b border-border-default py-3.5 leading-normal lg:grid-cols-[12.5rem_1fr] lg:gap-x-0 lg:py-[1.0625rem]">
+          <time dateTime={e.at} className="text-13 text-text-secondary tabular-nums lg:text-15">
+            {when(e.at)}
           </time>
-          <span className="font-bold text-text-secondary">{RECORD_CATEGORIES.find((c) => c.key === e.category)?.label}</span>
-          <span className="font-medium break-words">{e.text}</span>
+          <span className="text-sm break-words lg:text-15">
+            <span className="mr-1.5 text-13 text-text-secondary">{RECORD_CATEGORIES.find((c) => c.key === e.category)?.label}</span>
+            {e.text}
+          </span>
         </li>
       ))}
     </ol>
