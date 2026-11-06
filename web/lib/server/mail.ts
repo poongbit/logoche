@@ -55,7 +55,7 @@ export async function sendMail(mail: Mail): Promise<boolean> {
 // 11/6 디자인 반영: 로고 → (완성은 초록 띠) → 이름·상태 → 제목 그림 → 본문 → 검은 알약 버튼 → 안내 → 바닥글.
 // 메일 앱은 웹폰트를 못 써서 제목은 Black Han Sans로 미리 그린 그림(public/mail/head-*.png, 2배 크기)을 넣는다. 고치려면 그림을 다시 만든다.
 type Kind = "done" | "failed" | "choose" | "draft";
-const HEAD: Record<Kind, [number, number]> = { done: [211, 42], failed: [210, 42], choose: [221, 42], draft: [255, 42] };
+const HEAD: Record<Kind, [number, number]> = { done: [217, 42], failed: [216, 42], choose: [227, 42], draft: [261, 42] };
 const GREEN = "#35e0b2";
 const FONT = "-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif";
 
@@ -68,31 +68,34 @@ interface Body {
   note: string;
 }
 
-const para = (l: string) => `<p style="font-size:16px;line-height:1.65;margin:0 0 10px;color:#111">${escapeHtml(l).replace(/\n/g, "<br>")}</p>`;
+// 줄바꿈은 화면 폭에 맡긴다(\n은 공백). 고정 줄바꿈을 넣으면 좁은 휴대폰에서 "느낌으 / 로"처럼 끊긴다. keep-all로 어절 단위로만 꺾는다.
+const flat = (s: string) => escapeHtml(s.replace(/\s*\n\s*/g, " "));
+const para = (l: string) => `<p style="font-size:16px;line-height:1.65;margin:0 0 10px;color:#111;word-break:keep-all">${flat(l)}</p>`;
 
 function layout(b: Body): { text: string; html: string } {
   const text = [b.title, "", ...b.lines, "", `${b.button.label}: ${b.button.href}`, "", b.note, "", "로고체 · logoche.my"].join("\n");
   const [w, h] = HEAD[b.kind];
-  const head = `<img src="${SITE_URL}/mail/head-${b.kind}.png" width="${w}" height="${h}" alt="${escapeHtml(b.title)}" style="display:block;border:0;height:${h}px;width:${w}px">`;
+  const head = `<img src="${SITE_URL}/mail/head-${b.kind}.png" width="${w}" height="${h}" alt="${escapeHtml(b.title)}" style="display:block;border:0;height:${h}px;width:${w}px;max-width:100%;margin-left:-4px">`;
   const logo = `<img src="${SITE_URL}/logo.png" width="88" height="32" alt="로고체" style="display:block;border:0">`;
   const label = `<p style="font-size:13px;font-weight:700;color:#444;margin:0 0 10px">${escapeHtml(b.label)}</p>`;
   const top =
     b.kind === "done"
-      ? `<tr><td style="padding:32px 40px 24px">${logo}</td></tr>
-<tr><td style="background:${GREEN};padding:28px 40px 30px">${label}${head}</td></tr>
-<tr><td style="padding:32px 40px 0">`
-      : `<tr><td style="padding:32px 40px 0">${logo}<div style="border-top:1px solid #777;margin:24px 0 28px"></div>${label}<div style="margin:0 0 22px">${head}</div>`;
+      ? `<tr><td class="pad" style="padding:32px 40px 24px">${logo}</td></tr>
+<tr><td class="pad" style="background:${GREEN};padding:28px 40px 30px">${label}${head}</td></tr>
+<tr><td class="pad" style="padding:32px 40px 0">`
+      : `<tr><td class="pad" style="padding:32px 40px 0">${logo}<div style="border-top:1px solid #777;margin:24px 0 28px"></div>${label}<div style="margin:0 0 22px">${head}</div>`;
   const button = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 22px"><tr>
 <td style="background:#111;border-radius:999px;padding:8px 8px 8px 26px;white-space:nowrap"><a href="${escapeHtml(b.button.href)}" style="color:#fff;text-decoration:none;font-weight:800;font-size:17px;font-family:${FONT}">${escapeHtml(b.button.label)}<span style="display:inline-block;width:40px;height:40px;line-height:40px;border-radius:20px;background:${GREEN};color:#111;text-align:center;font-weight:900;font-size:18px;margin-left:22px;vertical-align:middle">&rarr;</span></a></td>
 </tr></table>`;
-  const html = `<!doctype html><html lang="ko"><body style="margin:0;background:#fff">
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<style>:root{color-scheme:light}@media (max-width:520px){.pad{padding-left:22px!important;padding-right:22px!important}}</style></head><body style="margin:0;background:#fff">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff"><tr><td align="center">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;font-family:${FONT};color:#111;text-align:left">
 ${top}
 ${b.lines.map(para).join("\n")}
 ${button}
-<p style="font-size:13.5px;line-height:1.6;color:#555;margin:0 0 28px">${escapeHtml(b.note).replace(/\n/g, "<br>")}</p>
-<div style="border-top:1px solid #e5e5e5;padding:18px 0 36px">
+<p style="font-size:13.5px;line-height:1.6;color:#555;margin:0 0 28px;word-break:keep-all">${flat(b.note)}</p>
+<div style="border-top:1px solid #e5e5e5;padding:18px 0 36px;word-break:keep-all">
 <p style="font-size:12.5px;line-height:1.6;color:#666;margin:0">로고체 · ${escapeHtml(SITE_URL.replace(/^https?:\/\//, ""))}<br>로고체에서 폰트를 만들 때 쓴 구글 계정으로 보내는 알림이에요.</p>
 </div>
 </td></tr></table>
