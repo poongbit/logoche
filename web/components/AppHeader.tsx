@@ -198,7 +198,7 @@ export function AppHeader() {
           aria-label="로고체 처음으로"
           className="-my-3 inline-flex items-center py-3"
         >
-          <BrandLogo className="h-6 w-auto lg:h-[1.875rem]" />
+          <BrandLogo />
         </Link>
         <nav
           aria-label="메뉴"
