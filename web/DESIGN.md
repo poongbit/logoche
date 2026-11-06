@@ -188,7 +188,7 @@
 | `PrimaryButton` · `PrimaryLink` 주 버튼 B3 '체 태그' | `Button.tsx` | 먹 알약 56 + 오른쪽 민트 동그라미 44 안 먹 화살표(441:35). 올렸을 때 `bg/inverse-strong`(#000) + 화살표 오른쪽 2px, 누름 0.97배, 키보드 초점 3px 먹 테두리를 2px 띄워서. 꺼짐: 점선 + 회색. `block`이면 폭 전체(글자 왼쪽, `labelAlign="center"`면 가운데). 화면마다 하나. |
 | `SecondaryButton` · `SecondaryLink` 보조 버튼 | `Button.tsx` | 흰 알약 + 2px 먹 테두리. `md` 52·16(441:40), `sm` 40·14(목록 줄·받기 줄). 꺼짐 점선. |
 | `TextButton` · `TextLink` 글자 링크 | `Button.tsx` | 15 굵게 보조 글자색 밑줄, 위아래 12px(441:47). |
-| `SelectChip` 고르는 칩 | `SelectChip.tsx` | 중간 강도: 고름 = 회색 바탕 + 2px 먹 테두리 + 체크 + 굵게, 안 고름 = 옅은 테두리 + 보통, 꺼짐 = 점선(463:115). `mode="toggle"`(aria-pressed) / `"radio"`(role=radio, `rovingTab`·`onRadioKeys`와 함께). `size="sm"`은 글자 다듬기 프리셋. `ui.tsx`의 `Chip`도 이 모양을 쓴다. |
+| `SelectChip` 고르는 칩 | `SelectChip.tsx` | 중간 강도: 고름 = 회색 바탕 + 2px 먹 테두리 + 체크 + 굵게, 안 고름 = 옅은 테두리 + 보통, 꺼짐 = 점선(463:115). `mode="toggle"`(aria-pressed) / `"radio"`(role=radio, `rovingTab`·`onRadioKeys`와 함께). `size="sm"`은 글자 다듬기 프리셋(높이 36·글자 13, 데스크톱은 좌우 10·사이 4로 서랍 안 일곱 개 한 줄). `ui.tsx`의 `Chip`도 이 모양을 쓴다. |
 | `SegmentedPair` 양쪽 고르기 | `SegmentedPair.tsx` | 3/4 글씨 취향 B안(552:608). 두 칸을 한 줄로 붙이고 고른 쪽만 중간 강도 + 오른쪽 위 체크 원. 쌍마다 radiogroup. |
 | `CheckCircle` · `CheckMark` | `Check.tsx` | 먹 원 + 흰 체크(22px, 고른 카드·상태 줄) / 선 체크(칩·접수한 것 줄). |
 | `UnderlineTabs` 밑줄 탭 | `UnderlineTabs.tsx` | 고름 16 굵게 + 글자 폭 2.5px 먹 밑줄, 안 고름 16 보조색, 사이 32(549:402). tablist, 화살표·Home·End. |

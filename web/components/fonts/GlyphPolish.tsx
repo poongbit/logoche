@@ -387,9 +387,10 @@ export const GlyphPolish = memo(function GlyphPolish({
             {canTweak &&
               (mode === "slider" ? (
                 <>
-                  <div role="group" aria-label="프리셋" className="-mx-4 flex shrink-0 gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] lg:-mx-8 lg:px-8">
+                  {/* 휴대폰은 옆으로 미는 줄(564:626), 데스크톱은 일곱 개가 서랍 폭 안에 한 줄로(스크롤 없음, 563:590) */}
+                  <div role="group" aria-label="프리셋" className="-mx-4 flex shrink-0 gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:gap-1 lg:overflow-visible lg:px-0">
                     {TWEAK_PRESETS.map((p) => (
-                      <SelectChip key={p.label} size="sm" className="text-sm!" selected={pressedPreset(p.values)} onClick={() => setValues({ ...NO_TWEAK, ...p.values })}>
+                      <SelectChip key={p.label} size="sm" selected={pressedPreset(p.values)} onClick={() => setValues({ ...NO_TWEAK, ...p.values })}>
                         {p.label}
                       </SelectChip>
                     ))}

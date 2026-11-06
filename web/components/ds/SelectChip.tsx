@@ -22,14 +22,17 @@ export type SelectChipProps = {
    */
   mode?: "toggle" | "radio";
   tabIndex?: number;
-  /** md 42px(질문 칩) · sm 36px, 좌우 12(글자 다듬기 프리셋 — 서랍 폭에서 한 줄) */
+  /**
+   * md 42px(질문 칩) · sm 36px 글자 13(글자 다듬기 프리셋, 563:590). sm은 데스크톱에서 좌우 10·체크 간격 4로 줄여
+   * 서랍(560) 안에 프리셋 일곱 개가 한 줄로 들어간다(screens.md 오후 8차, 사용자 요청: 넘침·줄바꿈 없이 한 줄).
+   */
   size?: "md" | "sm";
   className?: string;
 };
 
 export function SelectChip({ selected, onClick, children, badge, disabled, mode = "toggle", tabIndex, size = "md", className = "" }: SelectChipProps) {
   const a11y = mode === "radio" ? ({ role: "radio", "aria-checked": selected } as const) : ({ "aria-pressed": selected } as const);
-  const pad = size === "sm" ? (selected ? "pr-3 pl-2.5" : "px-3") : selected ? "pr-4 pl-3" : "px-4";
+  const pad = size === "sm" ? (selected ? "pr-3 pl-2.5 lg:pr-2.5 lg:pl-2" : "px-3 lg:px-2.5") : selected ? "pr-4 pl-3" : "px-4";
   return (
     <button
       type="button"
@@ -37,8 +40,8 @@ export function SelectChip({ selected, onClick, children, badge, disabled, mode 
       tabIndex={tabIndex}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full text-15 transition-[background-color,border-color,color,transform] duration-(--dur-fast) ease-standard motion-safe:active:scale-[0.97] disabled:active:scale-100 ${
-        size === "sm" ? "h-9" : "h-[2.625rem]"
+      className={`inline-flex shrink-0 items-center rounded-full transition-[background-color,border-color,color,transform] duration-(--dur-fast) ease-standard motion-safe:active:scale-[0.97] disabled:active:scale-100 ${
+        size === "sm" ? "h-9 gap-1.5 text-13 lg:gap-1" : "h-[2.625rem] gap-1.5 text-15"
       } ${pad} ${
         selected
           ? "border-2 border-border-active bg-bg-surface-strong font-bold text-text-primary"
