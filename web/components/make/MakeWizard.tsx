@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CheckMark, DisplayTitle, PrimaryButton, Receipt, SegmentedPair, SelectChip, TextButton } from "@/components/ds";
+import { CheckMark, DisplayTitle, PrimaryButton, Receipt, ReserveBold, SegmentedPair, SelectChip, SelectedRing, TextButton } from "@/components/ds";
 import { InAppNotice, useGoogleSignIn } from "@/components/GoogleSignIn";
 import { Notice, TextField, onRadioKeys, rovingTab } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
@@ -464,17 +464,19 @@ function SourceRow({ selected, onClick, tabIndex, children }: { selected: boolea
       aria-checked={selected}
       tabIndex={tabIndex}
       onClick={onClick}
-      className={`flex min-h-[3.75rem] w-full items-center gap-3 rounded-full px-4 py-2 text-left text-base transition-[background-color,border-color] duration-(--dur-fast) lg:px-[1.125rem] ${
-        selected ? "border-2 border-border-active bg-bg-surface font-bold" : "border-[1.5px] border-border-strong bg-bg-canvas font-medium hover:border-border-active hover:bg-bg-surface"
+      className={`relative flex min-h-[3.75rem] w-full items-center gap-3 rounded-full border-[1.5px] px-4 py-2 text-left text-base font-medium transition-[background-color,border-color] duration-(--dur-fast) lg:px-[1.125rem] ${
+        selected ? "border-border-active bg-bg-surface" : "border-border-strong bg-bg-canvas hover:border-border-active hover:bg-bg-surface"
       }`}
     >
+      {/* 11/6 밤: 테두리는 늘 1.5px, 고른 2px은 겹쳐 그리고 굵은 글자 폭을 미리 잡아 고를 때 줄이 바뀌거나 밀리지 않게 */}
+      {selected && <SelectedRing />}
       <span
         aria-hidden
         className={`grid size-6 shrink-0 place-items-center rounded-full ${selected ? "bg-bg-inverse text-text-inverse" : "border-2 border-border-strong bg-bg-canvas"}`}
       >
         {selected && <CheckMark className="ds-motion h-3 w-3 animate-ds-check" />}
       </span>
-      <span className="min-w-0">{children}</span>
+      <ReserveBold bold={selected}>{children}</ReserveBold>
     </button>
   );
 }

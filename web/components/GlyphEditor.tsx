@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { ModalPortal } from "@/components/ModalPortal";
-import { PrimaryButton, SecondaryButton, TextButton } from "@/components/ds";
+import { PrimaryButton, ReserveBold, SecondaryButton, SelectedRing, TextButton } from "@/components/ds";
 import { Notice, Spinner } from "@/components/ui";
 import { errorMessage } from "@/lib/api";
 import type { GlyphGuides } from "@/lib/types";
@@ -616,8 +616,8 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
   const segment = (on: boolean) =>
     `-m-[1.5px] rounded-full text-sm transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:text-text-disabled ${on ? "border-2 border-border-active bg-bg-surface-strong font-bold" : "font-medium text-text-secondary hover:text-text-primary"}`;
   const toolButton = (on: boolean) =>
-    `flex shrink-0 items-center gap-1.5 rounded-full px-4 text-sm transition-[background-color,border-color] duration-(--dur-fast) max-lg:h-10 lg:w-full lg:flex-col lg:gap-1 lg:rounded-[0.875rem] lg:px-1.5 lg:py-2.5 lg:text-13 ${
-      on ? "border-2 border-border-active bg-bg-surface-strong font-bold" : "border-[1.5px] border-border-default font-medium hover:bg-bg-surface lg:border-transparent"
+    `relative flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-medium transition-[background-color,border-color] duration-(--dur-fast) max-lg:h-10 lg:w-full lg:flex-col lg:gap-1 lg:rounded-[0.875rem] lg:px-1.5 lg:py-2.5 lg:text-13 ${
+      on ? "border-border-active bg-bg-surface-strong" : "border-border-default hover:bg-bg-surface lg:border-transparent"
     }`;
   const undoRedo = (className: string) => (
     <>
@@ -776,7 +776,11 @@ export function GlyphEditor({ title, ghostLabel = "원래 글자 겹쳐 보기",
                   <svg viewBox="0 0 20 20" className="h-5 w-5 max-lg:hidden" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     {t.icon}
                   </svg>
-                  <span className="whitespace-nowrap">{t.label}</span>
+                  {/* 11/6 밤: 고른 2px은 겹쳐 그리고 굵은 글자 폭을 미리 잡아, 고를 때 옆 도구가 밀리지 않게 */}
+                  {tool === t.key && <SelectedRing className="rounded-full lg:rounded-[0.875rem]" />}
+                  <ReserveBold bold={tool === t.key} className="whitespace-nowrap">
+                    {t.label}
+                  </ReserveBold>
                 </button>
               ))}
               <span aria-hidden className="my-1 h-px shrink-0 bg-border-default max-lg:hidden" />

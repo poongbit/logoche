@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { onRadioKeys, rovingTab } from "@/components/ui";
 import { CheckCircle } from "./Check";
+import { ReserveBold } from "./SelectChip";
 
 // 11/6 양쪽 고르기(3/4 글씨 취향 B안, 피그마 552:608 '양쪽 고르기').
 // 반대말 두 칸을 한 줄로 붙이고, 고른 쪽만 중간 강도(회색 바탕 + 2px 먹 테두리) + 오른쪽 위 체크 원. 글자·이름은 왼쪽 정렬.
@@ -61,7 +62,10 @@ export function SegmentedPair<V extends string>({
               />
             )}
             <span className="min-w-0 text-text-primary">{o.visual}</span>
-            <span className={`text-sm ${selected ? "font-bold text-text-primary" : "font-medium text-text-secondary"}`}>{o.label}</span>
+            {/* 굵은 글자 폭을 미리 잡아 고를 때 이름이 줄을 바꾸거나 밀리지 않게(11/6 밤) */}
+            <ReserveBold bold={selected} className={`text-sm font-medium ${selected ? "text-text-primary" : "text-text-secondary"}`}>
+              {o.label}
+            </ReserveBold>
             {selected && <CheckCircle pop className="absolute top-3 right-3 z-10 lg:top-4 lg:right-4" />}
           </button>
         );

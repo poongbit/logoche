@@ -3,7 +3,7 @@
 
 export { ArrowIcon, PrimaryButton, PrimaryLink, SecondaryButton, SecondaryLink, TextButton, TextLink } from "./Button";
 export { CheckCircle, CheckMark } from "./Check";
-export { SelectChip, type SelectChipProps } from "./SelectChip";
+export { ReserveBold, SelectChip, SelectedRing, type SelectChipProps } from "./SelectChip";
 export { SegmentedPair, type PairOption } from "./SegmentedPair";
 export { UnderlineTabs, tabId, tabPanelId, type TabItem } from "./UnderlineTabs";
 export { Receipt } from "./Receipt";

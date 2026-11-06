@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Steps } from "@/components/fonts/Making";
 import { StickyBar } from "@/components/fonts/shared";
 import { ModalPortal } from "@/components/ModalPortal";
-import { CheckCircle, PrimaryButton, Receipt, SecondaryButton, TextButton, TextLink } from "@/components/ds";
+import { CheckCircle, PrimaryButton, Receipt, SecondaryButton, SelectedRing, TextButton, TextLink } from "@/components/ds";
 import { Notice, onRadioKeys, rovingTab } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { authClient } from "@/lib/authClient";
@@ -43,10 +43,12 @@ function Card({
   const descId = `choose-why-${index}`;
   return (
     <li
-      className={`relative flex min-w-0 flex-col rounded-[1.25rem] bg-bg-canvas p-[1.125rem] transition-colors duration-(--dur-fast) ${
-        selected ? "border-2 border-border-active" : "border-[1.5px] border-border-default hover:border-border-strong"
+      className={`relative flex min-w-0 flex-col rounded-[1.25rem] border-[1.5px] bg-bg-canvas p-[1.125rem] transition-colors duration-(--dur-fast) ${
+        selected ? "border-border-active" : "border-border-default hover:border-border-strong"
       }`}
     >
+      {/* 11/6 밤: 테두리는 늘 1.5px, 고른 2px은 겹쳐 그려 카드 크기가 그대로(체크 원은 같은 크기의 빈 원 자리에 들어간다) */}
+      {selected && <SelectedRing className="rounded-[1.25rem]" />}
       {/* 카드 전체가 고르는 칸이다. 안의 '견본 다시 그리기' 버튼과 겹치지 않게 칸을 카드 뒤에 깐다(버튼 안에 버튼을 두지 않음). */}
       <button
         type="button"

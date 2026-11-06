@@ -53,7 +53,7 @@ export function ButtonLink({
 }
 
 /** 칩(업종·톤·사용처). badge는 '추천'처럼 칩 안에 붙는 말. 비활성이면 점선 테두리.
- * 11/6: 모양은 공통 부품 SelectChip(components/ds)의 '중간 강도'와 같다 — 고른 칩은 회색 바탕 + 2px 먹 테두리 + 체크 + 굵은 글자.
+ * 11/6: 모양은 공통 부품 SelectChip(components/ds)의 '중간 강도'와 같다 — 고른 칩은 회색 바탕 + 2px 먹 테두리 + 굵은 글자(11/6 밤: 체크 없음, 고를 때 폭 그대로).
  * 먹 채움은 누르는 버튼에만 쓴다(10/30 사용자 지적). 새 코드는 SelectChip을 바로 쓴다(radio 모드도 있다). */
 export function Chip(props: { selected: boolean; onClick: () => void; children: ReactNode; badge?: string; disabled?: boolean }) {
   return <SelectChip {...props} />;
