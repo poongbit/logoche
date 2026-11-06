@@ -651,14 +651,14 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
           title="가게에 걸어 봐요"
           desc={
             <>
-              <span className="max-lg:hidden">가게 앞 간판, 테이블 위 메뉴판, 인스타 게시물 사진에 폰트를 얹어 보여 드려요.</span>
-              <span className="lg:hidden">가게 앞 간판, 메뉴판, 인스타 사진에 얹어 보여 드려요.</span>
+              <span className="max-lg:hidden">가게 앞 간판, 식탁 위 메뉴판, 포장 봉투, SNS 게시물 사진에 폰트를 얹어 보여 드려요.</span>
+              <span className="lg:hidden">간판, 메뉴판, 포장, SNS 사진에 얹어 보여 드려요.</span>
             </>
           }
         >
           <div className="mt-4 lg:mt-14">
             <LazyMount>
-              <MockupTabs fontName={view.name} storeName={view.storeName} menu={menu} fontStyle={mockStyle} colors={view.colors} logo={view.logoUrl} />
+              <MockupTabs fontName={view.name} storeName={view.storeName} menu={menu} fontStyle={mockStyle} colors={view.colors} logo={view.logoUrl} slogan={view.slogans[0]} />
             </LazyMount>
           </div>
         </Section>
