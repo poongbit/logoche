@@ -340,7 +340,7 @@ function BusinessStep({ upload, setUpload, rejected }: StepProps & { rejected: b
         aria-describedby={rejected ? "make-feel-count make-feel-alert" : "make-feel-count"}
         onChange={(e) => setUpload({ desiredFeel: e.target.value })}
         placeholder="예: 고양이의 우아하고 유연한 곡선과 집사와의 따뜻한 교감, 정직하고 건강한 수제 간식의 가치를 담은 브랜드예요."
-        className={`mt-2 h-[10.625rem] w-full resize-none rounded-[1rem] border-2 bg-bg-canvas px-3.5 py-3 text-15 leading-[1.6] font-medium outline-none transition-shadow placeholder:text-text-secondary focus-visible:shadow-[0_0_0_4px_rgb(17_17_17/0.1)] lg:h-[9.375rem] lg:rounded-[1.125rem] lg:px-[1.125rem] lg:py-3.5 lg:text-base ${
+        className={`mt-2 h-[10.625rem] w-full resize-none rounded-[1rem] border-2 bg-bg-canvas px-3.5 py-3 text-15 leading-[1.6] font-medium outline-none transition-shadow placeholder:text-text-secondary lg:h-[9.375rem] lg:rounded-[1.125rem] lg:px-[1.125rem] lg:py-3.5 lg:text-base ${
           rejected ? "border-border-error" : "border-border-active"
         }`}
       />

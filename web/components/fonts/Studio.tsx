@@ -411,7 +411,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
               closeRename();
             }
           }}
-          className="h-14 w-full min-w-0 rounded-2xl border-2 border-border-active bg-bg-canvas px-4 font-display outline-none focus-visible:shadow-none text-2xl tracking-[-0.03em] outline-none sm:w-[28.75rem] lg:h-16 lg:text-[1.875rem]"
+          className="h-14 w-full min-w-0 rounded-2xl border-2 border-border-active bg-bg-canvas px-4 font-display text-2xl tracking-[-0.03em] outline-none sm:w-[28.75rem] lg:h-16 lg:text-[1.875rem]"
         />
         <PrimaryButton type="submit" disabled={busy}>
           {busy ? "저장하는 중" : "저장"}
@@ -578,13 +578,14 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                   <span aria-hidden className="lg:hidden">·</span>
                   <span className={boardDark ? "" : "lg:text-text-tertiary"}>{line.source}</span>
                 </label>
+                {/* 키보드 초점 고리는 글자색으로: 바탕색을 검정·로고 어두운 색으로 바꿔도 보인다 */}
                 <textarea
                   ref={i === 0 ? firstLine : undefined}
                   id={`try-${line.key}`}
                   rows={1}
                   value={texts[line.key] ?? line.text}
                   onChange={(e) => setTexts({ ...texts, [line.key]: e.target.value })}
-                  className={`w-full resize-none rounded-[0.625rem] bg-transparent px-1 outline-none [field-sizing:content] focus-visible:shadow-[0_0_0_2px_var(--ink)] ${line.size}`}
+                  className={`w-full resize-none rounded-[0.625rem] bg-transparent px-1 outline-none [field-sizing:content] focus-visible:shadow-[0_0_0_2px_currentColor] ${line.size}`}
                   style={{ fontFamily: family, color: fg, letterSpacing: `${tracking / 100}em`, lineHeight: leading / 100 }}
                 />
               </div>
