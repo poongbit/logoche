@@ -42,7 +42,7 @@ import { MOCK, RouteError } from "./env";
 import { getGlyphJob, readyRefs, retryGlyph, startGlyphJob } from "./glyphs";
 import { chooseGuideFont, guideFontEnabled } from "./guidefont";
 import { chooseMail, doneMail, draftMail, emailOf, failedMail, sendMail } from "./mail";
-import { restDrawnChars, restRecheck, restStyleRedrawn } from "./rest";
+import { restDrawnChars, restDrawnState, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
 import { analyzeStyle, applyDirection, cleanSlogans } from "./style";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
@@ -746,11 +746,17 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     };
   }
   let recent: ProjectView["recent"] = [];
-  if (p.phase === "building" && p.glyphJobId) {
+  const edited = p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [];
+  // 11/6: 만드는 중·멈춤 화면의 글자 지도(drawnMap)와 '마지막으로 그린 때'(lastSheetAt). 멈춤 화면도 '마지막으로 그린 글자'를 보이므로 recent를 같이 준다.
+  let drawnMap: string | null = null;
+  let lastSheetAt: number | null = null;
+  if ((p.phase === "building" || p.phase === "failed") && p.glyphJobId) {
     const jobId = p.glyphJobId;
-    recent = (await restDrawnChars(jobId))
-      .slice(0, 60)
-      .map((char) => ({ char, imageUrl: `/api/glyphs/jobs/${jobId}/rest/${char.codePointAt(0)!.toString(16)}` }));
+    const rest = await restDrawnState(jobId).catch(() => ({ chars: [] as string[], lastSheetAt: null }));
+    recent = rest.chars.slice(0, 60).map((char) => ({ char, imageUrl: `/api/glyphs/jobs/${jobId}/rest/${char.codePointAt(0)!.toString(16)}` }));
+    const refs = (await getGlyphJob(jobId).catch(() => null))?.items.filter((i) => i.status === "ready").map((i) => i.char) ?? [];
+    drawnMap = drawnBits(new Set([...refs, ...rest.chars, ...edited]));
+    lastSheetAt = rest.lastSheetAt;
   }
   const upload: Partial<UploadInput> = { ...p.upload };
   delete upload.logoImage;
@@ -766,12 +772,25 @@ export async function getProject(owner: string, id: string): Promise<ProjectView
     extras: p.result?.extras ?? [],
     recheck: p.phase === "done" && p.glyphJobId ? await restRecheck(p.glyphJobId).catch(() => []) : [],
     tweaks: p.glyphJobId ? await readTweakTable(p.glyphJobId) : {},
-    edited: p.glyphJobId ? await listEdits(p.glyphJobId).catch(() => []) : [],
+    edited,
     rebuilding: p.phase === "building" && !!p.fontId && !!p.result,
     revision: p.updatedAt,
     slogans: cleanSlogans(p.style?.slogans),
     record: p.record,
+    drawnMap,
+    lastSheetAt,
   };
+}
+
+/** 11/6 글자 지도 순서: 한글 2,350자(KS X 1001 순서) 다음 숫자·문장부호·영문 82자(EXTRA_CHARS). 화면(MakingMeter의 GLYPH_ORDER)과 같아야 한다. */
+const GLYPH_ORDER = [...KSX1001_HANGUL, ...EXTRA_CHARS];
+/** 그린 글자를 GLYPH_ORDER 순서의 비트(앞 글자가 높은 비트)로 묶어 base64로. 2,432칸 → 304바이트 → 408자 */
+function drawnBits(drawn: Set<string>): string {
+  const bytes = Buffer.alloc(Math.ceil(GLYPH_ORDER.length / 8));
+  GLYPH_ORDER.forEach((c, i) => {
+    if (drawn.has(c)) bytes[i >> 3] |= 0x80 >> (i & 7);
+  });
+  return bytes.toString("base64");
 }
 
 // ---------- 바꾸기 ----------

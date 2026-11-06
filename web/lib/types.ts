@@ -472,7 +472,7 @@ export interface ProjectView extends ProjectSummary {
   review: ProjectReview | null;
   choose: ProjectChoose | null; // 느낌 고르는 단계(11/4)
   build: BuildJob | null;
-  recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자(그리는 중)
+  recent: { char: string; imageUrl: string }[]; // 방금 그린 나머지 글자, 늦게 그린 것부터 최대 60자(그리는 중·11/6부터 멈춤에도)
   missing: string[]; // 서체에 없는 한글(다 만든 뒤)
   extras: string[]; // 서체에 든 숫자·문장부호(다 만든 뒤)
   recheck: string[]; // 다시 볼 글자: 획 두께·크기가 기준에서 가장 많이 벗어난 나머지 글자(다 만든 뒤, 최대 30자)
@@ -482,6 +482,14 @@ export interface ProjectView extends ProjectSummary {
   revision: number; // 폰트 파일이 바뀔 때마다 달라지는 값. 글자를 고치면 파일이 바뀌어 폰트를 다시 불러오는 열쇠로 쓴다
   slogans: string[]; // AI가 쓴 브랜드 맞춤 문장(없으면 빈 배열). 견본·목업의 문장
   record: RecordEvent[];
+  /**
+   * 11/6 글자 지도: 서체에 들어갈 그림이 있는 글자(기준 글자 · 나머지 글자 · 직접 그려 넣은 글자)를 2,432칸 비트로 묶어 base64로(앞 글자가 높은 비트).
+   * 칸 순서는 한글 2,350자(KS X 1001 순서, lib/hangul KSX1001_HANGUL) 다음 EXTRA_CHARS 82자(lib/constants). 만드는 중(building)·멈춤(failed)에만 있고,
+   * 글자 작업이 아직 없으면(로고 읽기·느낌 고르기에서 멈춤) null. 이 값을 모르는 예전 서버는 키가 없다(undefined).
+   */
+  drawnMap?: string | null;
+  /** 11/6: 나머지 글자표 한 장을 마지막으로 다 그린 시각(epoch ms). 아직 없으면 null. drawnMap과 같은 때에만 */
+  lastSheetAt?: number | null;
 }
 
 export type ReviewAction = { action: "hold" } | { action: "release" } | { action: "continue" } | { action: "redraw"; indices: number[] } | { action: "restyle" }; // restyle: 30자를 보고 다른 느낌으로 다시 고른다(11/4)
