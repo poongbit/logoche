@@ -502,7 +502,7 @@ export function Studio({ view, onChanged }: { view: ProjectView; onChanged: () =
                   가나다라마바사 아자차카타파하 0123456789 ABCabc
                 </p>
               </div>
-              <CompletionStamp name={view.name} size={150} shine className="absolute! -top-[4.1875rem] -right-[3.1875rem] max-lg:hidden" />
+              <CompletionStamp name={view.name} size={150} shine className="absolute! -top-[4.1875rem] -right-6 max-lg:hidden xl:-right-[3.1875rem]" />
               <CompletionStamp name={view.name} size={96} shine className="absolute! -top-12 -right-1 lg:hidden" />
             </div>
 
