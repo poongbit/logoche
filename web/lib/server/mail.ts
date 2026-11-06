@@ -4,9 +4,12 @@
 // 받는 주소는 구글 로그인으로 auth.sqlite에 저장된 메일이다. 로그인 없이 만든 작업(owner 'local'·'bench')은 보내지 않는다.
 // 보내기에 실패해도 폰트 작업에는 영향이 없다(호출하는 쪽이 오류를 삼킨다).
 
+import { randomBytes } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { MOCK } from "./env";
+import { mailCardPng } from "./engine";
 
 const API_KEY = process.env.RESEND_API_KEY ?? "";
 const FROM = process.env.MAIL_FROM || "로고체 <noreply@logoche.my>";
@@ -72,7 +75,7 @@ interface Body {
 const flat = (s: string) => escapeHtml(s.replace(/\s*\n\s*/g, " "));
 const para = (l: string) => `<p style="font-size:16px;line-height:1.65;margin:0 0 10px;color:#111;word-break:keep-all">${flat(l)}</p>`;
 
-function layout(b: Body): { text: string; html: string } {
+function layoutHtml(b: Body): { text: string; html: string } {
   const text = [b.title, "", ...b.lines, "", `${b.button.label}: ${b.button.href}`, "", b.note, "", "로고체 · logoche.my"].join("\n");
   const [w, h] = HEAD[b.kind];
   const head = `<img src="${SITE_URL}/mail/head-${b.kind}.png" width="${w}" height="${h}" alt="${escapeHtml(b.title)}" style="display:block;border:0;height:${h}px;width:${w}px;max-width:100%;margin-left:-4px">`;
@@ -103,9 +106,36 @@ ${button}
   return { text, html };
 }
 
+
+// 11/6: 다크모드에서 흰 바탕에 흰 글씨가 되는 일을 막으려고 본문을 그림 한 장으로 그린다(엔진 /mail/card). 그림은 .data/mail에 두고 /mail-card/<토큰>.png로 내준다.
+// 그림을 못 그리면(엔진 꺼짐 등) 위의 글자 버전으로 보낸다. 그림 속 글자는 못 읽는 사람을 위해 alt와 아래 링크로도 넣는다.
+const FOOTER = ["로고체 · logoche.my", "로고체에서 폰트를 만들 때 쓴 구글 계정으로 보내는 알림이에요."];
+export const MAIL_DIR = path.join(process.cwd(), ".data", "mail");
+
+async function layout(b: Body): Promise<{ text: string; html: string }> {
+  const fallback = layoutHtml(b);
+  try {
+    const png = await mailCardPng({ kind: b.kind, label: b.label, title: b.title, lines: b.lines, button: b.button.label, note: b.note, footer: FOOTER });
+    mkdirSync(MAIL_DIR, { recursive: true });
+    const token = randomBytes(12).toString("hex");
+    writeFileSync(path.join(MAIL_DIR, `${token}.png`), png);
+    const alt = [b.title, ...b.lines.map((l) => l.replace(/\s*\n\s*/g, " ")), `${b.button.label}: ${b.button.href}`].join(" / ");
+    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#ffffff">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(b.title)} ${escapeHtml(b.lines[0] ?? "")}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<a href="${escapeHtml(b.button.href)}" style="text-decoration:none"><img src="${SITE_URL}/mail-card/${token}.png" width="600" alt="${escapeHtml(alt)}" style="display:block;width:100%;max-width:600px;height:auto;border:0"></a>
+<p style="font-family:sans-serif;font-size:12px;line-height:1.6;color:#888;margin:8px 16px 24px;text-align:center"><a href="${escapeHtml(b.button.href)}" style="color:#888">${escapeHtml(b.button.label)}: ${escapeHtml(b.button.href)}</a></p>
+</td></tr></table></body></html>`;
+    return { text: fallback.text, html };
+  } catch (err) {
+    console.error("[logoche] 메일 그림을 못 그려 글자 버전으로 보내요", err);
+    return fallback;
+  }
+}
+
 const SCOPE = "한글 약 2,350자 + 숫자·문장부호·영문 대소문자 82자";
 
-export function doneMail(to: string, name: string, id: string, glyphCount: number, extraCount: number): Mail {
+export async function doneMail(to: string, name: string, id: string, glyphCount: number, extraCount: number): Promise<Mail> {
   const b: Body = {
     kind: "done",
     title: "폰트가 완성됐어요",
@@ -117,10 +147,10 @@ export function doneMail(to: string, name: string, id: string, glyphCount: numbe
     button: { href: `${SITE_URL}/fonts/${id}`, label: "폰트 보러 가기" },
     note: "SIL OFL 1.1로 드려요. 이 가게만 쓰는 독점 권리는 아니에요.\n자세한 건 스튜디오의 권리 안내에 있어요.",
   };
-  return { to, subject: `${name} 폰트가 완성됐어요`, ...layout(b) };
+  return { to, subject: `${name} 폰트가 완성됐어요`, ...(await layout(b)) };
 }
 
-export function failedMail(to: string, name: string, id: string): Mail {
+export async function failedMail(to: string, name: string, id: string): Promise<Mail> {
   const b: Body = {
     kind: "failed",
     title: "만들다가 멈췄어요",
@@ -129,11 +159,11 @@ export function failedMail(to: string, name: string, id: string): Mail {
     button: { href: `${SITE_URL}/fonts/${id}`, label: "이어서 만들기" },
     note: "그만두고 싶으면 같은 화면의 '그만두기'를 누르세요. 지우기 전에 한 번 더 물어봐요.",
   };
-  return { to, subject: `${name} 폰트 만들기가 멈췄어요`, ...layout(b) };
+  return { to, subject: `${name} 폰트 만들기가 멈췄어요`, ...(await layout(b)) };
 }
 
 /** 30자 초안이 나왔고 나머지를 그릴지 정하기를 기다린다는 알림(11/4) */
-export function draftMail(to: string, name: string, id: string): Mail {
+export async function draftMail(to: string, name: string, id: string): Promise<Mail> {
   const b: Body = {
     kind: "draft",
     title: "30자 초안이 나왔어요",
@@ -142,11 +172,11 @@ export function draftMail(to: string, name: string, id: string): Mail {
     button: { href: `${SITE_URL}/fonts/${id}`, label: "초안 보고 고르기" },
     note: "창을 닫아도 작업은 그대로 남아 있어요.",
   };
-  return { to, subject: `${name} 30자 초안이 나왔어요`, ...layout(b) };
+  return { to, subject: `${name} 30자 초안이 나왔어요`, ...(await layout(b)) };
 }
 
 /** 서체 방향 견본이 그려졌고 사용자가 고르기를 기다린다는 알림(11/4) */
-export function chooseMail(to: string, name: string, id: string): Mail {
+export async function chooseMail(to: string, name: string, id: string): Promise<Mail> {
   const b: Body = {
     kind: "choose",
     title: "느낌을 골라 주세요",
@@ -155,5 +185,5 @@ export function chooseMail(to: string, name: string, id: string): Mail {
     button: { href: `${SITE_URL}/fonts/${id}`, label: "느낌 고르러 가기" },
     note: "만들기를 시작하면 12~17분 걸려요. 창을 닫아도 서버에서 계속 만들어요.",
   };
-  return { to, subject: `${name} 느낌을 골라 주세요`, ...layout(b) };
+  return { to, subject: `${name} 느낌을 골라 주세요`, ...(await layout(b)) };
 }

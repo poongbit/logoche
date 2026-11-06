@@ -573,12 +573,12 @@ async function notify(id: string, kind: "done" | "failed" | "draft" | "choose") 
     const missing = p.result?.missing.length ?? 0;
     const mail =
       kind === "done"
-        ? doneMail(to, p.name, p.id, KSX1001_HANGUL.size - missing, p.result?.extras.length ?? 0)
+        ? await doneMail(to, p.name, p.id, KSX1001_HANGUL.size - missing, p.result?.extras.length ?? 0)
         : kind === "draft"
-          ? draftMail(to, p.name, p.id)
+          ? await draftMail(to, p.name, p.id)
           : kind === "choose"
-            ? chooseMail(to, p.name, p.id)
-            : failedMail(to, p.name, p.id);
+            ? await chooseMail(to, p.name, p.id)
+            : await failedMail(to, p.name, p.id);
     if (!(await sendMail(mail))) await unclaim(); // 키가 없어 못 보냈으면 나중에 다시 시도할 수 있게
   } catch (err) {
     console.error("[logoche] 알림 메일 실패", id, err);

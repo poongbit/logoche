@@ -149,3 +149,10 @@ export const engine = {
     call(`/builds/${buildId}/bundle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   issue: (buildId: string) => json<{ issued: boolean }>(`/builds/${buildId}/issue`, {}),
 };
+
+
+/** 알림 메일 본문 그림(11/6): 다크모드에서도 디자인 그대로 보이게 글자까지 그림 한 장으로 받는다. */
+export async function mailCardPng(body: { kind: string; label: string; title: string; lines: string[]; button: string; note: string; footer: string[] }): Promise<Buffer> {
+  const res = await call("/mail/card", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return Buffer.from(await res.arrayBuffer());
+}

@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, Response
 from fontTools.ttLib import TTFont
 from pydantic import BaseModel, Field
 
-from . import checks, drawn, raster
+from . import checks, drawn, mailcard, raster
 from .build import FORMATS, FontMeta, GlyphRejected, bundle, export_font, export_later, patch_glyph
 from .checks import warm_comparison
 from .contour import ALL_GLYPHS, Axes, Tweak
@@ -477,3 +477,23 @@ def issue(build_id: str) -> dict:
     except FileNotFoundError as err:
         raise HTTPException(404, "TTF가 없어요") from err
     return {"issued": True}
+
+
+class MailCardRequest(BaseModel):
+    kind: Literal["done", "failed", "choose", "draft"]
+    label: str = Field(max_length=80)
+    title: str = Field(max_length=40)
+    lines: list[str] = Field(max_length=4)
+    button: str = Field(max_length=30)
+    note: str = Field(max_length=200)
+    footer: list[str] = Field(max_length=3)
+
+
+@app.post("/mail/card")
+def mail_card_route(req: MailCardRequest) -> Response:
+    """알림 메일 본문 그림(11/6). 다크모드에서도 디자인 그대로 보이게 글자까지 그림으로 그린다."""
+    try:
+        png = mailcard.render_card(req.kind, req.label, req.title, req.lines, req.button, req.note, req.footer)
+    except FileNotFoundError as err:
+        raise HTTPException(500, f"메일 그림에 쓸 글꼴이 없어요: {err}") from err
+    return Response(png, media_type="image/png")
