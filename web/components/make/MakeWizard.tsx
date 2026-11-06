@@ -419,7 +419,7 @@ const GLYPH_KEYS: Record<string, string> = { round: "roundEdge", sharp: "sharpEd
 function GlyphMark({ id }: { id: string }) {
   const g = ATTRIBUTE_GLYPHS[GLYPH_KEYS[id]];
   return (
-    <span className="-mr-8 mt-0.5 block text-[1.4375rem] lg:mt-1.5 lg:text-[2.375rem]">
+    <span className="mt-0.5 block text-[1.4375rem] lg:mt-1.5 lg:text-[2.375rem]">
       <svg aria-hidden viewBox={`0 0 ${g.w} ${g.h}`} style={{ width: `${g.w / 100}em`, height: `${g.h / 100}em` }} className="block">
         <path d={g.d} fill="currentColor" />
       </svg>

@@ -49,7 +49,7 @@ export function SegmentedPair<V extends string>({
             aria-checked={selected}
             tabIndex={rovingTab(selected, left, any)}
             onClick={() => onChange(o.value)}
-            className={`group relative flex min-h-[6.5rem] min-w-0 flex-col items-start justify-between gap-2 px-6 pt-3 pb-3.5 text-left transition-colors duration-(--dur-fast) ${
+            className={`group relative flex min-h-[5.75rem] min-w-0 flex-col items-start justify-between gap-2 px-3.5 pt-3 pb-3 lg:min-h-[6.5rem] lg:px-6 lg:pb-3.5 text-left transition-colors duration-(--dur-fast) ${
               left ? "rounded-l-[1rem] border-r-[1.5px] border-border-strong" : "rounded-r-[1rem]"
             } ${selected ? "bg-bg-surface-strong" : "hover:bg-bg-surface"}`}
           >
@@ -60,9 +60,9 @@ export function SegmentedPair<V extends string>({
                 className={`pointer-events-none absolute -inset-[1.5px] z-10 border-2 border-border-active ${left ? "rounded-l-[1.125rem]" : "rounded-r-[1.125rem]"}`}
               />
             )}
-            <span className="min-w-0 pr-8 text-text-primary">{o.visual}</span>
-            <span className={`text-sm text-text-primary ${selected ? "font-bold" : "font-medium"}`}>{o.label}</span>
-            {selected && <CheckCircle pop className="absolute top-4 right-4 z-10" />}
+            <span className="min-w-0 text-text-primary">{o.visual}</span>
+            <span className={`text-sm ${selected ? "font-bold text-text-primary" : "font-medium text-text-secondary"}`}>{o.label}</span>
+            {selected && <CheckCircle pop className="absolute top-3 right-3 z-10 lg:top-4 lg:right-4" />}
           </button>
         );
       })}

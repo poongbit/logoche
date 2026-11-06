@@ -479,16 +479,23 @@ body {
 
 /* 접수증 절취선 양쪽 홈: 위 칸은 아래 두 모서리, 아래 칸은 위 두 모서리를 반원(--notch 반지름)으로 뚫는다. 뒤 바탕(민트 면 등)이 그대로 비친다. */
 .ds-notch-bottom {
-  --notch: 18px;
+  --notch: var(--notch-size, 14px);
   mask:
     radial-gradient(circle at 0 100%, transparent var(--notch), black calc(var(--notch) + 0.5px)) left / 51% 100% no-repeat,
     radial-gradient(circle at 100% 100%, transparent var(--notch), black calc(var(--notch) + 0.5px)) right / 51% 100% no-repeat;
 }
 .ds-notch-top {
-  --notch: 18px;
+  --notch: var(--notch-size, 14px);
   mask:
     radial-gradient(circle at 0 0, transparent var(--notch), black calc(var(--notch) + 0.5px)) left / 51% 100% no-repeat,
     radial-gradient(circle at 100% 0, transparent var(--notch), black calc(var(--notch) + 0.5px)) right / 51% 100% no-repeat;
+}
+/* 절취선 홈: 휴대폰 지름 28, 데스크톱 36(피그마 428:123 · 427:9). 화면이 --notch-size로 바꿀 수 있다. */
+@media (min-width: 1024px) {
+  .ds-notch-bottom,
+  .ds-notch-top {
+    --notch: var(--notch-size, 18px);
+  }
 }
 /* 절취선 점선(2px). 색은 currentColor, 점선 길이는 --dash·--gap */
 .ds-perforation {
