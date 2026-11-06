@@ -60,9 +60,10 @@ function readableOn(bg: string, prefer: string[], min: number): string {
 
 /** 로고 색 [대표색, 어두운 색, 밝은 색]과 그 위에 쓸 글자색. 큰 글자(간판·라벨)는 3:1, 본문은 4.5:1 기준. */
 function palette(colors: string[]) {
-  const main = HEX.test(colors[0] ?? "") ? colors[0] : "#F26B3A";
-  const dark = HEX.test(colors[1] ?? "") ? colors[1] : "#3B2A1E";
-  const light = HEX.test(colors[2] ?? "") ? colors[2] : "#FFF5E8";
+  // 로고 색을 모르면 먹·흰 바탕(11/6: 예전 기본값 주황은 어느 가게에나 같은 주황을 칠했다)
+  const main = HEX.test(colors[0] ?? "") ? colors[0] : "#141414";
+  const dark = HEX.test(colors[1] ?? "") ? colors[1] : "#141414";
+  const light = HEX.test(colors[2] ?? "") ? colors[2] : "#F6F6F5";
   return { main, dark, light, onMain: readableOn(main, [dark, light], 3), onLight: readableOn(light, [dark], 4.5) };
 }
 
@@ -90,6 +91,7 @@ interface Photo {
   safe: Box; // 보여도 되는 곳
   focus: Box; // 꼭 보여야 하는 곳. 무대가 허락하는 한 다 보이게 줄이고 가운데에 둔다(작게 잡을수록 크게 보인다)
   face: Point[]; // 글자를 얹을 면: 왼위·오른위·오른아래·왼아래
+  front?: { src: string; x: number; y: number; w: number; h: number }; // 글자 앞에 다시 얹을 사진 조각(손가락·노치·화면 테두리)
 }
 
 const SIGN_PHOTO: Photo = {
@@ -122,35 +124,99 @@ const MENU_PHOTO: Photo = {
 };
 const MENU_PAPER = "#D1BFB0"; // 종이 가운데 색(글자색 대비 계산용)
 
-const PACK_PHOTO: Photo = {
-  src: "/mockups/pack-bag.webp", // 빵집 계산대 위 크라프트 봉투 + 흰 라벨 스티커
-  map: "/mockups/pack-bag-map.png", // 라벨
-  width: 1792,
-  height: 768,
-  safe: { x: 0, y: 0, w: 1792, h: 768 },
-  focus: { x: 620, y: 120, w: 540, h: 550 },
-  face: [
-    [714.0, 292.0],
-    [1066.9, 292.0],
-    [1069.9, 498.0],
-    [708.4, 498.0],
-  ],
+// 포장·SNS 사진 후보(11/6 저녁). 정면(front)은 첫 안, angle·counter·hand·stand는 비스듬한 각도 안.
+export type PackShot = "front" | "angle" | "counter";
+export type SnsShot = "front" | "hand" | "stand";
+
+const PACK_PHOTOS: Record<PackShot, Photo> = {
+  front: {
+    src: "/mockups/pack-bag.webp",
+    map: "/mockups/pack-bag-map.png",
+    width: 1792,
+    height: 768,
+    safe: { x: 0, y: 0, w: 1792, h: 768 },
+    focus: { x: 620, y: 120, w: 540, h: 550 },
+    face: [
+      [714.0, 292.0],
+      [1066.9, 292.0],
+      [1069.9, 498.0],
+      [708.4, 498.0],
+    ],
+  },
+  angle: {
+    src: "/mockups/pack-angle.webp", // 빵집 계산대 위, 30° 돌아선 봉투(옆 주름이 보인다)
+    map: "/mockups/pack-angle-map.png",
+    width: 1792,
+    height: 768,
+    safe: { x: 0, y: 0, w: 1792, h: 768 },
+    focus: { x: 600, y: 60, w: 640, h: 660 },
+    face: [
+      [739.4, 269.5],
+      [1069.7, 281.2],
+      [1038.8, 525.3],
+      [711.2, 484.9],
+    ],
+  },
+  counter: {
+    src: "/mockups/pack-counter.webp", // 위에서 비스듬히 본 계산대: 봉투 + 아이스커피 + 빵 상자(손님에게 내주는 순간)
+    map: "/mockups/pack-counter-map.png",
+    width: 1792,
+    height: 768,
+    safe: { x: 0, y: 0, w: 1792, h: 768 },
+    focus: { x: 560, y: 20, w: 800, h: 720 },
+    face: [
+      [703.2, 321.2],
+      [1048.5, 246.1],
+      [1069.3, 417.1],
+      [729.2, 505.2],
+    ],
+  },
 };
 
-const SNS_PHOTO: Photo = {
-  src: "/mockups/sns-phone.webp", // 카페 식탁에서 손에 든 휴대폰(빈 흰 화면)
-  width: 1792,
-  height: 768,
-  safe: { x: 0, y: 0, w: 1792, h: 768 },
-  focus: { x: 620, y: 80, w: 560, h: 540 },
-  face: [
-    [789.8, 111.0],
-    [1002.0, 111.0],
-    [1002.0, 586.0],
-    [787.0, 586.0],
-  ],
+const SNS_PHOTOS: Record<SnsShot, Photo> = {
+  front: {
+    src: "/mockups/sns-phone.webp",
+    width: 1792,
+    height: 768,
+    safe: { x: 0, y: 0, w: 1792, h: 768 },
+    focus: { x: 620, y: 80, w: 560, h: 540 },
+    face: [
+      [789.8, 111.0],
+      [1002.0, 111.0],
+      [1002.0, 586.0],
+      [787.0, 586.0],
+    ],
+    front: { src: "/mockups/sns-phone-front.png", x: 783, y: 107, w: 224, h: 484 },
+  },
+  hand: {
+    src: "/mockups/sns-hand.webp", // 카페 식탁에서 비스듬히 쥔 휴대폰(엄지는 옆 테두리)
+    width: 1792,
+    height: 768,
+    safe: { x: 0, y: 0, w: 1792, h: 768 },
+    focus: { x: 640, y: 120, w: 560, h: 520 },
+    face: [
+      [872.1, 171.4],
+      [1043.1, 180.8],
+      [946.7, 577.4],
+      [765.5, 549.9],
+    ],
+    front: { src: "/mockups/sns-hand-front.png", x: 762, y: 167, w: 286, h: 415 },
+  },
+  stand: {
+    src: "/mockups/sns-stand.webp", // 위에서 본 카페 식탁, 거치대에 세운 휴대폰 + 라테·케이크
+    width: 1792,
+    height: 768,
+    safe: { x: 0, y: 0, w: 1792, h: 768 },
+    focus: { x: 560, y: 20, w: 640, h: 720 },
+    face: [
+      [653.0, 109.2],
+      [884.6, 35.1],
+      [1073.7, 550.0],
+      [858.1, 647.1],
+    ],
+    front: { src: "/mockups/sns-stand-front.png", x: 649, y: 31, w: 430, h: 621 },
+  },
 };
-const SNS_SCREEN_RADIUS = 22; // 사진 속 화면 모서리(사진 화소)
 
 /** w×h 상자를 네 점(왼위·오른위·오른아래·왼아래)에 맞추는 CSS matrix3d(Heckbert의 정사각형→사변형 사상). transform-origin은 0 0. */
 function quadMatrix(w: number, h: number, [[x0, y0], [x1, y1], [x2, y2], [x3, y3]]: Point[]): string {
@@ -175,8 +241,6 @@ function faceBox(face: Point[]) {
 
 const SIGN_FACE = faceBox(SIGN_PHOTO.face);
 const MENU_FACE = faceBox(MENU_PHOTO.face);
-const PACK_FACE = faceBox(PACK_PHOTO.face);
-const SNS_FACE = faceBox(SNS_PHOTO.face);
 
 const pixelCache = new Map<string, Promise<ImageData>>();
 
@@ -260,6 +324,10 @@ function PhotoStage({ photo, color = null, label, children }: { photo: Photo; co
       >
         <canvas ref={canvasRef} width={photo.width} height={photo.height} aria-hidden className="absolute inset-0" />
         {children}
+        {photo.front && (
+          // eslint-disable-next-line @next/next/no-img-element -- 사진 좌표에 그대로 얹는 조각
+          <img src={photo.front.src} alt="" aria-hidden className="pointer-events-none absolute" style={{ left: photo.front.x, top: photo.front.y, width: photo.front.w, height: photo.front.h }} />
+        )}
       </div>
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[url(/mockups/grain.png)] bg-[length:256px] opacity-[0.35] mix-blend-soft-light" />
       <SceneLabel title={label[0]} place={label[1]} />
@@ -337,23 +405,23 @@ export function MenuScene({ storeName, menu, fontStyle, colors }: MockupProps) {
   );
 }
 
-/** 포장 · 계산대 위. 크라프트 봉투의 라벨 스티커를 로고 대표색으로 칠하고(종이 결·그늘은 그대로), 가게 이름과 한 줄 인사를 인쇄한 것처럼 얹는다.
- * 로고에 없던 새 문장이 이 폰트로 찍히는 자리. 로고 색을 모르면 흰 라벨 + 먹 글자. */
-export function PackScene({ storeName, fontStyle, colors, slogan }: MockupProps) {
-  const color = HEX.test(colors[0] ?? "") ? colors[0] : null;
-  const ink = color ? palette(colors).onMain : "#141414";
-  const darkInk = luminance(ink) < luminance(color ?? "#FFFFFF");
+/** 포장 · 계산대 위. 크라프트 봉투의 라벨 스티커에 가게 이름과 한 줄 인사를 인쇄한 것처럼 얹는다. 로고에 없던 새 문장이 이 폰트로 찍히는 자리.
+ * 색(11/6 저녁): 간판이 대표색 면이니 라벨은 로고의 밝은 색으로 옅게 물들이고(지도로 종이 결 유지) 글자를 대표색으로 인쇄한다.
+ * 대표색이 밝은 색 위에서 3:1이 안 되면 어두운 색, 그것도 안 되면 먹. 로고 색을 모르면 흰 라벨 + 먹 글자. */
+export function PackScene({ storeName, fontStyle, colors, slogan, shot = "counter" }: MockupProps & { shot?: PackShot }) {
+  const photo = PACK_PHOTOS[shot];
+  const box = faceBox(photo.face);
+  const known = HEX.test(colors[0] ?? "");
+  const c = palette(colors);
+  const label = known && HEX.test(colors[2] ?? "") ? mix(c.light, "#FFFFFF", 0.35) : null;
+  const ink = readableOn(label ?? "#FFFFFF", known ? [c.main, c.dark] : [], 3);
   const line = slogan && [...slogan].length <= 16 ? slogan : "찾아 주셔서 고맙습니다";
-  const { w, h } = PACK_FACE;
-  const nameSize = Math.min(h * 0.36, (w * 0.84) / chars(storeName));
-  const lineSize = Math.min(h * 0.13, (w * 0.8) / chars(line));
+  const { w, h } = box;
+  const nameSize = Math.min(h * 0.34, (w * 0.84) / chars(storeName));
+  const lineSize = Math.min(h * 0.12, (w * 0.8) / chars(line));
   return (
-    <PhotoStage photo={PACK_PHOTO} color={color} label={["포장", "계산대 위"]}>
-      <Face
-        box={PACK_FACE}
-        className={`flex flex-col items-center justify-center ${darkInk ? "mix-blend-multiply" : ""}`}
-        style={{ color: ink, gap: h * 0.07, padding: `${h * 0.1}px ${w * 0.06}px`, filter: "blur(0.3px)", opacity: darkInk ? 0.95 : 0.97 }}
-      >
+    <PhotoStage photo={photo} color={label} label={["포장", "계산대 위"]}>
+      <Face box={box} className="flex flex-col items-center justify-center mix-blend-multiply" style={{ color: ink, gap: h * 0.07, padding: `${h * 0.1}px ${w * 0.06}px`, filter: "blur(0.3px)", opacity: 0.95 }}>
         <span className="leading-none whitespace-nowrap" style={{ ...fontStyle, fontSize: nameSize }}>
           {storeName}
         </span>
@@ -366,73 +434,74 @@ export function PackScene({ storeName, fontStyle, colors, slogan }: MockupProps)
   );
 }
 
-/** SNS · 휴대폰. 손에 든 휴대폰 화면 가득 스토리형 게시물(로고 대표색 바탕 + 오늘의 추천 메뉴·가격·가게 이름)을 띄운다.
- * 계정 줄·메시지 칸 같은 앱 글씨는 화면 글꼴(SUIT) 그대로, 사장님이 만든 게시물 안 글씨만 폰트로 바뀐다. 특정 앱의 로고·아이콘은 쓰지 않는다. */
-export function SocialScene({ storeName, menu, fontStyle, colors, logo }: MockupProps) {
+/** SNS · 휴대폰. 휴대폰 화면 가득 스토리형 게시물을 띄우고, 사진에서 오려 둔 손가락·노치·테두리를 그 위에 다시 얹는다.
+ * 색(11/6 저녁): 바탕은 로고의 밝은 색, 큰 제목은 대표색(밝은 색 위 3:1이 안 되면 어두운 색), 가격 알약은 대표색 면.
+ * 계정 줄·'메시지 보내기' 같은 앱 글씨는 화면 글꼴, 게시물 안 글씨만 폰트. 특정 앱의 로고·아이콘은 쓰지 않는다. */
+export function SocialScene({ storeName, menu, fontStyle, colors, logo, shot = "stand", tone = "dark" }: MockupProps & { shot?: SnsShot; tone?: "light" | "dark" }) {
+  const photo = SNS_PHOTOS[shot];
+  const box = faceBox(photo.face);
   const c = palette(colors);
-  const { w, h } = SNS_FACE;
+  const bg = tone === "dark" ? c.dark : c.light;
+  const head = readableOn(bg, tone === "dark" ? [c.main, c.light] : [c.main, c.dark], 3);
+  const body = readableOn(bg, tone === "dark" ? [c.light] : [c.dark], 4.5);
+  const { w, h } = box;
   const [[item, price] = ["오늘의 메뉴", ""], ...rest] = menu;
   const headSize = Math.min(w * 0.3, (w * 0.86) / Math.min(chars(item), 6));
-  const ui = "font-sans text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.25)]";
+  const roomy = w >= 200; // 화면이 크면 함께 파는 메뉴 두 줄까지
+  const ui = "font-sans";
   return (
-    <PhotoStage photo={SNS_PHOTO} label={["SNS", "휴대폰"]}>
-      <Face
-        box={SNS_FACE}
-        className="overflow-hidden"
-        style={{ borderRadius: SNS_SCREEN_RADIUS, background: `linear-gradient(170deg, ${mix(c.main, "#FFFFFF", 0.1)}, ${c.main} 45%, ${mix(c.main, "#000000", 0.08)})`, color: c.onMain }}
-      >
-        <div className="flex h-full flex-col" style={{ padding: `${h * 0.03}px ${w * 0.07}px ${h * 0.025}px` }}>
+    <PhotoStage photo={photo} label={["SNS", "휴대폰"]}>
+      <Face box={box} className="overflow-hidden" style={{ background: bg, color: body }}>
+        <div className="flex h-full flex-col" style={{ padding: `${h * 0.05}px ${w * 0.07}px ${h * 0.03}px` }}>
           {/* 스토리 진행 줄과 계정 줄(앱 글씨) */}
           <div className="flex gap-1">
-            <span className="h-[2.5px] flex-1 rounded-full bg-white/90" />
-            <span className="h-[2.5px] flex-1 rounded-full bg-white/45" />
+            <span className="h-[2.5px] flex-1 rounded-full" style={{ background: body, opacity: 0.8 }} />
+            <span className="h-[2.5px] flex-1 rounded-full" style={{ background: body, opacity: 0.25 }} />
           </div>
           <div className="mt-2.5 flex items-center gap-1.5">
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element -- 사용자가 올린 data URL
               <img src={logo} alt="" className="h-[18px] w-[18px] rounded-full bg-white object-cover object-left" />
             ) : (
-              <span className="h-[18px] w-[18px] rounded-full" style={{ background: c.light }} />
+              <span className="h-[18px] w-[18px] rounded-full" style={{ background: c.main }} />
             )}
             <span className={`text-[9px] font-bold ${ui}`}>{storeName}</span>
-            <span className={`text-[8px] opacity-80 ${ui}`}>1시간</span>
+            <span className={`text-[8px] opacity-60 ${ui}`}>1시간</span>
           </div>
-          {/* 게시물(폰트): 오늘의 추천 · 메뉴 이름 · 가격, 함께 파는 메뉴 두 줄, 가게 이름 */}
+          {/* 게시물(폰트) */}
           <div className="flex flex-1 flex-col justify-center" style={{ gap: h * 0.022 }}>
-            <span className="leading-none opacity-85" style={{ ...fontStyle, fontSize: w * 0.09 }}>
+            <span className="leading-none opacity-80" style={{ ...fontStyle, fontSize: w * 0.09 }}>
               오늘의 추천
             </span>
-            <span className="leading-[1.08] break-keep" style={{ ...fontStyle, fontSize: headSize }}>
+            <span className="leading-[1.08] break-keep" style={{ ...fontStyle, fontSize: headSize, color: head }}>
               {item}
             </span>
             {price && (
-              <span className="self-start rounded-full leading-none" style={{ ...fontStyle, fontSize: w * 0.09, background: c.light, color: c.onLight, padding: `${w * 0.035}px ${w * 0.055}px` }}>
+              <span className="self-start rounded-full leading-none" style={{ ...fontStyle, fontSize: w * 0.09, background: c.main, color: c.onMain, padding: `${w * 0.035}px ${w * 0.055}px` }}>
                 {won(price)}
               </span>
             )}
-            {rest.length > 0 && (
-              <div className="flex flex-col border-t" style={{ borderColor: `color-mix(in srgb, ${c.onMain} 35%, transparent)`, marginTop: h * 0.03, paddingTop: h * 0.025, gap: h * 0.012 }}>
+            {roomy && rest.length > 0 && (
+              <div className="flex flex-col border-t" style={{ borderColor: `color-mix(in srgb, ${body} 25%, transparent)`, marginTop: h * 0.03, paddingTop: h * 0.025, gap: h * 0.012 }}>
                 {rest.slice(0, 2).map(([name, p]) => (
                   <div key={name} className="flex items-baseline justify-between gap-2 leading-none" style={{ ...fontStyle, fontSize: w * 0.075 }}>
                     <span className="truncate">{name}</span>
-                    <span className="shrink-0 opacity-85">{won(p)}</span>
+                    <span className="shrink-0 opacity-80">{won(p)}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <span className="leading-tight" style={{ ...fontStyle, fontSize: Math.min(w * 0.1, (w * 0.86) / chars(storeName)), marginBottom: h * 0.03 }}>
+          <span className="leading-tight" style={{ ...fontStyle, fontSize: Math.min(w * 0.1, (w * 0.86) / chars(storeName)), marginBottom: h * 0.03, color: head }}>
             {storeName}
           </span>
-          <div className={`flex h-[22px] items-center rounded-full border border-white/70 px-2.5 text-[8px] ${ui}`}>메시지 보내기</div>
+          <div className={`flex h-[22px] items-center rounded-full border px-2.5 text-[8px] ${ui}`} style={{ borderColor: `color-mix(in srgb, ${body} 40%, transparent)` }}>
+            메시지 보내기
+          </div>
         </div>
       </Face>
       {/* 화면 유리 반사 */}
-      <Face
-        box={SNS_FACE}
-        className="pointer-events-none mix-blend-screen"
-        style={{ borderRadius: SNS_SCREEN_RADIUS, background: "linear-gradient(125deg, rgb(255 255 255 / 0.22) 0%, rgb(255 255 255 / 0.06) 30%, rgb(255 255 255 / 0) 46%)" }}
-      />
+      <Face box={box} className="pointer-events-none mix-blend-screen" style={{ background: "linear-gradient(125deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0.05) 30%, rgb(255 255 255 / 0) 46%)" }} />
     </PhotoStage>
   );
 }

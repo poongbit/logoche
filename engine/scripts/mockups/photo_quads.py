@@ -1,9 +1,8 @@
 """사용: python -I scripts/mockups/photo_quads.py <원본 PNG> <x0,y0,x1,y1 찾을 범위> <최소 밝기> <최대 채도> <확인용 PNG>
 
-11/6 시안 사진(메뉴판 세움판 종이·포장 라벨·휴대폰 화면)에서 밝고 채도가 낮은 면의 네 꼭짓점을 찾는다.
-가장 큰 덩어리의 윤곽에서 네 변 가운데 70% 점들에 직선을 맞추고(둥근 모서리는 빠진다) 만나는 점을 왼위·오른위·오른아래·왼아래로 낸다.
-11/6 값: menu2 700,80,1110,650 185 60 / bag2 690,270,1090,520 200 40 / phone2 780,100,1010,600 235 30.
-결과 꼭짓점은 web/components/Mockups.tsx의 *_PHOTO.face에 옮긴다. 확인용 PNG 옆에 마스크(-mask.png)도 쓴다.
+시안 사진(메뉴판 세움판 종이·포장 라벨·휴대폰 화면)에서 밝고 채도가 낮은 면의 네 꼭짓점을 찾는다.
+가장 큰 덩어리 윤곽의 네 변 가운데 70% 점들에 직선을 맞추고 만나는 점을 왼위·오른위·오른아래·왼아래로 낸다.
+노치가 있는 화면(sns-stand)은 위 변이 노치에 걸려 손으로 고쳤다(Mockups.tsx 값이 원본).
 """
 import sys, cv2, numpy as np, json
 def mask_of(path, roi, gmin, smax):
@@ -27,14 +26,17 @@ def fit_quad(m):
         if len(ap) == 4: break
     q = ap.reshape(-1,2).astype(float)
     # order tl,tr,br,bl
-    s = q.sum(1); d = q[:,0]-q[:,1]
-    q = np.array([q[s.argmin()], q[d.argmax()], q[s.argmax()], q[d.argmin()]])
+    cen = q.mean(0); ang = np.arctan2(q[:,1]-cen[1], q[:,0]-cen[0])
+    q = q[np.argsort(ang)]  # 화면 좌표에서 시계 방향
+    k = int(np.argmin(q.sum(1))); q = np.roll(q, -k, axis=0)  # 왼위부터
     lines = []
     for i in range(4):
         a, b = q[i], q[(i+1)%4]
         v = b - a; L = np.linalg.norm(v); u = v/L; nrm = np.array([-u[1], u[0]])
         t = (c - a) @ u; dd = np.abs((c - a) @ nrm)
         sel = c[(t > 0.15*L) & (t < 0.85*L) & (dd < 12)]
+        if len(sel) < 10:
+            lines.append((a, u)); continue
         vx, vy, x0, y0 = cv2.fitLine(sel.astype(np.float32), cv2.DIST_HUBER, 0, 0.01, 0.01).ravel()
         lines.append((np.array([x0,y0]), np.array([vx,vy])))
     pts = []
