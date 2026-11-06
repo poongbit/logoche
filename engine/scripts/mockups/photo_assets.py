@@ -1,27 +1,53 @@
-"""사용: python -I scripts/mockups/photo_assets.py <web/public/mockups>  (원본 bag2.png·menu2.png·phone2.png가 있는 폴더에서)
+"""사용: python -I scripts/mockups/photo_assets.py <web/public/mockups> '<JSON>'
 
-11/6 시안 사진 원본(Figma '로고체 디자인'에서 gpt-image-2.5로 생성, 1792×768)을 웹용 webp로 바꾸고,
-포장 라벨 칠할 곳 지도(회색 = 라벨 밝기 ÷ 라벨 가운데 밝기 × 128, 투명도 = 라벨)와 필름 입자 타일(grain.png)을 만든다.
-라벨 마스크는 photo_quads.py가 쓴 /tmp/dbg_bag2-mask.png를 쓴다.
+시안 사진 원본(PNG)에서 웹 자산을 만든다(11/6). JSON은 [{"src": 원본, "name": 내보낼 이름, "kind": "label"|"screen", "quad": 네 꼭짓점}, ...].
+꼭짓점(왼위·오른위·오른아래·왼아래)은 photo_quads.py로 찾고 web/components/Mockups.tsx의 face에도 같은 값을 넣는다.
+  - 모두: <name>.webp
+  - label(포장 라벨): <name>-map.png 칠할 곳 지도. 회색 = 라벨 밝기 ÷ 라벨 가운데 밝기 × 128, 투명도 = 라벨
+  - screen(휴대폰 화면): <name>-front.png 화면 앞 조각. 화면 사변형을 조금 넓힌 곳 안의 '흰 화면이 아닌' 화소(노치·테두리·손가락).
+    출력의 front 상자(x, y, w, h)를 Mockups.tsx의 Photo.front에 넣는다
+  - 늘: grain.png 필름 입자 타일(soft-light로 무대 전체에 얹는다)
+
+11/6 값:
+  pack-counter label [[703.2,321.2],[1048.5,246.1],[1069.3,417.1],[729.2,505.2]]
+  sns-stand    screen [[653.0,109.2],[884.6,35.1],[1073.7,550.0],[858.1,647.1]]  (위 변은 노치에 걸려 손으로 고친 값)
+  menu-stand   (webp만, 꼭짓점 [[711.0,93.0],[1092.7,89.1],[1108.6,612.7],[721.5,639.7]])
 """
-import sys, numpy as np, cv2
+import sys, json, numpy as np, cv2
 from PIL import Image, ImageFilter
+
 out = sys.argv[1]
-# 사진을 webp로
-for src, dst in [("bag2.png","pack-bag.webp"),("menu2.png","menu-stand.webp"),("phone2.png","sns-phone.webp")]:
-    Image.open(src).convert("RGB").save(f"{out}/{dst}", "WEBP", quality=86, method=6)
-# 포장 라벨 칠할 곳 지도: 회색 = 라벨 밝기 ÷ 라벨 가운데 밝기 × 128, 투명도 = 라벨 마스크
-im = np.asarray(Image.open("bag2.png").convert("RGB")).astype(np.float32)
-lum = im @ np.array([0.2126, 0.7152, 0.0722], np.float32)
-m = cv2.imread("/tmp/dbg_bag2-mask.png", 0).astype(np.float32) / 255
-m = cv2.erode(m, np.ones((3,3),np.uint8))
-m = cv2.GaussianBlur(m, (0,0), 0.9)
-ref = np.median(lum[m > 0.9])
-grey = np.where(m > 0, np.clip(lum / ref * 128, 0, 255), 0)
-la = np.dstack([grey, m * 255]).astype(np.uint8)
-Image.fromarray(la, "LA").save(f"{out}/pack-bag-map.png", optimize=True)
-print("label ref lum", ref)
-# 그레인 타일(흑백 128 근처, soft-light로 얹는다)
+spec = json.loads(sys.argv[2])
+for s in spec:
+    rgb = np.asarray(Image.open(s["src"]).convert("RGB"))
+    Image.fromarray(rgb).save(f"{out}/{s['name']}.webp", "WEBP", quality=86, method=6)
+    if s.get("kind") not in ("label", "screen"):
+        continue
+    H, W, _ = rgb.shape
+    q = np.array(s["quad"], np.float32)
+    poly = np.zeros((H, W), np.uint8)
+    cv2.fillPoly(poly, [q.round().astype(np.int32)], 255)
+    lum = rgb.astype(np.float32) @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    if s["kind"] == "label":
+        m = cv2.erode(poly, np.ones((3, 3), np.uint8)).astype(np.float32) / 255
+        m = cv2.GaussianBlur(m, (0, 0), 0.9)
+        ref = np.median(lum[m > 0.9])
+        grey = np.where(m > 0, np.clip(lum / ref * 128, 0, 255), 0)
+        Image.fromarray(np.dstack([grey, m * 255]).astype(np.uint8), "LA").save(f"{out}/{s['name']}-map.png", optimize=True)
+        print(s["name"], "label ref", round(float(ref), 1))
+    else:
+        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+        grown = cv2.dilate(poly, np.ones((9, 9), np.uint8))
+        white = ((lum > 228) & (hsv[..., 1] < 25)).astype(np.uint8) * 255
+        white = cv2.morphologyEx(white, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        occ = cv2.GaussianBlur(((grown > 0) & (white == 0)).astype(np.uint8) * 255, (0, 0), 0.7)
+        rgba = np.dstack([rgb, occ])
+        rgba[occ == 0, :3] = 0  # 투명한 곳은 검정으로 비워 파일을 줄인다
+        ys, xs = np.where(occ > 0)
+        x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+        Image.fromarray(rgba[y0:y1, x0:x1], "RGBA").save(f"{out}/{s['name']}-front.png", optimize=True)
+        print(s["name"], "front", {"x": int(x0), "y": int(y0), "w": int(x1 - x0), "h": int(y1 - y0)})
+
 rng = np.random.default_rng(7)
-n = rng.normal(128, 26, (256,256)).clip(0,255).astype(np.uint8)
+n = rng.normal(128, 26, (256, 256)).clip(0, 255).astype(np.uint8)
 Image.fromarray(n, "L").filter(ImageFilter.GaussianBlur(0.45)).save(f"{out}/grain.png", optimize=True)

@@ -11,8 +11,10 @@ import { BASE_GOTHIC_STACK } from "@/lib/preview";
 //  · 인스타(CSS로 그린 휴대폰) → 손에 든 휴대폰 실사 + 화면 가득 스토리형 게시물 'SNS'. 인스타 로고·화면은 따라 그리지 않는다.
 //  · 포장(크라프트 봉투의 라벨 스티커)을 더했다. 간판·메뉴판에 없는 새 문장을 폰트로 보여 주는 자리.
 //  · 간판 글자는 입체 채널 글자(두께·그림자), 모든 장면에 미세한 흐림과 필름 입자를 깔아 '붙여 넣은' 느낌을 줄였다.
-// 새 사진 세 장은 Figma '로고체 디자인'에서 이미지 생성(gpt-image-2.5)으로 만들었고(1792×768), 면 네 꼭짓점·라벨 칠할 곳 지도는
-// engine/scripts/mockups/photo_quads.py · photo_assets.py로 다시 만든다.
+// 11/6 밤: 포장·SNS를 비스듬한 각도 사진으로(정면 사진은 너무 반듯했다), 색 역할을 장면마다 나눴다(간판 대표색 면 · 메뉴판 어두운 색 인쇄 ·
+// 포장 밝은 라벨 + 대표색 인쇄 · SNS 어두운 바탕 + 대표색 제목). 좁은 무대에서는 글자 면 둘레를 크게 자른다(Photo.narrow).
+// 메뉴판·포장·SNS 사진은 Figma AI 이미지 생성(gpt-image-2.5, 1792×768)으로 만들었고 저장소의 webp가 원본이다.
+// 면 네 꼭짓점은 engine/scripts/mockups/photo_quads.py, 라벨 지도·화면 앞 조각은 photo_assets.py로 다시 만든다.
 // 비교 손잡이 양쪽(만든 폰트·기본 고딕)은 같은 장면·같은 효과에서 글꼴만 바뀐다.
 
 export interface MockupProps {
@@ -90,6 +92,7 @@ interface Photo {
   height: number;
   safe: Box; // 보여도 되는 곳
   focus: Box; // 꼭 보여야 하는 곳. 무대가 허락하는 한 다 보이게 줄이고 가운데에 둔다(작게 잡을수록 크게 보인다)
+  narrow?: Box; // 좁은 무대(가로:세로 2 미만, 휴대폰·태블릿)에서 쓸 focus. 글자 면 둘레만 잡아 크게 보인다
   face: Point[]; // 글자를 얹을 면: 왼위·오른위·오른아래·왼아래
   front?: { src: string; x: number; y: number; w: number; h: number }; // 글자 앞에 다시 얹을 사진 조각(손가락·노치·화면 테두리)
 }
@@ -101,6 +104,7 @@ const SIGN_PHOTO: Photo = {
   height: 768,
   safe: { x: 180, y: 0, w: 1196, h: 768 },
   focus: { x: 280, y: 0, w: 920, h: 520 },
+  narrow: { x: 300, y: 130, w: 870, h: 270 },
   face: [
     [312.9, 206.7],
     [1163.5, 143.5],
@@ -115,6 +119,7 @@ const MENU_PHOTO: Photo = {
   height: 768,
   safe: { x: 240, y: 0, w: 1552, h: 768 }, // 왼쪽 위 벽 게시물은 보이지 않게
   focus: { x: 640, y: 40, w: 540, h: 680 },
+  narrow: { x: 680, y: 75, w: 460, h: 580 },
   face: [
     [711.0, 93.0],
     [1092.7, 89.1],
@@ -124,98 +129,36 @@ const MENU_PHOTO: Photo = {
 };
 const MENU_PAPER = "#D1BFB0"; // 종이 가운데 색(글자색 대비 계산용)
 
-// 포장·SNS 사진 후보(11/6 저녁). 정면(front)은 첫 안, angle·counter·hand·stand는 비스듬한 각도 안.
-export type PackShot = "front" | "angle" | "counter";
-export type SnsShot = "front" | "hand" | "stand";
-
-const PACK_PHOTOS: Record<PackShot, Photo> = {
-  front: {
-    src: "/mockups/pack-bag.webp",
-    map: "/mockups/pack-bag-map.png",
-    width: 1792,
-    height: 768,
-    safe: { x: 0, y: 0, w: 1792, h: 768 },
-    focus: { x: 620, y: 120, w: 540, h: 550 },
-    face: [
-      [714.0, 292.0],
-      [1066.9, 292.0],
-      [1069.9, 498.0],
-      [708.4, 498.0],
-    ],
-  },
-  angle: {
-    src: "/mockups/pack-angle.webp", // 빵집 계산대 위, 30° 돌아선 봉투(옆 주름이 보인다)
-    map: "/mockups/pack-angle-map.png",
-    width: 1792,
-    height: 768,
-    safe: { x: 0, y: 0, w: 1792, h: 768 },
-    focus: { x: 600, y: 60, w: 640, h: 660 },
-    face: [
-      [739.4, 269.5],
-      [1069.7, 281.2],
-      [1038.8, 525.3],
-      [711.2, 484.9],
-    ],
-  },
-  counter: {
-    src: "/mockups/pack-counter.webp", // 위에서 비스듬히 본 계산대: 봉투 + 아이스커피 + 빵 상자(손님에게 내주는 순간)
-    map: "/mockups/pack-counter-map.png",
-    width: 1792,
-    height: 768,
-    safe: { x: 0, y: 0, w: 1792, h: 768 },
-    focus: { x: 560, y: 20, w: 800, h: 720 },
-    face: [
-      [703.2, 321.2],
-      [1048.5, 246.1],
-      [1069.3, 417.1],
-      [729.2, 505.2],
-    ],
-  },
+const PACK_PHOTO: Photo = {
+  src: "/mockups/pack-counter.webp", // 위에서 비스듬히 본 빵집 계산대: 봉투 + 아이스커피 + 빵 상자(손님에게 내주는 순간)
+  map: "/mockups/pack-counter-map.png", // 라벨
+  width: 1792,
+  height: 768,
+  safe: { x: 0, y: 0, w: 1792, h: 768 },
+  focus: { x: 560, y: 20, w: 800, h: 720 },
+  narrow: { x: 640, y: 200, w: 500, h: 360 },
+  face: [
+    [703.2, 321.2],
+    [1048.5, 246.1],
+    [1069.3, 417.1],
+    [729.2, 505.2],
+  ],
 };
 
-const SNS_PHOTOS: Record<SnsShot, Photo> = {
-  front: {
-    src: "/mockups/sns-phone.webp",
-    width: 1792,
-    height: 768,
-    safe: { x: 0, y: 0, w: 1792, h: 768 },
-    focus: { x: 620, y: 80, w: 560, h: 540 },
-    face: [
-      [789.8, 111.0],
-      [1002.0, 111.0],
-      [1002.0, 586.0],
-      [787.0, 586.0],
-    ],
-    front: { src: "/mockups/sns-phone-front.png", x: 783, y: 107, w: 224, h: 484 },
-  },
-  hand: {
-    src: "/mockups/sns-hand.webp", // 카페 식탁에서 비스듬히 쥔 휴대폰(엄지는 옆 테두리)
-    width: 1792,
-    height: 768,
-    safe: { x: 0, y: 0, w: 1792, h: 768 },
-    focus: { x: 640, y: 120, w: 560, h: 520 },
-    face: [
-      [872.1, 171.4],
-      [1043.1, 180.8],
-      [946.7, 577.4],
-      [765.5, 549.9],
-    ],
-    front: { src: "/mockups/sns-hand-front.png", x: 762, y: 167, w: 286, h: 415 },
-  },
-  stand: {
-    src: "/mockups/sns-stand.webp", // 위에서 본 카페 식탁, 거치대에 세운 휴대폰 + 라테·케이크
-    width: 1792,
-    height: 768,
-    safe: { x: 0, y: 0, w: 1792, h: 768 },
-    focus: { x: 560, y: 20, w: 640, h: 720 },
-    face: [
-      [653.0, 109.2],
-      [884.6, 35.1],
-      [1073.7, 550.0],
-      [858.1, 647.1],
-    ],
-    front: { src: "/mockups/sns-stand-front.png", x: 649, y: 31, w: 430, h: 621 },
-  },
+const SNS_PHOTO: Photo = {
+  src: "/mockups/sns-stand.webp", // 위에서 본 카페 식탁, 거치대에 세운 휴대폰 + 라테·케이크
+  width: 1792,
+  height: 768,
+  safe: { x: 0, y: 0, w: 1792, h: 768 },
+  focus: { x: 560, y: 20, w: 640, h: 720 },
+  narrow: { x: 620, y: 60, w: 500, h: 560 },
+  face: [
+    [653.0, 109.2],
+    [884.6, 35.1],
+    [1073.7, 550.0],
+    [858.1, 647.1],
+  ],
+  front: { src: "/mockups/sns-stand-front.png", x: 649, y: 31, w: 430, h: 621 }, // 노치·화면 테두리
 };
 
 /** w×h 상자를 네 점(왼위·오른위·오른아래·왼아래)에 맞추는 CSS matrix3d(Heckbert의 정사각형→사변형 사상). transform-origin은 0 0. */
@@ -241,6 +184,8 @@ function faceBox(face: Point[]) {
 
 const SIGN_FACE = faceBox(SIGN_PHOTO.face);
 const MENU_FACE = faceBox(MENU_PHOTO.face);
+const PACK_FACE = faceBox(PACK_PHOTO.face);
+const SNS_FACE = faceBox(SNS_PHOTO.face);
 
 const pixelCache = new Map<string, Promise<ImageData>>();
 
@@ -291,11 +236,12 @@ function PhotoStage({ photo, color = null, label, children }: { photo: Photo; co
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
-    const { safe, focus: f } = photo;
+    const { safe } = photo;
     const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
     const observer = new ResizeObserver(([entry]) => {
       const { width: w, height: h } = entry.contentRect;
       if (!w || !h) return;
+      const f = photo.narrow && w / h < 2 ? photo.narrow : photo.focus;
       const s = Math.max(Math.min(w / f.w, h / f.h), w / safe.w, h / safe.h);
       const [vw, vh] = [w / s, h / s];
       setView({
@@ -406,22 +352,20 @@ export function MenuScene({ storeName, menu, fontStyle, colors }: MockupProps) {
 }
 
 /** 포장 · 계산대 위. 크라프트 봉투의 라벨 스티커에 가게 이름과 한 줄 인사를 인쇄한 것처럼 얹는다. 로고에 없던 새 문장이 이 폰트로 찍히는 자리.
- * 색(11/6 저녁): 간판이 대표색 면이니 라벨은 로고의 밝은 색으로 옅게 물들이고(지도로 종이 결 유지) 글자를 대표색으로 인쇄한다.
+ * 색(11/6 밤): 간판이 대표색 면이니 라벨은 로고의 밝은 색으로 옅게 물들이고(지도로 종이 결 유지) 글자를 대표색으로 인쇄한다.
  * 대표색이 밝은 색 위에서 3:1이 안 되면 어두운 색, 그것도 안 되면 먹. 로고 색을 모르면 흰 라벨 + 먹 글자. */
-export function PackScene({ storeName, fontStyle, colors, slogan, shot = "counter" }: MockupProps & { shot?: PackShot }) {
-  const photo = PACK_PHOTOS[shot];
-  const box = faceBox(photo.face);
+export function PackScene({ storeName, fontStyle, colors, slogan }: MockupProps) {
   const known = HEX.test(colors[0] ?? "");
   const c = palette(colors);
   const label = known && HEX.test(colors[2] ?? "") ? mix(c.light, "#FFFFFF", 0.35) : null;
   const ink = readableOn(label ?? "#FFFFFF", known ? [c.main, c.dark] : [], 3);
   const line = slogan && [...slogan].length <= 16 ? slogan : "찾아 주셔서 고맙습니다";
-  const { w, h } = box;
+  const { w, h } = PACK_FACE;
   const nameSize = Math.min(h * 0.34, (w * 0.84) / chars(storeName));
   const lineSize = Math.min(h * 0.12, (w * 0.8) / chars(line));
   return (
-    <PhotoStage photo={photo} color={label} label={["포장", "계산대 위"]}>
-      <Face box={box} className="flex flex-col items-center justify-center mix-blend-multiply" style={{ color: ink, gap: h * 0.07, padding: `${h * 0.1}px ${w * 0.06}px`, filter: "blur(0.3px)", opacity: 0.95 }}>
+    <PhotoStage photo={PACK_PHOTO} color={label} label={["포장", "계산대 위"]}>
+      <Face box={PACK_FACE} className="flex flex-col items-center justify-center mix-blend-multiply" style={{ color: ink, gap: h * 0.07, padding: `${h * 0.1}px ${w * 0.06}px`, filter: "blur(0.3px)", opacity: 0.95 }}>
         <span className="leading-none whitespace-nowrap" style={{ ...fontStyle, fontSize: nameSize }}>
           {storeName}
         </span>
@@ -435,23 +379,22 @@ export function PackScene({ storeName, fontStyle, colors, slogan, shot = "counte
 }
 
 /** SNS · 휴대폰. 휴대폰 화면 가득 스토리형 게시물을 띄우고, 사진에서 오려 둔 손가락·노치·테두리를 그 위에 다시 얹는다.
- * 색(11/6 저녁): 바탕은 로고의 밝은 색, 큰 제목은 대표색(밝은 색 위 3:1이 안 되면 어두운 색), 가격 알약은 대표색 면.
+ * 색(11/6 밤): 바탕은 로고의 어두운 색(밝은 바탕은 빈 종이처럼 보였다), 큰 제목은 대표색(어두운 색 위 3:1이 안 되면 밝은 색), 가격 알약은 대표색 면.
  * 계정 줄·'메시지 보내기' 같은 앱 글씨는 화면 글꼴, 게시물 안 글씨만 폰트. 특정 앱의 로고·아이콘은 쓰지 않는다. */
-export function SocialScene({ storeName, menu, fontStyle, colors, logo, shot = "stand", tone = "dark" }: MockupProps & { shot?: SnsShot; tone?: "light" | "dark" }) {
-  const photo = SNS_PHOTOS[shot];
-  const box = faceBox(photo.face);
+export function SocialScene({ storeName, menu, fontStyle, colors, logo }: MockupProps) {
   const c = palette(colors);
-  const bg = tone === "dark" ? c.dark : c.light;
-  const head = readableOn(bg, tone === "dark" ? [c.main, c.light] : [c.main, c.dark], 3);
-  const body = readableOn(bg, tone === "dark" ? [c.light] : [c.dark], 4.5);
-  const { w, h } = box;
+  const bg = c.dark;
+  const head = readableOn(bg, [c.main, c.light], 3);
+  const body = readableOn(bg, [c.light], 4.5);
+  const pill = contrast(c.main, bg) >= 1.5 ? c.main : c.light; // 대표색이 바탕과 같으면(로고 색 모름 등) 밝은 색 알약
+  const { w, h } = SNS_FACE;
   const [[item, price] = ["오늘의 메뉴", ""], ...rest] = menu;
   const headSize = Math.min(w * 0.3, (w * 0.86) / Math.min(chars(item), 6));
   const roomy = w >= 200; // 화면이 크면 함께 파는 메뉴 두 줄까지
   const ui = "font-sans";
   return (
-    <PhotoStage photo={photo} label={["SNS", "휴대폰"]}>
-      <Face box={box} className="overflow-hidden" style={{ background: bg, color: body }}>
+    <PhotoStage photo={SNS_PHOTO} label={["SNS", "휴대폰"]}>
+      <Face box={SNS_FACE} className="overflow-hidden" style={{ background: bg, color: body }}>
         <div className="flex h-full flex-col" style={{ padding: `${h * 0.05}px ${w * 0.07}px ${h * 0.03}px` }}>
           {/* 스토리 진행 줄과 계정 줄(앱 글씨) */}
           <div className="flex gap-1">
@@ -477,7 +420,7 @@ export function SocialScene({ storeName, menu, fontStyle, colors, logo, shot = "
               {item}
             </span>
             {price && (
-              <span className="self-start rounded-full leading-none" style={{ ...fontStyle, fontSize: w * 0.09, background: c.main, color: c.onMain, padding: `${w * 0.035}px ${w * 0.055}px` }}>
+              <span className="self-start rounded-full leading-none" style={{ ...fontStyle, fontSize: w * 0.09, background: pill, color: readableOn(pill, [c.dark, c.light], 3), padding: `${w * 0.035}px ${w * 0.055}px` }}>
                 {won(price)}
               </span>
             )}
@@ -501,7 +444,7 @@ export function SocialScene({ storeName, menu, fontStyle, colors, logo, shot = "
         </div>
       </Face>
       {/* 화면 유리 반사 */}
-      <Face box={box} className="pointer-events-none mix-blend-screen" style={{ background: "linear-gradient(125deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0.05) 30%, rgb(255 255 255 / 0) 46%)" }} />
+      <Face box={SNS_FACE} className="pointer-events-none mix-blend-screen" style={{ background: "linear-gradient(125deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0.05) 30%, rgb(255 255 255 / 0) 46%)" }} />
     </PhotoStage>
   );
 }
