@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { UnderlineTabs, tabId, tabPanelId } from "@/components/ds";
 import { BASE_GOTHIC_STACK } from "@/lib/preview";
 
 // 스튜디오 '시안 — 가게에 걸어 봐요'. 로고 색 [대표색, 어두운 색, 밝은 색]을 입힌다.
 // 네 장면 모두 실제 사진 위에 실제 폰트 글자를 얹는다(글자는 AI가 그리지 않는다).
 // 11/2 간판·메뉴판을 사진으로(사용자가 AI로 만든 사진). 11/6 시안 품질 개선:
-//  · 메뉴판 사진을 가죽판 종이(Gemini 표시가 있던 사진) → 식탁 위 아크릴 세움판으로 바꿨다(세로 종이라 메뉴가 바로 읽힌다).
-//  · 인스타(CSS로 그린 휴대폰) → 손에 든 휴대폰 실사 + 화면 가득 스토리형 게시물 'SNS'. 인스타 로고·화면은 따라 그리지 않는다.
+//  · 메뉴판 사진을 가죽판 종이(Gemini 표시가 있던 사진) → 세로 종이 메뉴판으로 바꿨다(메뉴가 바로 읽힌다).
+//  · 인스타(CSS로 그린 휴대폰) → 휴대폰 실사 + 화면 가득 스토리형 게시물 'SNS'. 인스타 로고·화면은 따라 그리지 않는다.
 //  · 포장(크라프트 봉투의 라벨 스티커)을 더했다. 간판·메뉴판에 없는 새 문장을 폰트로 보여 주는 자리.
 //  · 간판 글자는 입체 채널 글자(두께·그림자), 모든 장면에 미세한 흐림과 필름 입자를 깔아 '붙여 넣은' 느낌을 줄였다.
-// 11/6 밤: 포장·SNS를 비스듬한 각도 사진으로(정면 사진은 너무 반듯했다), 색 역할을 장면마다 나눴다(간판 대표색 면 · 메뉴판 어두운 색 인쇄 ·
+// 11/6 밤: 포장·SNS를 비스듬한 각도 사진으로(정면 사진은 너무 반듯했다). 이어서 메뉴판·포장·SNS가 모두 '나무 식탁 위 가운데 물건'이라
+// 탭을 넘겨도 같은 자리 같아서, 장소·카메라 높이·빛·물건 위치를 장면마다 바꿨다(간판 거리 정면 · 메뉴판 실내 벽 오른쪽 · 포장 골목 손 왼쪽 ·
+// SNS 위에서 내려다본 식탁 오른쪽), 업종이 드러나는 소품(반찬·라테·빵)은 뺐다. 색 역할도 장면마다 나눴다(간판 대표색 면 · 메뉴판 어두운 색 인쇄 ·
 // 포장 밝은 라벨 + 대표색 인쇄 · SNS 어두운 바탕 + 대표색 제목). 좁은 무대에서는 글자 면 둘레를 크게 자른다(Photo.narrow).
 // 메뉴판·포장·SNS 사진은 Figma AI 이미지 생성(gpt-image-2.5, 1792×768)으로 만들었고 저장소의 webp가 원본이다.
 // 면 네 꼭짓점은 engine/scripts/mockups/photo_quads.py, 라벨 지도·화면 앞 조각은 photo_assets.py로 다시 만든다.
@@ -25,6 +27,8 @@ export interface MockupProps {
   logo?: string | null;
   /** 가게 이야기로 쓴 문장(있으면 포장 라벨 둘째 줄에 쓴다) */
   slogan?: string | null;
+  /** 글자 면 가운데가 무대 가로의 어디(0~1)에 보이는지 알린다. 비교 손잡이를 그 자리에 놓는 데 쓴다 */
+  onAnchor?: (x: number) => void;
 }
 
 export const BASE_GOTHIC_STYLE: CSSProperties = { fontFamily: BASE_GOTHIC_STACK, fontWeight: 400 };
@@ -114,51 +118,51 @@ const SIGN_PHOTO: Photo = {
 };
 
 const MENU_PHOTO: Photo = {
-  src: "/mockups/menu-stand.webp", // 식탁 위 아크릴 세움판(세로 종이)
-  width: 1792,
-  height: 768,
-  safe: { x: 240, y: 0, w: 1552, h: 768 }, // 왼쪽 위 벽 게시물은 보이지 않게
-  focus: { x: 640, y: 40, w: 540, h: 680 },
-  narrow: { x: 680, y: 75, w: 460, h: 580 },
-  face: [
-    [711.0, 93.0],
-    [1092.7, 89.1],
-    [1108.6, 612.7],
-    [721.5, 639.7],
-  ],
-};
-const MENU_PAPER = "#D1BFB0"; // 종이 가운데 색(글자색 대비 계산용)
-
-const PACK_PHOTO: Photo = {
-  src: "/mockups/pack-counter.webp", // 위에서 비스듬히 본 빵집 계산대: 봉투 + 아이스커피 + 빵 상자(손님에게 내주는 순간)
-  map: "/mockups/pack-counter-map.png", // 라벨
+  src: "/mockups/menu-wall.webp", // 가게 안 계산대 옆 벽에 건 검은 액자 속 종이 메뉴판(따뜻한 실내, 액자는 오른쪽)
   width: 1792,
   height: 768,
   safe: { x: 0, y: 0, w: 1792, h: 768 },
-  focus: { x: 560, y: 20, w: 800, h: 720 },
-  narrow: { x: 640, y: 200, w: 500, h: 360 },
+  focus: { x: 620, y: 0, w: 1060, h: 720 },
+  narrow: { x: 1100, y: 5, w: 500, h: 680 },
   face: [
-    [703.2, 321.2],
-    [1048.5, 246.1],
-    [1069.3, 417.1],
-    [729.2, 505.2],
+    [1152.0, 77.2],
+    [1542.0, 27.1],
+    [1542.0, 640.0],
+    [1152.0, 613.4],
+  ],
+};
+const MENU_PAPER = "#DDCAB8"; // 종이 가운데 색(글자색 대비 계산용)
+
+const PACK_PHOTO: Photo = {
+  src: "/mockups/pack-street.webp", // 가게 문을 나서는 손님 손에 들린 봉투, 햇빛 드는 동네 골목(봉투는 왼쪽)
+  map: "/mockups/pack-street-map.png", // 라벨
+  width: 1792,
+  height: 768,
+  safe: { x: 0, y: 0, w: 1792, h: 768 },
+  focus: { x: 40, y: 10, w: 1080, h: 740 },
+  narrow: { x: 190, y: 160, w: 620, h: 580 },
+  face: [
+    [326.9, 353.1],
+    [656.2, 315.6],
+    [693.1, 511.0],
+    [362.5, 567.4],
   ],
 };
 
 const SNS_PHOTO: Photo = {
-  src: "/mockups/sns-stand.webp", // 위에서 본 카페 식탁, 거치대에 세운 휴대폰 + 라테·케이크
+  src: "/mockups/sns-flat.webp", // 위에서 내려다본 리넨 식탁보 위, 손에 든 휴대폰이 비스듬히(차가운 낮빛, 휴대폰은 오른쪽)
   width: 1792,
   height: 768,
   safe: { x: 0, y: 0, w: 1792, h: 768 },
-  focus: { x: 560, y: 20, w: 640, h: 720 },
-  narrow: { x: 620, y: 60, w: 500, h: 560 },
+  focus: { x: 560, y: 0, w: 1100, h: 768 },
+  narrow: { x: 1010, y: 0, w: 560, h: 720 },
   face: [
-    [653.0, 109.2],
-    [884.6, 35.1],
-    [1073.7, 550.0],
-    [858.1, 647.1],
+    [1058.3, 119.3],
+    [1318.9, 24.6],
+    [1515.2, 589.4],
+    [1260.8, 678.6],
   ],
-  front: { src: "/mockups/sns-stand-front.png", x: 649, y: 31, w: 430, h: 621 }, // 노치·화면 테두리
+  front: { src: "/mockups/sns-flat-front.png", x: 1052, y: 19, w: 470, h: 667 }, // 화면 테두리·둥근 모서리
 };
 
 /** w×h 상자를 네 점(왼위·오른위·오른아래·왼아래)에 맞추는 CSS matrix3d(Heckbert의 정사각형→사변형 사상). transform-origin은 0 0. */
@@ -227,7 +231,19 @@ async function paintPhoto(canvas: HTMLCanvasElement, photo: Photo, color: string
 
 /** 사진 무대: 무대 크기에 맞춰 사진 좌표계(width×height)를 통째로 줄여 보인다. focus는 다 보이게, 무대는 safe 안의 사진으로 빈틈없이 채운다.
  * children은 사진 좌표로 놓는다(Face). 맨 위에 필름 입자를 아주 옅게 깔아 사진과 글자의 결을 맞춘다. */
-function PhotoStage({ photo, color = null, label, children }: { photo: Photo; color?: string | null; label: [string, string]; children: ReactNode }) {
+function PhotoStage({
+  photo,
+  color = null,
+  label,
+  onAnchor,
+  children,
+}: {
+  photo: Photo;
+  color?: string | null;
+  label: [string, string];
+  onAnchor?: (x: number) => void;
+  children: ReactNode;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [view, setView] = useState<{ s: number; x: number; y: number } | null>(null);
@@ -244,15 +260,14 @@ function PhotoStage({ photo, color = null, label, children }: { photo: Photo; co
       const f = photo.narrow && w / h < 2 ? photo.narrow : photo.focus;
       const s = Math.max(Math.min(w / f.w, h / f.h), w / safe.w, h / safe.h);
       const [vw, vh] = [w / s, h / s];
-      setView({
-        s,
-        x: clamp(f.x + f.w / 2 - vw / 2, safe.x, safe.x + safe.w - vw),
-        y: clamp(f.y + f.h / 2 - vh / 2, safe.y, safe.y + safe.h - vh),
-      });
+      const x = clamp(f.x + f.w / 2 - vw / 2, safe.x, safe.x + safe.w - vw);
+      setView({ s, x, y: clamp(f.y + f.h / 2 - vh / 2, safe.y, safe.y + safe.h - vh) });
+      const cx = photo.face.reduce((t, [px]) => t + px, 0) / photo.face.length;
+      onAnchor?.(Math.min(0.9, Math.max(0.1, ((cx - x) * s) / w)));
     });
     observer.observe(stage);
     return () => observer.disconnect();
-  }, [photo]);
+  }, [photo, onAnchor]);
 
   useEffect(() => {
     let live = true;
@@ -294,7 +309,7 @@ function Face({ box, className = "", style, children }: { box: ReturnType<typeof
 
 /** 간판 · 가게 앞. 간판 면·차양을 로고 대표색으로 칠하고, 글자는 간판 면에서 튀어나온 채널 글자처럼(옆면 두께 + 면에 지는 그림자).
  * 로고 색을 모르면 사진의 파랑 그대로 + 흰 글자. */
-export function SignScene({ storeName, fontStyle, colors }: MockupProps) {
+export function SignScene({ storeName, fontStyle, colors, onAnchor }: MockupProps) {
   const color = HEX.test(colors[0] ?? "") ? colors[0] : null;
   const ink = color ? palette(colors).onMain : "#FFFFFF";
   const fontSize = Math.min(SIGN_FACE.h * 0.58, (SIGN_FACE.w * 0.82) / chars(storeName));
@@ -306,7 +321,7 @@ export function SignScene({ storeName, fontStyle, colors }: MockupProps) {
     `0 ${depth * 3}px ${depth * 5}px rgb(0 0 0 / 0.2)`,
   ].join(", ");
   return (
-    <PhotoStage photo={SIGN_PHOTO} color={color} label={["간판", "가게 앞"]}>
+    <PhotoStage photo={SIGN_PHOTO} color={color} label={["간판", "가게 앞"]} onAnchor={onAnchor}>
       <Face box={SIGN_FACE} className="grid place-items-center">
         <span className="leading-none whitespace-nowrap" style={{ ...fontStyle, fontSize, color: ink, textShadow: shadow, filter: "blur(0.35px)" }}>
           {storeName}
@@ -316,16 +331,16 @@ export function SignScene({ storeName, fontStyle, colors }: MockupProps) {
   );
 }
 
-/** 메뉴판 · 식탁 위(아크릴 세움판). 종이 색은 그대로 두고 글자는 로고의 어두운 색을 종이 결과 곱해(multiply) 인쇄한 것처럼,
- * 그 위에 아크릴 반사를 한 겹 얹는다. */
-export function MenuScene({ storeName, menu, fontStyle, colors }: MockupProps) {
+/** 메뉴판 · 계산대 옆(벽에 건 액자). 종이 색은 그대로 두고 글자는 로고의 어두운 색을 종이 결과 곱해(multiply) 인쇄한 것처럼,
+ * 그 위에 액자 유리 반사를 한 겹 얹는다. */
+export function MenuScene({ storeName, menu, fontStyle, colors, onAnchor }: MockupProps) {
   const ink = readableOn(MENU_PAPER, [palette(colors).dark], 4.5);
   const { w, h } = MENU_FACE;
   const nameSize = Math.min(h * 0.11, (w * 0.8 * 0.92) / chars(storeName));
   const longest = Math.max(...menu.map(([item, price]) => chars(item) + chars(won(price)) * 0.8));
   const itemSize = Math.min(h * 0.068, (w * 0.8 * 0.86) / longest);
   return (
-    <PhotoStage photo={MENU_PHOTO} label={["메뉴판", "식탁 위"]}>
+    <PhotoStage photo={MENU_PHOTO} label={["메뉴판", "계산대 옆"]} onAnchor={onAnchor}>
       <Face box={MENU_FACE} className="flex flex-col mix-blend-multiply" style={{ padding: `${h * 0.1}px ${w * 0.09}px ${h * 0.09}px`, color: ink, opacity: 0.94, filter: "blur(0.3px)" }}>
         <div className="text-center leading-tight" style={{ ...fontStyle, fontSize: nameSize }}>
           {storeName}
@@ -345,16 +360,16 @@ export function MenuScene({ storeName, menu, fontStyle, colors }: MockupProps) {
           ))}
         </div>
       </Face>
-      {/* 아크릴 판 반사: 종이 위를 비스듬히 지나는 옅은 빛 */}
+      {/* 액자 유리 반사: 종이 위를 비스듬히 지나는 옅은 빛 */}
       <Face box={MENU_FACE} className="pointer-events-none mix-blend-screen" style={{ background: "linear-gradient(112deg, rgb(255 255 255 / 0) 22%, rgb(255 255 255 / 0.16) 34%, rgb(255 255 255 / 0) 52%)" }} />
     </PhotoStage>
   );
 }
 
-/** 포장 · 계산대 위. 크라프트 봉투의 라벨 스티커에 가게 이름과 한 줄 인사를 인쇄한 것처럼 얹는다. 로고에 없던 새 문장이 이 폰트로 찍히는 자리.
+/** 포장 · 가게 앞. 손님 손에 들린 크라프트 봉투의 라벨 스티커에 가게 이름과 한 줄 인사를 인쇄한 것처럼 얹는다. 로고에 없던 새 문장이 이 폰트로 찍히는 자리.
  * 색(11/6 밤): 간판이 대표색 면이니 라벨은 로고의 밝은 색으로 옅게 물들이고(지도로 종이 결 유지) 글자를 대표색으로 인쇄한다.
  * 대표색이 밝은 색 위에서 3:1이 안 되면 어두운 색, 그것도 안 되면 먹. 로고 색을 모르면 흰 라벨 + 먹 글자. */
-export function PackScene({ storeName, fontStyle, colors, slogan }: MockupProps) {
+export function PackScene({ storeName, fontStyle, colors, slogan, onAnchor }: MockupProps) {
   const known = HEX.test(colors[0] ?? "");
   const c = palette(colors);
   const label = known && HEX.test(colors[2] ?? "") ? mix(c.light, "#FFFFFF", 0.35) : null;
@@ -364,7 +379,7 @@ export function PackScene({ storeName, fontStyle, colors, slogan }: MockupProps)
   const nameSize = Math.min(h * 0.34, (w * 0.84) / chars(storeName));
   const lineSize = Math.min(h * 0.12, (w * 0.8) / chars(line));
   return (
-    <PhotoStage photo={PACK_PHOTO} color={label} label={["포장", "계산대 위"]}>
+    <PhotoStage photo={PACK_PHOTO} color={label} label={["포장", "가게 앞"]} onAnchor={onAnchor}>
       <Face box={PACK_FACE} className="flex flex-col items-center justify-center mix-blend-multiply" style={{ color: ink, gap: h * 0.07, padding: `${h * 0.1}px ${w * 0.06}px`, filter: "blur(0.3px)", opacity: 0.95 }}>
         <span className="leading-none whitespace-nowrap" style={{ ...fontStyle, fontSize: nameSize }}>
           {storeName}
@@ -381,7 +396,7 @@ export function PackScene({ storeName, fontStyle, colors, slogan }: MockupProps)
 /** SNS · 휴대폰. 휴대폰 화면 가득 스토리형 게시물을 띄우고, 사진에서 오려 둔 손가락·노치·테두리를 그 위에 다시 얹는다.
  * 색(11/6 밤): 바탕은 로고의 어두운 색(밝은 바탕은 빈 종이처럼 보였다), 큰 제목은 대표색(어두운 색 위 3:1이 안 되면 밝은 색), 가격 알약은 대표색 면.
  * 계정 줄·'메시지 보내기' 같은 앱 글씨는 화면 글꼴, 게시물 안 글씨만 폰트. 특정 앱의 로고·아이콘은 쓰지 않는다. */
-export function SocialScene({ storeName, menu, fontStyle, colors, logo }: MockupProps) {
+export function SocialScene({ storeName, menu, fontStyle, colors, logo, onAnchor }: MockupProps) {
   const c = palette(colors);
   const bg = c.dark;
   const head = readableOn(bg, [c.main, c.light], 3);
@@ -393,7 +408,7 @@ export function SocialScene({ storeName, menu, fontStyle, colors, logo }: Mockup
   const roomy = w >= 200; // 화면이 크면 함께 파는 메뉴 두 줄까지
   const ui = "font-sans";
   return (
-    <PhotoStage photo={SNS_PHOTO} label={["SNS", "휴대폰"]}>
+    <PhotoStage photo={SNS_PHOTO} label={["SNS", "휴대폰"]} onAnchor={onAnchor}>
       <Face box={SNS_FACE} className="overflow-hidden" style={{ background: bg, color: body }}>
         <div className="flex h-full flex-col" style={{ padding: `${h * 0.05}px ${w * 0.07}px ${h * 0.03}px` }}>
           {/* 스토리 진행 줄과 계정 줄(앱 글씨) */}
@@ -467,10 +482,28 @@ function Scene({ kind, ...props }: MockupProps & { kind: SceneKey }) {
 }
 
 /** 밀어서 비교: 같은 시안 두 장을 겹치고 위 장(내 폰트)을 clip-path로 잘라 보인다. 손잡이를 끌거나 화살표 키로 5%씩 옮긴다. */
-export function CompareSlider({ top, bottom, topLabel, bottomLabel }: { top: ReactNode; bottom: ReactNode; topLabel: string; bottomLabel: string }) {
+export function CompareSlider({
+  top,
+  bottom,
+  topLabel,
+  bottomLabel,
+  anchor = null,
+}: {
+  top: ReactNode;
+  bottom: ReactNode;
+  topLabel: string;
+  bottomLabel: string;
+  /** 처음 손잡이 자리(0~1). 글자가 한쪽에 몰린 사진에서도 글자가 반씩 두 글꼴로 보이게 글자 면 가운데에 둔다. 한 번 움직이면 따르지 않는다 */
+  anchor?: number | null;
+}) {
   const [pos, setPos] = useState(50);
+  const touched = useRef(false);
+  useEffect(() => {
+    if (anchor != null && !touched.current) setPos(anchor * 100);
+  }, [anchor]);
   const box = useRef<HTMLDivElement>(null);
   const move = (e: PointerEvent<HTMLDivElement>) => {
+    touched.current = true;
     const r = box.current?.getBoundingClientRect();
     if (r) setPos(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
   };
@@ -478,6 +511,7 @@ export function CompareSlider({ top, bottom, topLabel, bottomLabel }: { top: Rea
     const step = e.key === "ArrowLeft" ? -5 : e.key === "ArrowRight" ? 5 : 0;
     if (!step) return;
     e.preventDefault();
+    touched.current = true;
     setPos((v) => Math.min(100, Math.max(0, v + step)));
   };
   return (
@@ -521,15 +555,28 @@ export function CompareSlider({ top, bottom, topLabel, bottomLabel }: { top: Rea
  * 무대는 사진 장면(PhotoStage). 높이는 탭을 바꿔도 같다(데스크톱 440 · 휴대폰 240). */
 export function MockupTabs({ fontName, ...props }: MockupProps & { fontName: string }) {
   const [kind, setKind] = useState<SceneKey>("sign");
+  const [anchor, setAnchor] = useState<number | null>(null);
+  const report = useCallback((x: number) => setAnchor(Math.round(x * 200) / 200), []);
   return (
     <div className="flex flex-col gap-4 lg:gap-5">
-      <UnderlineTabs label="시안 종류" idPrefix="mockup" tabs={SCENES.map((t) => ({ value: t.key, label: t.label }))} value={kind} onChange={setKind} />
+      <UnderlineTabs
+        label="시안 종류"
+        idPrefix="mockup"
+        tabs={SCENES.map((t) => ({ value: t.key, label: t.label }))}
+        value={kind}
+        onChange={(k) => {
+          setAnchor(null);
+          setKind(k);
+        }}
+      />
       <div id={tabPanelId("mockup", kind)} role="tabpanel" aria-labelledby={tabId("mockup", kind)}>
         <div className="h-[15rem] sm:h-[22.5rem] lg:h-[27.5rem]">
           <CompareSlider
+            key={kind}
+            anchor={anchor}
             topLabel={fontName}
             bottomLabel="기본 고딕"
-            top={<Scene kind={kind} {...props} />}
+            top={<Scene kind={kind} {...props} onAnchor={report} />}
             bottom={<Scene kind={kind} {...props} fontStyle={BASE_GOTHIC_STYLE} />}
           />
         </div>
