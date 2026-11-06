@@ -48,7 +48,7 @@ export type UsageContext = "signage_menu" | "sns_thumbnail" | "packaging_sticker
 export interface StyleAttributes {
   edge: "round" | "sharp"; // 획 끝 → 둥글기
   weight: "thin" | "bold"; // 굵기
-  contrast: "even" | "high"; // 굵기 차이(고딕처럼 균일 / 명조처럼 차이) → 대비
+  contrast: "even" | "high"; // 가로세로 굵기(고딕처럼 균일 / 명조처럼 차이) → 대비
   hand: "neat" | "brush"; // 손맛 → 흔들림
 }
 

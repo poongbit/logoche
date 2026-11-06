@@ -231,7 +231,7 @@ function firstRecord(u: UploadInput): RecordEvent[] {
   }
   if (u.attributes) {
     const a = u.attributes;
-    out.push(event("selection", `글씨 속성 선택: 획 끝 ${attributeLabel("edge", a.edge)} · 굵기 ${attributeLabel("weight", a.weight)} · 굵기 차이 ${attributeLabel("contrast", a.contrast)} · 손맛 ${attributeLabel("hand", a.hand)}`));
+    out.push(event("selection", `글씨 속성 선택: 획 끝 ${attributeLabel("edge", a.edge)} · 굵기 ${attributeLabel("weight", a.weight)} · 가로세로 굵기 ${attributeLabel("contrast", a.contrast)} · 손맛 ${attributeLabel("hand", a.hand)}`));
   }
   const intent = [
     u.industry && `업종 ${industryText(u)}`,

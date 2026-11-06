@@ -392,7 +392,7 @@ stateDiagram-v2
 ## 11/4 입력 흐름 개편(1차)
 - 메인은 로고 올리기 + 가게 이름 + 폰트 만들기만 받는다(components/home/Hero.tsx). 나머지는 /make/industry → business → style → rights 질문 페이지가 한 가지씩 묻는다(components/make/MakeWizard.tsx, lib/makeSteps.ts).
 - 건너뛰기 없음(사용자 결정): 업종, 사업 내용(10자 이상), 속성 네 쌍, 로고 권리가 필수. 로고 글자·브랜드 톤·주 사용처는 묻지 않는다(이전 작업 데이터에만 남음).
-- 업종은 묶음별 목록을 스크롤해 고르거나 직접 입력(직접 입력은 '기타'+직접 적은 업종). 속성은 획 끝·굵기·굵기 차이·손맛 네 쌍(lib/constants.ts ATTRIBUTE_*), 견본 '가'는 OFL 글꼴에서 따 둔 외곽선(lib/attributeGlyphs.ts).
+- 업종은 묶음별 목록을 스크롤해 고르거나 직접 입력(직접 입력은 '기타'+직접 적은 업종). 속성은 획 끝·굵기·가로세로 굵기·손맛 네 쌍(lib/constants.ts ATTRIBUTE_*), 견본 '가'는 OFL 글꼴에서 따 둔 외곽선(lib/attributeGlyphs.ts).
 - 서버: UploadInput.attributes. 프롬프트에 '반드시 따름' 블록, 방향 굵기를 선택 범위(가늘게 150~419, 굵게 540~850)로 맞춤, 둥글기·대비·흔들림 축을 선택값으로 고정(chosen=true라 그리기 지시문에 늘 들어감), 톤 충돌 3안은 이 축에서 묻지 않음. 입력 검증은 rules.missingUploadFields.
 - 단계 표시는 가게 → 느낌 → 권리 → 견본 → 만들기 다섯 칸으로 통일(Making.tsx STEPS).
 - 실측: 새 입력 21회 호출 시험(로고 글자 판별 12/12, 굵기 선택 반영 9/9)과 실서버 1건(각지게·가늘게·명조 차이·손맛)에서 세 방향 굵기 380/270/160, 축 3개 고정 확인. 단 세 견본이 모두 가는 명조 계열로 닮아 보임(제약이 강하면 방향 다양성이 줄어듦).

@@ -159,7 +159,7 @@ export const ATTRIBUTE_PAIRS: {
 }[] = [
   { key: "edge", label: "획 끝", options: [{ value: "round", label: "둥글게" }, { value: "sharp", label: "각지게" }] },
   { key: "weight", label: "굵기", options: [{ value: "thin", label: "가늘게" }, { value: "bold", label: "굵게" }] },
-  { key: "contrast", label: "굵기 차이", options: [{ value: "even", label: "고딕처럼 균일" }, { value: "high", label: "명조처럼 차이" }] },
+  { key: "contrast", label: "가로세로 굵기", options: [{ value: "even", label: "고딕처럼 균일" }, { value: "high", label: "명조처럼 차이" }] },
   { key: "hand", label: "손맛", options: [{ value: "neat", label: "반듯하게" }, { value: "brush", label: "손으로 쓴 듯" }] },
 ];
 export const ATTRIBUTE_AXES = {

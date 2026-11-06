@@ -110,7 +110,7 @@ export function buildStyleCard(
   if (attr) {
     const picked: { key: AxisKey; value: number; reason: string }[] = [
       { key: "roundness", value: ATTRIBUTE_AXES.edge[attr.edge], reason: `직접 고른 속성: 획 끝 ${attributeLabel("edge", attr.edge)}` },
-      { key: "contrast", value: ATTRIBUTE_AXES.contrast[attr.contrast], reason: `직접 고른 속성: 굵기 차이 ${attributeLabel("contrast", attr.contrast)}` },
+      { key: "contrast", value: ATTRIBUTE_AXES.contrast[attr.contrast], reason: `직접 고른 속성: 가로세로 굵기 ${attributeLabel("contrast", attr.contrast)}` },
       { key: "wobble", value: ATTRIBUTE_AXES.hand[attr.hand], reason: `직접 고른 속성: 손맛 ${attributeLabel("hand", attr.hand)}` },
     ];
     for (const p of picked) {
