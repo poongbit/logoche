@@ -1,5 +1,7 @@
 import type {
   ChooseAction,
+  GlyphParts,
+  CutKey,
   GlyphTweak,
   SaveGlyphTweakRequest,
   SaveGlyphTweakResponse,
@@ -63,6 +65,7 @@ export const api = {
   glyphTweakHistory: (id: string, char: string) =>
     request<{ history: { at: string; tweak: GlyphTweak | null; note: string }[] }>(`/api/projects/${id}/tweaks?char=${encodeURIComponent(char)}`),
   /** 다듬기의 직접 그리기: 편집 화면에 띄울 그림 / 저장(image가 null이면 직접 고친 것을 지움) */
+  projectGlyphParts: (id: string, char: string, cuts?: Partial<Record<CutKey, number>>) => post<GlyphParts>(`/api/projects/${id}/glyph-parts`, { char, cuts }),
   projectGlyphEditSource: (id: string, char: string) => post<GlyphEditSource>(`/api/projects/${id}/glyph-edit`, { char }),
   saveProjectGlyphEdit: (id: string, body: { char: string; image: string | null }) => post<{ edited: string[] }>(`/api/projects/${id}/glyph-edit`, body, undefined, "PUT"),
   reviewProject: (id: string, body: ReviewAction) => post<{ ok: boolean }>(`/api/projects/${id}/review`, body),

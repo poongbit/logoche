@@ -14,15 +14,17 @@ from typing import Literal
 from contextlib import asynccontextmanager
 
 import numpy as np
+import pathops
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
+from fontTools.misc.transform import Transform
 from fontTools.ttLib import TTFont
 from pydantic import BaseModel, Field
 
-from . import checks, drawn, mailcard, raster
+from . import checks, drawn, jamo, mailcard, raster
 from .build import FORMATS, FontMeta, GlyphRejected, bundle, export_font, export_later, patch_glyph
 from .checks import warm_comparison
-from .contour import ALL_GLYPHS, Axes, Tweak
+from .contour import ALL_GLYPHS, Axes, PartTweak, Tweak, style_transform, svg_path, vtrace
 from .hangul import DRAWN_CHARS, KSX1001_HANGUL
 from .jobs import BuildManager, new_build_id, ocr_sheet
 from .layout import get_layout
@@ -212,6 +214,14 @@ class BuildAxes(BaseModel):
     drawnWeight: float | None = None  # 참고 글자를 그릴 때의 굵기. 지금 굵기와의 차이만큼 획을 굵히거나 가늘인다
 
 
+class PartInput(BaseModel):
+    width: float = Field(100, ge=30, le=250)
+    height: float = Field(100, ge=30, le=250)
+    scale: float = Field(100, ge=30, le=250)
+    tx: float = Field(0, ge=-400, le=400)
+    ty: float = Field(0, ge=-400, le=400)
+
+
 class TweakInput(BaseModel):
     """글자 하나의 조정(contour.Tweak). 범위는 화면 슬라이더보다 넉넉하게 받는다."""
 
@@ -223,6 +233,15 @@ class TweakInput(BaseModel):
     tx: float = Field(0, ge=-300, le=300)
     ty: float = Field(0, ge=-300, le=300)
     rel: str | None = Field(None, min_length=1, max_length=1)
+    parts: dict[Literal["cho", "jung", "jong"], PartInput] | None = None  # 11/11 초·중·종성 부분 조정(글자별만)
+    cuts: dict[Literal["x", "y", "j"], float] | None = None  # 11/11 영역 경계 이동(폰트 단위)
+
+
+def _tweak(t: TweakInput) -> Tweak:
+    data = t.model_dump(exclude={"parts", "cuts"})
+    parts = {k: PartTweak(**v.model_dump()) for k, v in t.parts.items()} if t.parts else None
+    cuts = {k: max(-300.0, min(300.0, v)) for k, v in t.cuts.items()} if t.cuts else None
+    return Tweak(**data, parts=parts, cuts=cuts)
 
 
 def _tweaks(tweaks: dict[str, TweakInput]) -> dict[str, Tweak]:
@@ -230,7 +249,7 @@ def _tweaks(tweaks: dict[str, TweakInput]) -> dict[str, Tweak]:
     for ch, t in tweaks.items():
         if ch != ALL_GLYPHS and (len(ch) != 1 or ch not in KSX1001_HANGUL):
             raise HTTPException(400, f"조정은 한글 완성형 글자나 전체('*')에만 걸 수 있어요: {ch}")
-        out[ch] = Tweak(**t.model_dump())
+        out[ch] = _tweak(t)
     return out
 
 
@@ -377,19 +396,68 @@ def glyph_edit_source(req: GlyphEditRequest) -> dict:
     }
 
 
+@app.post("/glyphs/parts")
+def glyph_parts(req: GlyphEditRequest) -> dict:
+    """부분 끌어서 바꾸기(11/11): 글자를 초성·중성·종성 영역으로 나눠 영역마다 외곽선(SVG 패스, 폰트 단위, y는 위쪽)을 돌려준다.
+    경계는 req.tweak.cuts만큼 옮긴다. 외곽선에는 글자별·부분 조정을 걸지 않았다(화면이 SVG 변환으로 건다). style은 너비·기울기·자간 변환 [a,b,c,d,e,f],
+    lines는 경계선(폰트 단위: x면 세로선 pos가 x, lo~hi가 y / y면 가로선 pos가 y, lo~hi가 x)이다."""
+    ch = _edit_char(req.char)
+    tweak = _tweak(req.tweak) if req.tweak else None
+    axes = drawn.tweaked_axes(_axes(req.axes), tweak)
+    if req.edit:
+        mask, px = drawn.edit_mask(_edits([req.edit])[ch], axes), drawn.EDIT_PX
+    else:
+        mask, px = _drawn_mask(req, ch, axes), drawn.PX
+        if mask is None:
+            raise HTTPException(400, f"'{ch}'은(는) 아직 그리지 못한 글자예요")
+    lab, lines = jamo.split(mask, ch, px, tweak.cuts if tweak else None)
+    layout = get_layout()
+    style, _ = style_transform(layout.advance, axes)
+    to_units = Transform(1 / px, 0, 0, -1 / px, drawn.FRAME_LEFT, drawn.FRAME_TOP)
+    parts: dict[str, dict] = {}
+    for number, name in jamo.PART_NAMES.items():
+        part = lab == number
+        b = raster.bbox(part)
+        if b is None:
+            continue
+        pad = 4
+        h, w = part.shape
+        x0, y0, x1, y1 = max(0, b[0] - pad), max(0, b[1] - pad), min(w, b[2] + pad), min(h, b[3] + pad)
+        path = pathops.Path(fillType=pathops.FillType.EVEN_ODD)
+        vtrace(part[y0:y1, x0:x1], path.getPen(), to_units.translate(x0, y0))
+        path.simplify(fix_winding=True, keep_starting_points=False)
+        d, _ = svg_path(path)
+        bx0, by0 = to_units.transformPoint((b[0], b[3]))
+        bx1, by1 = to_units.transformPoint((b[2], b[1]))
+        parts[name] = {"d": d, "bounds": [bx0, by0, bx1, by1]}
+    cho, jung, jong = jamo.jamo_of(ch)
+    out_lines = []
+    for ln in lines:
+        if ln.axis == "x":
+            pos, _ = to_units.transformPoint((ln.pos, 0))
+            _, lo = to_units.transformPoint((0, ln.lo))
+            _, hi = to_units.transformPoint((0, ln.hi))
+        else:
+            _, pos = to_units.transformPoint((0, ln.pos))
+            lo, _ = to_units.transformPoint((ln.lo, 0))
+            hi, _ = to_units.transformPoint((ln.hi, 0))
+        out_lines.append({"id": ln.id, "axis": ln.axis, "pos": pos, "lo": min(lo, hi), "hi": max(lo, hi)})
+    return {"char": ch, "advance": layout.advance, "style": list(style), "parts": parts, "labels": {"cho": cho, "jung": jung, "jong": jong}, "lines": out_lines}
+
+
 @app.post("/builds/{build_id}/glyph")
 def patch_build_glyph(build_id: str, req: GlyphEditRequest) -> dict:
     """만든 폰트에서 글자 하나만 다시 딴다. edit가 있으면 고친 그림으로, 없으면 그린 그대로(고친 것 되돌리기)."""
     ch = _edit_char(req.char)
-    tweak = Tweak(**req.tweak.model_dump()) if req.tweak else None
+    tweak = _tweak(req.tweak) if req.tweak else None
     axes = drawn.tweaked_axes(_axes(req.axes), tweak)  # 글자별 굵기 조정을 축에 반영
     if req.edit:
-        outline, advance = drawn.trace(drawn.edit_mask(_edits([req.edit])[ch], axes), axes, get_layout().advance, drawn.EDIT_PX, tweak)
+        outline, advance = drawn.trace(drawn.edit_mask(_edits([req.edit])[ch], axes), axes, get_layout().advance, drawn.EDIT_PX, tweak, ch)
     else:
         mask = _drawn_mask(req, ch, axes)
         if mask is None:
             raise HTTPException(400, f"'{ch}'은(는) 아직 그리지 못한 글자라 되돌릴 그림이 없어요")
-        outline, advance = drawn.trace(mask, axes, get_layout().advance, drawn.PX, tweak)
+        outline, advance = drawn.trace(mask, axes, get_layout().advance, drawn.PX, tweak, ch)
     path = _font_file(build_id)
     try:
         patch_glyph(path, ch, outline, advance)

@@ -38,7 +38,8 @@ from fontTools.misc.transform import Transform
 from PIL import Image, ImageDraw, ImageFont
 
 from . import raster
-from .contour import ALL_GLYPHS, SHARP_BELOW, Axes, Tweak, style_transform, tweak_transform, vtrace
+from . import jamo
+from .contour import ALL_GLYPHS, SHARP_BELOW, Axes, PartTweak, Tweak, style_transform, tweak_transform, vtrace
 from .hangul import KSX1001_HANGUL
 from .reference import REFERENCE_FONTS, REFERENCE_WEIGHTS, glyph_bounds, load_font
 
@@ -369,8 +370,40 @@ def tweaked_axes(axes: Axes, tweak: Tweak | None) -> Axes:
     return replace(axes, weight=axes.weight + tweak.pull, drawn_weight=axes.weight if axes.drawn_weight is None else axes.drawn_weight)
 
 
-def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX, tweak: Tweak | None = None) -> tuple[pathops.Path, int]:
-    """틀 그림(px 배율) 한 글자를 폰트 단위 외곽선으로. (외곽선, 글자 폭)을 돌려준다. tweak: 이 글자만의 조정(Tweak)."""
+def _part_transform(p: PartTweak, cx: float, cy: float) -> Transform:
+    """부분 조정 변환(폰트 단위, 축은 부분 잉크 상자 가운데 (cx, cy))."""
+    sx, sy = p.width / 100 * p.scale / 100, p.height / 100 * p.scale / 100
+    return Transform(1, 0, 0, 1, p.tx, p.ty).transform(Transform(sx, 0, 0, sy, cx * (1 - sx), cy * (1 - sy)))
+
+
+def _trace_parts(mask: np.ndarray, ch: str, style: Transform, px: float, tweak: Tweak) -> pathops.Path:
+    """초성·중성·종성 영역을 따로 따서 부분 조정을 건 뒤 합친다(11/11). 영역은 jamo.split으로 나눈다."""
+    lab, _ = jamo.split(mask, ch, px, tweak.cuts)
+    out = pathops.Path(fillType=pathops.FillType.WINDING)
+    for number, name in jamo.PART_NAMES.items():
+        part = lab == number
+        b = raster.bbox(part)
+        if b is None:
+            continue
+        m = max(4, round(MARGIN * px / PX))
+        h, w = mask.shape
+        x0, y0, x1, y1 = max(0, b[0] - m), max(0, b[1] - m), min(w, b[2] + m), min(h, b[3] + m)
+        to_units = Transform(1 / px, 0, 0, -1 / px, FRAME_LEFT, FRAME_TOP).translate(x0, y0)
+        pt = (tweak.parts or {}).get(name)
+        move = Transform()
+        if pt is not None and not pt.identity:
+            cx = FRAME_LEFT + (b[0] + b[2]) / 2 / px  # 부분 잉크 상자 가운데(폰트 단위). b는 (x0, y0, x1, y1) 픽셀
+            cy = FRAME_TOP - (b[1] + b[3]) / 2 / px
+            move = _part_transform(pt, cx, cy)
+        piece = pathops.Path(fillType=pathops.FillType.EVEN_ODD)
+        vtrace(part[y0:y1, x0:x1], piece.getPen(), style.transform(move).transform(to_units))
+        piece.simplify(fix_winding=True, keep_starting_points=False)
+        out = pathops.op(out, piece, pathops.PathOp.UNION, fix_winding=True)
+    return out
+
+
+def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX, tweak: Tweak | None = None, ch: str | None = None) -> tuple[pathops.Path, int]:
+    """틀 그림(px 배율) 한 글자를 폰트 단위 외곽선으로. (외곽선, 글자 폭)을 돌려준다. tweak: 이 글자만의 조정(Tweak). ch: 부분 조정(초·중·종성)에 필요."""
     style, width = style_transform(advance, axes)
     if tweak is not None and tweak.geometric:
         style = style.transform(tweak_transform(advance, tweak))  # 그림 → 폰트 단위 → 글자별 조정 → 전체 너비·기울기·자간
@@ -378,6 +411,8 @@ def trace(mask: np.ndarray, axes: Axes, advance: int, px: float = PX, tweak: Twe
     b = raster.bbox(mask)
     if b is None:
         return path, width
+    if tweak is not None and tweak.has_parts and ch is not None and ch in KSX1001_HANGUL:
+        return _trace_parts(mask, ch, style, px, tweak), width
     h, w = mask.shape
     m = max(4, round(MARGIN * px / PX))
     x0, y0, x1, y1 = max(0, b[0] - m), max(0, b[1] - m), min(w, b[2] + m), min(h, b[3] + m)
@@ -408,16 +443,23 @@ def resolve_all(glyphs: dict[str, np.ndarray], axes: Axes, offset_px: float, twe
 
 
 def outline(
-    mask: np.ndarray | None, axes: Axes, advance: int, offset_px: float, edit: Edit | None = None, tweak: Tweak | None = None, thick: tuple[float, float] | None = None
+    mask: np.ndarray | None,
+    axes: Axes,
+    advance: int,
+    offset_px: float,
+    edit: Edit | None = None,
+    tweak: Tweak | None = None,
+    thick: tuple[float, float] | None = None,
+    ch: str | None = None,
 ) -> tuple[pathops.Path, int]:
     """그린 글자(틀 그림) 하나를 외곽선으로. 고친 글자가 있으면 그 그림을 쓴다. tweak: 이 글자만의 조정. thick: 전체 굵기 조정의 (기준 글자에서 옮긴 거리, 기준 두께)(resolve_all)."""
     if tweak is not None and tweak.pull:
         axes = tweaked_axes(axes, tweak)
         offset_px = weight_offset(axes)
     if edit is not None:
-        return trace(edit_mask(edit, axes), axes, advance, EDIT_PX, tweak)
+        return trace(edit_mask(edit, axes), axes, advance, EDIT_PX, tweak, ch)
     assert mask is not None
     if thick:
         # 이 글자의 지금 획 두께 ≈ 그린 두께 + 양쪽 offset. 기준 글자와 두께 비율만큼 옮긴다.
         offset_px += thick[0] * (raster.solid_thickness(mask) + 2 * offset_px) / thick[1]
-    return trace(glyph_mask(mask, axes, offset_px), axes, advance, PX, tweak)
+    return trace(glyph_mask(mask, axes, offset_px), axes, advance, PX, tweak, ch)

@@ -27,6 +27,7 @@ import type {
   RecordEvent,
   ChooseAction,
   ReviewAction,
+  GlyphParts,
   SaveGlyphTweakRequest,
   SaveGlyphTweakResponse,
   StartBuildJobRequest,
@@ -1005,6 +1006,18 @@ export async function saveProjectGlyphEdit(owner: string, id: string, req: { cha
   const res = await saveEdit(p.glyphJobId, { char: req.char, image: req.image, axes: p.style.axes, buildId: p.fontId });
   await update(id, (q) => void q.record.push(event("human_edit", req.image ? `'${req.char}' 직접 그려 고침 (그림판)` : `'${req.char}' 직접 고친 그림을 지우고 AI가 그린 그대로 돌림`)));
   return { edited: res.edits };
+}
+
+/** 부분 끌어서 바꾸기(11/11): 글자를 초성·중성·종성 영역으로 나눈 외곽선. cuts는 경계를 자동으로 찾은 자리에서 옮긴 만큼(폰트 단위). */
+export async function projectGlyphParts(owner: string, id: string, char: string, cuts: unknown): Promise<GlyphParts> {
+  const p = await readOwned(owner, id);
+  if (p.phase !== "done" || !p.glyphJobId || !p.style) throw new RouteError(409, "다 만든 폰트만 고칠 수 있어요");
+  const key = checkTweakKey(char);
+  if (key === ALL_GLYPHS) throw new RouteError(400, "글자 하나를 골라 주세요");
+  const [edit] = await readEdits(p.glyphJobId, new Set([key]));
+  const base = await engineRequest(p.glyphJobId, key, p.style.axes, edit ?? null);
+  const clean = clampTweak({ ...(base.tweak ?? {}), cuts }, p.style.axes.find((a) => a.key === "weight")?.value ?? 400);
+  return engine.parts({ ...base, tweak: { ...clean, parts: undefined } });
 }
 
 /** 글자 하나(또는 전체)의 조정 기록(최대 100개). 되돌리기에 쓴다. */

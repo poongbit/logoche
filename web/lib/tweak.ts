@@ -1,7 +1,7 @@
 // 11/4 다듬기: 서버(lib/server/tweaks.ts)와 브라우저(components/fonts/GlyphPolish.tsx)가 함께 쓰는 조정 상수와 미리보기 변환.
 // 이 파일은 node 모듈을 쓰지 않는다(브라우저 번들에 들어간다).
 
-import type { GlyphTweak } from "./types";
+import type { CutKey, EditTweak, GlyphParts, GlyphTweak, PartKey, PartValues } from "./types";
 
 export const NO_TWEAK: GlyphTweak = { pull: 0, slant: 0, width: 100, height: 100, scale: 100, tx: 0, ty: 0 };
 
@@ -36,7 +36,62 @@ export const TWEAK_PRESETS: { label: string; values: Partial<GlyphTweak> }[] = [
   { label: "넓게", values: { width: 125, tx: 10 } },
 ];
 
-export const isNoTweak = (t: GlyphTweak) => (Object.keys(NO_TWEAK) as (keyof GlyphTweak)[]).every((k) => t[k] === NO_TWEAK[k]);
+// ---- 11/11 부분 조정(초성·중성·종성) ----
+export const NO_PART: PartValues = { width: 100, height: 100, scale: 100, tx: 0, ty: 0 };
+export const PART_RANGES: Record<keyof PartValues, [number, number]> = { width: [30, 250], height: [30, 250], scale: [30, 250], tx: [-400, 400], ty: [-400, 400] };
+export const PART_KEYS: PartKey[] = ["cho", "jung", "jong"];
+export const PART_LABEL: Record<PartKey, string> = { cho: "초성", jung: "중성", jong: "종성" };
+export const CUT_RANGE: [number, number] = [-300, 300];
+export const isNoPart = (p: PartValues | undefined) => !p || (Object.keys(NO_PART) as (keyof PartValues)[]).every((k) => p[k] === NO_PART[k]);
+export const clampPartValue = (key: keyof PartValues, v: number) => Math.round(Math.min(PART_RANGES[key][1], Math.max(PART_RANGES[key][0], v)));
+
+/** 기본값인 부분과, 부분 조정이 없을 때의 경계 이동을 뺀다(저장·비교용). 경계 이동은 부분 조정이 있어야 뜻이 있다. */
+export function cleanTweak(t: EditTweak): EditTweak {
+  const { parts, cuts, ...rest } = t;
+  const keptParts = Object.fromEntries(PART_KEYS.filter((k) => !isNoPart(parts?.[k])).map((k) => [k, parts![k]!]));
+  if (Object.keys(keptParts).length === 0) return rest;
+  const keptCuts = Object.fromEntries((["x", "y", "j"] as CutKey[]).filter((k) => cuts?.[k]).map((k) => [k, cuts![k]!]));
+  return { ...rest, parts: keptParts, ...(Object.keys(keptCuts).length ? { cuts: keptCuts } : {}) };
+}
+
+export const isNoTweak = (t: EditTweak) => {
+  const c = cleanTweak(t);
+  return (Object.keys(NO_TWEAK) as (keyof GlyphTweak)[]).every((k) => c[k] === NO_TWEAK[k]) && !c.parts;
+};
+/** 두 조정이 같은가(기본값과 같은 부분은 없는 것으로 본다) */
+export const sameTweak = (a: EditTweak, b: EditTweak) => JSON.stringify(sortKeys(cleanTweak(a))) === JSON.stringify(sortKeys(cleanTweak(b)));
+function sortKeys(v: unknown): unknown {
+  if (Array.isArray(v) || typeof v !== "object" || v === null) return v;
+  return Object.fromEntries(Object.entries(v).sort(([x], [y]) => (x < y ? -1 : 1)).map(([k, x]) => [k, sortKeys(x)]));
+}
+
+// SVG 행렬 (a b c d e f): x' = a·x + c·y + e, y' = b·x + d·y + f (폰트 단위, y 위쪽)
+export type Mat = [number, number, number, number, number, number];
+const mul = (m: Mat, n: Mat): Mat => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+const scaleAbout = (sx: number, sy: number, cx: number, cy: number): Mat => [sx, 0, 0, sy, cx * (1 - sx), cy * (1 - sy)];
+
+/** 엔진 contour.tweak_transform과 같은 글자 전체 변환(크기·가로·세로 → 기울기 → 이동) */
+export function glyphMatrix(t: GlyphTweak, advance: number): Mat {
+  const cx = advance / 2;
+  const cy = 380;
+  const sx = (t.width / 100) * (t.scale / 100);
+  const sy = (t.height / 100) * (t.scale / 100);
+  const shear = Math.tan((t.slant * Math.PI) / 180);
+  return mul([1, 0, 0, 1, t.tx, t.ty], mul([1, 0, shear, 1, -cy * shear, 0], scaleAbout(sx, sy, cx, cy)));
+}
+
+/** 부분 하나의 변환(엔진 drawn._part_transform): 부분 잉크 상자 가운데가 축 */
+export function partMatrix(p: PartValues | undefined, bounds: [number, number, number, number]): Mat {
+  if (!p) return [1, 0, 0, 1, 0, 0];
+  const sx = (p.width / 100) * (p.scale / 100);
+  const sy = (p.height / 100) * (p.scale / 100);
+  return mul([1, 0, 0, 1, p.tx, p.ty], scaleAbout(sx, sy, (bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2));
+}
+
+/** 글자 칸(너비 advance × 높이 1000 = 줄 높이)에 부분들을 그리는 SVG 변환. y를 뒤집고(폰트 y는 위쪽) 윗선(880)을 칸 맨 위로 둔다. */
+export const stageFlip = (): Mat => [1, 0, 0, -1, 0, 880];
+export const matString = (m: Mat) => `matrix(${m.map((x) => +x.toFixed(4)).join(" ")})`;
+export const outerMatrix = (parts: GlyphParts, t: GlyphTweak): Mat => mul(stageFlip(), mul(parts.style, glyphMatrix(t, parts.advance)));
 
 /** 값을 슬라이더 범위로 맞춘다 */
 export const clampTweakValue = (key: keyof GlyphTweak, v: number) => Math.round(Math.min(TWEAK_RANGES[key][1], Math.max(TWEAK_RANGES[key][0], v)));

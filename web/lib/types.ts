@@ -243,8 +243,37 @@ export interface GlyphTweak {
   ty: number;
 }
 
+/** 초성·중성·종성 한 부분의 조정(11/11, 엔진 contour.PartTweak): 그 부분 잉크 상자 가운데를 축으로 크기·가로·세로(%), tx·ty는 폰트 단위(+는 오른쪽·위). */
+export interface PartValues {
+  width: number;
+  height: number;
+  scale: number;
+  tx: number;
+  ty: number;
+}
+export type PartKey = "cho" | "jung" | "jong";
+/** 영역 경계 이동(폰트 단위, 엔진 jamo.split): x는 초|중 세로 경계(+오른쪽), y는 초|중 가로 경계(+위), j는 종성 경계(+위) */
+export type CutKey = "x" | "y" | "j";
+/** 부분 조정과 경계 이동. 글자별 조정에서만 쓴다(전체 "*"에는 걸지 않는다). 기본값인 항목은 넣지 않는다. */
+export interface PartsTweak {
+  parts?: Partial<Record<PartKey, PartValues>>;
+  cuts?: Partial<Record<CutKey, number>>;
+}
+/** 화면이 다루는 조정 = 글자 전체 조정 + 부분 조정 */
+export type EditTweak = GlyphTweak & PartsTweak;
+
+/** 부분으로 나눈 글자(엔진 /glyphs/parts). 좌표는 폰트 단위, y는 위쪽. */
+export interface GlyphParts {
+  char: string;
+  advance: number;
+  style: [number, number, number, number, number, number]; // 너비·기울기·자간 변환 (a b c d e f)
+  parts: Partial<Record<PartKey, { d: string; bounds: [number, number, number, number] }>>; // bounds: 왼 아래 오른 위
+  labels: Record<PartKey, string>; // 초성·중성·종성 글자(ㅂ·ㅜ·ㅇ), 받침이 없으면 빈 문자열
+  lines: { id: CutKey; axis: "x" | "y"; pos: number; lo: number; hi: number }[];
+}
+
 /** 표에 저장되는 조정. rel은 전체("*") 조정에서만: 굵기(pull)를 모든 글자에 같은 양으로 걸지 않고, 이 글자에서 실제로 달라진 획 두께의 배율을 다른 글자에도 건다(11/5, 엔진 drawn.resolve_all). */
-export type StoredTweak = GlyphTweak & { rel?: string };
+export type StoredTweak = EditTweak & { rel?: string };
 
 /** 조정 표. "*"는 전체 글자, 나머지는 글자별 조정(전체 조정을 덮어쓴다). 조정이 없는 글자는 표에 없다. */
 export type TweakTable = Record<string, StoredTweak>;

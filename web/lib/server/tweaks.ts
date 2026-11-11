@@ -8,8 +8,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { WEIGHT_CAP } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
-import { NO_TWEAK, TWEAK_RANGES, isNoTweak } from "@/lib/tweak";
-import type { GlyphTweak, StoredTweak, TweakTable } from "@/lib/types";
+import { CUT_RANGE, NO_PART, PART_KEYS, PART_LABEL, PART_RANGES, NO_TWEAK, TWEAK_RANGES, cleanTweak, isNoTweak } from "@/lib/tweak";
+import type { CutKey, EditTweak, GlyphTweak, PartKey, PartValues, StoredTweak, TweakTable } from "@/lib/types";
 import { RouteError } from "./env";
 
 const DATA_DIR = path.join(process.cwd(), ".data", "glyphs");
@@ -73,9 +73,39 @@ export function clampTweak(input: unknown, baseWeight: number): StoredTweak {
   }
   out.pull = Math.min(WEIGHT_CAP - baseWeight, Math.max(WEIGHT_FLOOR - baseWeight, out.pull));
   const rel = (input as { rel?: unknown }).rel;
-  const stored: StoredTweak = out;
+  const stored: StoredTweak = cleanTweak({ ...out, ...clampParts(input as Record<string, unknown>) }) as StoredTweak;
   if (typeof rel === "string" && [...rel].length === 1 && KSX1001_HANGUL.has(rel) && out.pull !== 0) stored.rel = rel; // 기준 글자(전체 조정의 굵기 배율을 잴 글자)
   return stored;
+}
+
+/** 부분 조정과 경계 이동(11/11)을 범위에 맞춘다. 모르는 키·숫자가 아닌 값은 버린다. */
+function clampParts(input: Record<string, unknown>): Pick<EditTweak, "parts" | "cuts"> {
+  const out: Pick<EditTweak, "parts" | "cuts"> = {};
+  const rawParts = input.parts;
+  if (typeof rawParts === "object" && rawParts !== null) {
+    const parts: Partial<Record<PartKey, PartValues>> = {};
+    for (const k of PART_KEYS) {
+      const raw = (rawParts as Record<string, unknown>)[k];
+      if (typeof raw !== "object" || raw === null) continue;
+      const p = { ...NO_PART };
+      for (const f of Object.keys(NO_PART) as (keyof PartValues)[]) {
+        const v = (raw as Record<string, unknown>)[f];
+        if (typeof v === "number" && Number.isFinite(v)) p[f] = Math.round(Math.min(PART_RANGES[f][1], Math.max(PART_RANGES[f][0], v)) * 10) / 10;
+      }
+      parts[k] = p;
+    }
+    out.parts = parts;
+  }
+  const rawCuts = input.cuts;
+  if (typeof rawCuts === "object" && rawCuts !== null) {
+    const cuts: Partial<Record<CutKey, number>> = {};
+    for (const k of ["x", "y", "j"] as CutKey[]) {
+      const v = (rawCuts as Record<string, unknown>)[k];
+      if (typeof v === "number" && Number.isFinite(v)) cuts[k] = Math.round(Math.min(CUT_RANGE[1], Math.max(CUT_RANGE[0], v)));
+    }
+    out.cuts = cuts;
+  }
+  return out;
 }
 
 export async function readTweakTable(jobId: string): Promise<TweakTable> {
@@ -121,6 +151,13 @@ export function describeTweak(char: string, before: StoredTweak | null, after: S
   const from = before ?? NO_TWEAK;
   const fmt = (k: keyof GlyphTweak, v: number) => `${LABELS[k].signed && v > 0 ? "+" : ""}${v}${LABELS[k].unit}`;
   const changes = (Object.keys(NO_TWEAK) as (keyof GlyphTweak)[]).filter((k) => after[k] !== from[k]).map((k) => `${LABELS[k].name} ${fmt(k, from[k])} → ${fmt(k, after[k])}`);
+  const partChanges = PART_KEYS.filter((k) => JSON.stringify(after.parts?.[k] ?? null) !== JSON.stringify(before?.parts?.[k] ?? null)).map((k) => {
+    const p = after.parts?.[k];
+    if (!p) return `${PART_LABEL[k]} 원래대로`;
+    const bits = (Object.keys(NO_PART) as (keyof PartValues)[]).filter((f) => p[f] !== NO_PART[f]).map((f) => `${{ width: "가로", height: "세로", scale: "크기", tx: "가로 이동", ty: "세로 이동" }[f]} ${p[f]}${f === "tx" || f === "ty" ? "" : "%"}`);
+    return `${PART_LABEL[k]} ${bits.join(" ")}`;
+  });
+  if (partChanges.length) changes.push(...partChanges);
   const rel = after.rel ? ` · 굵기는 '${after.rel}'에서 달라진 획 두께의 비율로 건다` : "";
   return `${who} 조정: ${changes.join(", ") || "변경 없음"}${rel}${note ? ` (${note})` : ""}`;
 }

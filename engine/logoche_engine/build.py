@@ -89,7 +89,7 @@ def build_font(
     for i, ch in enumerate(chars):
         width = layout.advance if i < len(hangul) else drawn.ref_advance(ch)
         own = tweaks.get(ch)
-        path, advance = drawn.outline(glyphs.get(ch), axes, width, offset_px, edits.get(ch), own or all_tweak, None if own else all_thick)
+        path, advance = drawn.outline(glyphs.get(ch), axes, width, offset_px, edits.get(ch), own or all_tweak, None if own else all_thick, ch)
         name = f"uni{ord(ch):04X}"
         glyph_order.append(name)
         cmap[ord(ch)] = name

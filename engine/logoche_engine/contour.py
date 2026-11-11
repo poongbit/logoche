@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
@@ -32,6 +32,21 @@ class Axes:
 
 
 @dataclass(frozen=True)
+class PartTweak:
+    """초성·중성·종성 한 부분에 더한 조정(11/11). 그 부분 잉크 상자 가운데를 축으로 크기·가로·세로를 걸고 tx·ty만큼 옮긴다(폰트 단위)."""
+
+    width: float = 100
+    height: float = 100
+    scale: float = 100
+    tx: float = 0
+    ty: float = 0
+
+    @property
+    def identity(self) -> bool:
+        return (self.width, self.height, self.scale, self.tx, self.ty) == (100, 100, 100, 0, 0)
+
+
+@dataclass(frozen=True)
 class Tweak:
     """사용자가 글자 하나에 더한 조정(11/3 다듬기). 모두 AI가 정한 전체 값에 더하거나 곱한다. 기본값이면 아무것도 바꾸지 않는다.
     pull: 굵기 축 증감, slant: 기울기 증감(도), width·height·scale: 퍼센트, tx·ty: 폰트 단위 이동(+는 오른쪽·위).
@@ -44,7 +59,13 @@ class Tweak:
     scale: float = 100
     tx: float = 0
     ty: float = 0
+    parts: dict[str, PartTweak] | None = field(default=None, hash=False)  # 11/11 부분 조정: cho·jung·jong → PartTweak. 글자별 조정에서만(전체 "*"에는 걸지 않는다)
+    cuts: dict[str, float] | None = field(default=None, hash=False)  # 11/11 영역 경계 이동(폰트 단위): x·y·j (jamo.split)
     rel: str | None = None  # 전체 조정("*")에서만: 이 글자에서 굵기 조정(pull)이 만든 두께 변화의 배율을 재어 다른 글자에도 그 배율로 건다(drawn.resolve_all). 없으면 pull을 모든 글자에 같은 양으로 건다
+
+    @property
+    def has_parts(self) -> bool:
+        return bool(self.parts) and any(not p.identity for p in self.parts.values())
 
     @property
     def geometric(self) -> bool:

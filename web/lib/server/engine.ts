@@ -1,7 +1,7 @@
 // Python 엔진 서버(engine/) 호출. 엔진은 측정·기준 글자표·글자표 자르기와 자리 맞추기·TTF 빌드·구조 검사를 맡는다.
 // 10/30: MX-Font를 뺐다. 엔진은 이미지 API가 그린 글자로 바로 외곽선을 딴다. 이미지 API·Claude 호출은 웹 서버가 한다.
 
-import type { BuildStage, CheckResult, GlyphGuides, NearestKind, PreviewResponse, StoredTweak, TweakTable } from "@/lib/types";
+import type { BuildStage, CheckResult, GlyphGuides, GlyphParts, NearestKind, PreviewResponse, StoredTweak, TweakTable } from "@/lib/types";
 import { ENGINE_URL, RouteError } from "./env";
 
 interface Measured {
@@ -136,6 +136,8 @@ export const engine = {
   /** 편집 화면에 띄울 그림: 지금 글자 · AI가 그린 그대로(못 그린 글자는 빈 그림) · 글자 틀 자리 */
   editSource: (body: EngineGlyphEditRequest) =>
     json<{ char: string; size: number; image: string; original: string; guides: GlyphGuides }>("/glyphs/edit-source", body),
+  /** 글자를 초성·중성·종성 영역으로 나눈 외곽선과 경계선(11/11 부분 끌어서 바꾸기) */
+  parts: (body: EngineGlyphEditRequest) => json<GlyphParts>("/glyphs/parts", body),
   /** 만든 폰트에서 글자 하나만 다시 딴다(edit가 null이면 AI가 만든 그대로) */
   patchGlyph: (buildId: string, body: EngineGlyphEditRequest) => json<{ ok: boolean }>(`/builds/${buildId}/glyph`, body),
   build: (buildId: string) => json<EngineBuild>(`/builds/${buildId}`),
