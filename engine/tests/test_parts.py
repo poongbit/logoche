@@ -46,4 +46,14 @@ check("초성만 키우면 위쪽 경계가 올라가고 아래는 그대로", b
 
 cut, _ = jamo.split(gm, "붕", drawn.PX, {"y": -80})
 check("경계를 옮기면 초성 영역이 바뀐다", (cut == 1).sum() != (lab == 1).sum())
+# 같은 자모 전체 조정(11/12): "cho:ㅂ"가 ㅂ을 초성으로 가진 글자에만, 글자 자신의 조정 위에 더해진다
+group = {"cho:ㅂ": Tweak(parts={"cho": PartTweak(scale=120, tx=10)})}
+t = drawn.with_groups("붕", None, group)
+check("같은 초성 조정이 붕에 걸린다", t is not None and t.parts["cho"].scale == 120)
+check("다른 초성(꿀)에는 걸리지 않는다", drawn.with_groups("꿀", None, group) is None)
+check("ㅂ이 받침인 글자(입)에는 걸리지 않는다", drawn.with_groups("입", None, group) is None)
+t2 = drawn.with_groups("붕", Tweak(parts={"cho": PartTweak(scale=50, tx=-4)}), group)
+check("글자 자신의 조정은 곱하고 더한다", t2.parts["cho"].scale == 60 and t2.parts["cho"].tx == 6, str(t2.parts["cho"]))
+bigger, _ = drawn.trace(gm, axes, adv, drawn.PX, t, "붕")
+check("윤곽에 반영된다", bigger.bounds != base.bounds)
 print("모두 통과")

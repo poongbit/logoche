@@ -19,7 +19,8 @@ import { CloseButton, backdropMotion, sheetMotion, usePresence } from "@/compone
 import { Notice } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { GLYPH_FONT_STACK } from "@/lib/preview";
-import { NO_PART, NO_TWEAK, PART_KEYS, PART_LABEL, TWEAK_FIELDS, TWEAK_PRESETS, CUT_RANGE, clampPartValue, clampTweakValue, cleanTweak, deltaTransform, isNoPart, isNoTweak, matString, outerMatrix, partMatrix, sameTweak, strokeFor } from "@/lib/tweak";
+import { KSX1001_HANGUL } from "@/lib/hangul";
+import { effectiveParts, groupKey, groupParts, jamoOf, ownParts, NO_PART, NO_TWEAK, PART_KEYS, PART_LABEL, TWEAK_FIELDS, TWEAK_PRESETS, CUT_RANGE, clampPartValue, clampTweakValue, cleanTweak, deltaTransform, isNoPart, isNoTweak, matString, outerMatrix, partMatrix, sameTweak, strokeFor } from "@/lib/tweak";
 import type { CutKey, EditTweak, GlyphParts, GlyphTweak, PartKey, PartValues, ProjectView } from "@/lib/types";
 
 // 그림판(934줄)은 "직접 그리기"를 누를 때만 받는다(11/4 성능 점검)
@@ -118,11 +119,15 @@ export const GlyphPolish = memo(function GlyphPolish({
   /** 닫히는 모션(200ms)이 끝난 뒤 부른다 */
   onClose: () => void;
 }) {
-  const saved = view.tweaks[char] ?? NO_TWEAK;
+  // 저장값 = 글자 자신의 조정 + 같은 초성·중성·종성 모든 글자 조정(폰트 파일에는 합친 값이 들어 있다. 부분 조정은 합친 값으로 다룬다)
+  const group = groupParts(view.tweaks, char);
+  const savedParts = effectiveParts(view.tweaks, char);
+  const saved: EditTweak = Object.keys(savedParts).length ? { ...(view.tweaks[char] ?? NO_TWEAK), parts: savedParts } : (view.tweaks[char] ?? NO_TWEAK);
   const savedKey = JSON.stringify(saved);
   const [values, setValues] = useState<EditTweak>(saved);
   const [mode, setMode] = useState<Mode>("slider");
   const [confirmAll, setConfirmAll] = useState(false);
+  const [confirmGroup, setConfirmGroup] = useState<PartKey | null>(null); // 같은 자모 모든 글자에 적용 확인(11/12)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -250,7 +255,9 @@ export const GlyphPolish = memo(function GlyphPolish({
     setBusy(true);
     setError(null);
     try {
-      await api.saveGlyphTweak(view.id, { char, tweak: tweak && !isNoTweak(tweak) ? cleanTweak(tweak) : null, note });
+      // 부분 조정은 화면에서 합친 값으로 다루므로, 저장할 때 같은 자모 조정을 뺀 이 글자만의 값으로 바꾼다
+      const own = tweak ? cleanTweak({ ...tweak, parts: ownParts(tweak.parts, group) }) : null;
+      await api.saveGlyphTweak(view.id, { char, tweak: own && !isNoTweak(own) ? own : null, note });
       await sleep(700); // 엔진이 다른 형식(woff2 등) 파일을 다시 만드는 동안 잠깐 기다린다
       onSaved();
       tell(tweak && !isNoTweak(tweak) ? "저장했어요. 폰트에 넣었어요." : "원래 모양으로 돌렸어요.");
@@ -272,6 +279,23 @@ export const GlyphPolish = memo(function GlyphPolish({
       const all = { ...glyphOnly, tx: 0, ty: 0 };
       await api.saveGlyphTweak(view.id, { char: "*", tweak: isNoTweak(all) ? null : values.pull !== 0 ? { ...all, rel: char } : all, note: `모든 글자에 적용 (기준 '${char}')` });
       setConfirmAll(false);
+      onSaved();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // 같은 초성·중성·종성을 가진 모든 글자에 지금 고른 부분의 조정을 건다. 폰트 파일이 새로 만들어진다.
+  async function applyGroup(part: PartKey) {
+    const jamo = jamoOf(char)[part];
+    setBusy(true);
+    setError(null);
+    try {
+      const value = values.parts?.[part] ?? NO_PART;
+      await api.saveGlyphTweak(view.id, { char: groupKey(part, jamo), tweak: { ...NO_TWEAK, parts: { [part]: value } }, note: `${PART_LABEL[part]} ${jamo} 모든 글자에 적용 (기준 '${char}')`, source: char });
+      setConfirmGroup(null);
       onSaved();
     } catch (err) {
       setError(errorMessage(err));
@@ -666,6 +690,11 @@ export const GlyphPolish = memo(function GlyphPolish({
                       </>
                     )}
                   </div>
+                  {selPart && jamoOf(char)[selPart] && (!isNoPart(values.parts?.[selPart]) || group[selPart]) && (
+                    <TextButton tone="primary" disabled={busy} onClick={() => setConfirmGroup(selPart)} className="self-start py-1.5!">
+                      {PART_LABEL[selPart]} {jamoOf(char)[selPart]}이(가) 들어간 모든 글자에 적용
+                    </TextButton>
+                  )}
                 </div>
               ))}
             {canTweak && values.pull !== saved.pull && <p className="text-xs text-text-secondary">굵기는 저장하면 정확히 반영돼요. 지금 보이는 것은 어림이에요.</p>}
@@ -678,6 +707,28 @@ export const GlyphPolish = memo(function GlyphPolish({
               <p role="status" className={notice ? "text-13 font-bold text-text-success" : "sr-only"}>
                 {notice}
               </p>
+              {confirmGroup && (
+                <InlineConfirm label="같은 자모 모든 글자에 적용 확인" className="flex flex-col gap-3 rounded-[0.875rem] border-2 border-border-active p-4 text-sm leading-normal">
+                  <p>
+                    {PART_LABEL[confirmGroup]}이(가) <b>{jamoOf(char)[confirmGroup]}</b>인 글자 모두에(약 {[...KSX1001_HANGUL].filter((c) => jamoOf(c)[confirmGroup] === jamoOf(char)[confirmGroup]).length}자) 이 부분의 크기·가로·세로·위치 변화를
+                    같은 만큼 걸어요. 글자마다 따로 고친 부분은 그 위에 더해져요. 폰트 파일만 새로 만들어져 몇 분 걸리고, 그동안 이 화면은 만드는 중으로 바뀌어요.
+                    {!isNoPart(values.parts?.[confirmGroup]) ? "" : " 지금은 원래 모양이라 이미 걸린 조정을 지워요."}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void applyGroup(confirmGroup)}
+                      className="h-10 flex-1 rounded-full bg-bg-inverse px-3 text-sm font-bold text-text-inverse hover:bg-bg-inverse-strong disabled:cursor-not-allowed disabled:bg-bg-disabled disabled:text-text-disabled"
+                    >
+                      {busy ? "시작하는 중" : "모두 적용"}
+                    </button>
+                    <button type="button" data-autofocus disabled={busy} onClick={() => setConfirmGroup(null)} className="h-10 flex-1 rounded-full border-2 border-border-active px-3 text-sm font-bold hover:bg-bg-surface">
+                      취소
+                    </button>
+                  </div>
+                </InlineConfirm>
+              )}
               {confirmAll && (
                 <InlineConfirm label="모든 글자에 적용 확인" className="flex flex-col gap-3 rounded-[0.875rem] border-2 border-border-active p-4 text-sm leading-normal">
                   <p>

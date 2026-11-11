@@ -247,8 +247,8 @@ def _tweak(t: TweakInput) -> Tweak:
 def _tweaks(tweaks: dict[str, TweakInput]) -> dict[str, Tweak]:
     out = {}
     for ch, t in tweaks.items():
-        if ch != ALL_GLYPHS and (len(ch) != 1 or ch not in KSX1001_HANGUL):
-            raise HTTPException(400, f"조정은 한글 완성형 글자나 전체('*')에만 걸 수 있어요: {ch}")
+        if ch != ALL_GLYPHS and not re.fullmatch(r"(cho|jung|jong):[ㄱ-ㅣ]", ch) and (len(ch) != 1 or ch not in KSX1001_HANGUL):
+            raise HTTPException(400, f"조정은 한글 완성형 글자나 전체('*'), 같은 자모('cho:ㅂ')에만 걸 수 있어요: {ch}")
         out[ch] = _tweak(t)
     return out
 

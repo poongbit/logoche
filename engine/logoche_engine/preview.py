@@ -33,7 +33,7 @@ def render_preview(glyphs: dict[str, np.ndarray], axes: Axes, text: str, edits: 
         elif ch in glyphs or ch in edits:
             if ch not in made:
                 own = tweaks.get(ch)
-                path, advance = drawn.outline(glyphs.get(ch), axes, layout.advance, offset_px, edits.get(ch), own or all_tweak, None if own else all_thick, ch)
+                path, advance = drawn.outline(glyphs.get(ch), axes, layout.advance, offset_px, edits.get(ch), drawn.with_groups(ch, own or all_tweak, tweaks), None if own else all_thick, ch)
                 made[ch] = {"path": svg_path(path, to_svg)[0], "advance": advance}
             out.append({"char": ch, **made[ch]})
         else:

@@ -280,8 +280,10 @@ export type TweakTable = Record<string, StoredTweak>;
 
 /** 글자 조정 저장. tweak이 null이면 그 글자(또는 전체)의 조정을 지운다. 글자 하나는 지금 폰트에 바로 바꿔 끼운다. */
 export interface SaveGlyphTweakRequest {
-  char: string; // 한글 한 글자 또는 "*"(전체)
+  char: string; // 한글 한 글자, "*"(전체), 또는 "cho:ㅂ" · "jung:ㅜ" · "jong:ㅇ"(같은 초성·중성·종성을 가진 모든 글자, 11/12)
   tweak: StoredTweak | null;
+  /** char가 "cho:ㅂ" 같은 같은 자모 열쇠일 때: 이 조정을 만든 글자. 이 글자 자신의 그 부분 조정은 비운다(합친 값이 같은 자모 조정으로 옮겨 가므로) */
+  source?: string;
   note?: string; // 어떻게 조정했는지(슬라이더·변형·프리셋). 제작 기록에 붙는다
 }
 

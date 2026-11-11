@@ -8,7 +8,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { WEIGHT_CAP } from "@/lib/constants";
 import { KSX1001_HANGUL } from "@/lib/hangul";
-import { CUT_RANGE, NO_PART, PART_KEYS, PART_LABEL, PART_RANGES, NO_TWEAK, TWEAK_RANGES, cleanTweak, isNoTweak } from "@/lib/tweak";
+import { CUT_RANGE, GROUP_KEY, effectiveParts, NO_PART, PART_KEYS, PART_LABEL, PART_RANGES, NO_TWEAK, TWEAK_RANGES, cleanTweak, isNoTweak } from "@/lib/tweak";
 import type { CutKey, EditTweak, GlyphTweak, PartKey, PartValues, StoredTweak, TweakTable } from "@/lib/types";
 import { RouteError } from "./env";
 
@@ -52,10 +52,10 @@ async function write(jobId: string, stored: Stored) {
   await fs.rename(tmp, file(jobId)); // 쓰다 멈춰도 표가 깨지지 않게
 }
 
-/** 한글 완성형 한 글자 또는 "*" */
+/** 한글 완성형 한 글자, "*"(전체), 또는 같은 자모 열쇠("cho:ㅂ" · "jung:ㅜ" · "jong:ㅇ") */
 export function checkTweakKey(char: string): string {
-  if (char !== ALL_GLYPHS && ([...char].length !== 1 || !KSX1001_HANGUL.has(char))) {
-    throw new RouteError(400, "한글 완성형 2,350자 가운데 한 글자이거나 전체여야 해요");
+  if (char !== ALL_GLYPHS && !GROUP_KEY.test(char) && ([...char].length !== 1 || !KSX1001_HANGUL.has(char))) {
+    throw new RouteError(400, "한글 완성형 2,350자 가운데 한 글자이거나 전체, 같은 자모여야 해요");
   }
   return char;
 }
@@ -117,7 +117,14 @@ export async function readTweakHistory(jobId: string, char: string): Promise<Twe
 }
 
 /** 이 글자에 실제로 걸리는 조정: 글자별 조정이 있으면 그것, 없으면 전체 조정 */
-export const effectiveTweak = (table: TweakTable, char: string): StoredTweak | null => table[char] ?? table[ALL_GLYPHS] ?? null;
+export function effectiveTweak(table: TweakTable, char: string): StoredTweak | null {
+  const base = table[char] ?? table[ALL_GLYPHS] ?? null;
+  if (!KSX1001_HANGUL.has(char)) return base;
+  // 11/12 같은 초성·중성·종성 모든 글자에 건 조정을 이 글자의 조정 위에 얹는다(엔진 drawn.with_groups와 같다)
+  const parts = effectiveParts(table, char);
+  if (Object.keys(parts).length === 0) return base;
+  return { ...(base ?? NO_TWEAK), parts };
+}
 
 /** 조정을 저장한다(tweak이 null이거나 모두 기본값이면 지운다). 바꾼 표를 돌려준다. */
 export async function writeTweak(jobId: string, char: string, tweak: StoredTweak | null, note: string): Promise<{ table: TweakTable; previous: StoredTweak | null }> {
@@ -146,7 +153,8 @@ const LABELS: Record<keyof GlyphTweak, { name: string; unit: string; signed: boo
 
 /** 제작 기록에 남길 한 줄: 바뀐 항목만 "기울기 +4° → +8°" 식으로 */
 export function describeTweak(char: string, before: StoredTweak | null, after: StoredTweak | null, note: string): string {
-  const who = char === ALL_GLYPHS ? "전체 글자" : `'${char}'`;
+  const group = GROUP_KEY.exec(char);
+  const who = char === ALL_GLYPHS ? "전체 글자" : group ? `${{ cho: "초성", jung: "중성", jong: "종성" }[group[1] as "cho" | "jung" | "jong"]} ${group[2]}을(를) 가진 모든 글자` : `'${char}'`;
   if (!after) return `${who} 조정을 지워 AI가 정한 값으로 되돌림`;
   const from = before ?? NO_TWEAK;
   const fmt = (k: keyof GlyphTweak, v: number) => `${LABELS[k].signed && v > 0 ? "+" : ""}${v}${LABELS[k].unit}`;

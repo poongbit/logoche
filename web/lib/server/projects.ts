@@ -28,7 +28,9 @@ import type {
   ChooseAction,
   ReviewAction,
   GlyphParts,
+  PartKey,
   SaveGlyphTweakRequest,
+  StoredTweak,
   SaveGlyphTweakResponse,
   StartBuildJobRequest,
   StartGlyphJobRequest,
@@ -46,6 +48,7 @@ import { chooseMail, doneMail, draftMail, emailOf, failedMail, sendMail } from "
 import { restDrawnChars, restDrawnState, restRecheck, restStyleRedrawn } from "./rest";
 import { createSample } from "./samples";
 import { analyzeStyle, applyDirection, cleanSlogans } from "./style";
+import { GROUP_KEY, NO_TWEAK, cleanTweak, isNoPart } from "@/lib/tweak";
 import { ALL_GLYPHS, checkTweakKey, clampTweak, describeTweak, readTweakHistory, readTweakTable, writeTweak, type TweakHistoryEntry } from "./tweaks";
 
 const DIR = path.join(process.cwd(), ".data", "projects");
@@ -954,15 +957,35 @@ export async function saveProjectTweak(owner: string, id: string, req: SaveGlyph
   if (drivers.has(id)) throw new RouteError(409, "아직 만드는 중이에요");
   const jobId = p.glyphJobId;
   const key = checkTweakKey(req.char);
+  const group = GROUP_KEY.exec(key); // 11/12 같은 초성·중성·종성 모든 글자
   const baseWeight = p.style.axes.find((a) => a.key === "weight")?.value ?? 400;
-  const tweak = req.tweak === null ? null : clampTweak(req.tweak, baseWeight);
+  let tweak = req.tweak === null ? null : clampTweak(req.tweak, baseWeight);
   if (tweak && key !== ALL_GLYPHS) delete tweak.rel; // 기준 글자는 전체 조정에서만 쓴다
+  if (group) {
+    // 같은 자모 조정은 그 부분 하나만 담는다(글자 전체 조정·경계 이동은 글자마다 달라 걸지 않는다)
+    const part = group[1] as PartKey;
+    const value = tweak?.parts?.[part];
+    tweak = value && !isNoPart(value) ? { ...NO_TWEAK, parts: { [part]: value } } : null;
+  }
   const note = typeof req.note === "string" ? req.note.trim().slice(0, 40) : "";
+  let sourceUndo: (() => Promise<unknown>) | null = null;
+  if (group && req.source !== undefined) {
+    // 이 조정을 만든 글자: 합친 값이 같은 자모 조정으로 옮겨 갔으므로 그 글자 자신의 그 부분 조정은 비운다
+    const source = checkTweakKey(req.source);
+    const part = group[1] as PartKey;
+    const own = (await readTweakTable(jobId))[source];
+    if (own?.parts?.[part]) {
+      const rest = { ...own.parts };
+      delete rest[part];
+      sourceUndo = () => writeTweak(jobId, source, own, "저장 실패로 되돌림");
+      await writeTweak(jobId, source, cleanTweak({ ...own, parts: rest }) as StoredTweak, `${note || "같은 자모에 적용"}: 이 글자만의 ${part === "cho" ? "초성" : part === "jung" ? "중성" : "종성"} 조정을 같은 자모 조정으로 옮김`);
+    }
+  }
 
   // 표를 먼저 바꿔야 engineRequest가 새 조정을 읽는다. 엔진이 받지 않으면(빈 글자 등) 표를 되돌린다.
   const { table, previous } = await writeTweak(jobId, key, tweak, note);
   let patched = false;
-  if (key !== ALL_GLYPHS && p.fontId) {
+  if (key !== ALL_GLYPHS && !group && p.fontId) {
     try {
       const [edit] = await readEdits(jobId, new Set([key]));
       await engine.patchGlyph(p.fontId, await engineRequest(jobId, key, p.style.axes, edit ?? null));
@@ -973,12 +996,13 @@ export async function saveProjectTweak(owner: string, id: string, req: SaveGlyph
     }
   }
   if (JSON.stringify(previous) !== JSON.stringify(table[key] ?? null)) await update(id, (q) => void q.record.push(event("human_edit", describeTweak(key, previous, table[key] ?? null, note))));
-  if (key === ALL_GLYPHS) {
+  if (key === ALL_GLYPHS || group) {
     let buildJobId: string;
     try {
       buildJobId = await startBuild({ ...(await buildRequest(p)), skipDraw: true });
     } catch (err) {
       await writeTweak(jobId, key, previous, "저장 실패로 되돌림");
+      await sourceUndo?.();
       throw err;
     }
     await update(id, (q) => {
@@ -988,7 +1012,7 @@ export async function saveProjectTweak(owner: string, id: string, req: SaveGlyph
     });
     drive(id);
   }
-  return { tweaks: table, patched, rebuild: false };
+  return { tweaks: group ? await readTweakTable(jobId) : table, patched, rebuild: false };
 }
 
 /** 다듬기의 "직접 그리기": 편집 화면에 띄울 그림(지금 글자, AI가 그린 그대로, 글자 틀 자리). */

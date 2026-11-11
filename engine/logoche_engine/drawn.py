@@ -370,6 +370,33 @@ def tweaked_axes(axes: Axes, tweak: Tweak | None) -> Axes:
     return replace(axes, weight=axes.weight + tweak.pull, drawn_weight=axes.weight if axes.drawn_weight is None else axes.drawn_weight)
 
 
+def combine_part(group: PartTweak, own: PartTweak) -> PartTweak:
+    """같은 자모 전체 조정(group) 위에 이 글자만의 조정(own)을 더한다: 크기·가로·세로는 곱하고 이동은 더한다. 화면(web/lib/tweak.ts combinePart)과 같다."""
+    return PartTweak(
+        width=round(group.width * own.width / 100, 1),
+        height=round(group.height * own.height / 100, 1),
+        scale=round(group.scale * own.scale / 100, 1),
+        tx=group.tx + own.tx,
+        ty=group.ty + own.ty,
+    )
+
+
+def with_groups(ch: str, tweak: Tweak | None, tweaks: dict[str, Tweak]) -> Tweak | None:
+    """글자의 조정에 '같은 초성·중성·종성 모든 글자' 조정(표의 "cho:ㅂ" 같은 열쇠)을 얹어 돌려준다(11/12)."""
+    if ch not in KSX1001_HANGUL:
+        return tweak
+    parts = dict(tweak.parts or {}) if tweak else {}
+    changed = False
+    for name, j in zip(("cho", "jung", "jong"), jamo.jamo_of(ch)):
+        g = tweaks.get(f"{name}:{j}") if j else None
+        gp = g.parts.get(name) if g and g.parts else None
+        if gp is None or gp.identity:
+            continue
+        parts[name] = combine_part(gp, parts.get(name) or PartTweak())
+        changed = True
+    return replace(tweak or Tweak(), parts=parts) if changed else tweak
+
+
 def _part_transform(p: PartTweak, cx: float, cy: float) -> Transform:
     """부분 조정 변환(폰트 단위, 축은 부분 잉크 상자 가운데 (cx, cy))."""
     sx, sy = p.width / 100 * p.scale / 100, p.height / 100 * p.scale / 100

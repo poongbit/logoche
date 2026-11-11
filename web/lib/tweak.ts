@@ -65,6 +65,65 @@ function sortKeys(v: unknown): unknown {
   return Object.fromEntries(Object.entries(v).sort(([x], [y]) => (x < y ? -1 : 1)).map(([k, x]) => [k, sortKeys(x)]));
 }
 
+// ---- 11/12 같은 자모 모든 글자에 적용: 표의 열쇠 "cho:ㅂ" · "jung:ㅜ" · "jong:ㅇ" (엔진 drawn.with_groups와 같다) ----
+const CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+const JUNG = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ";
+const JONG = " ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ";
+/** 음절 → 초성·중성·종성(받침이 없으면 종성은 빈 문자열) */
+export function jamoOf(ch: string): Record<PartKey, string> {
+  const code = ch.codePointAt(0)! - 0xac00;
+  return { cho: CHO[Math.floor(code / 588)], jung: JUNG[Math.floor(code / 28) % 21], jong: JONG[code % 28].trim() };
+}
+export const GROUP_KEY = /^(cho|jung|jong):([ㄱ-ㅣ])$/;
+export const groupKey = (part: PartKey, jamo: string) => `${part}:${jamo}`;
+/** 그 음절이 쓰는 같은 자모 조정(표에서) */
+export function groupParts(table: Record<string, EditTweak>, ch: string): Partial<Record<PartKey, PartValues>> {
+  const j = jamoOf(ch);
+  const out: Partial<Record<PartKey, PartValues>> = {};
+  for (const k of PART_KEYS) {
+    const g = j[k] ? table[groupKey(k, j[k])]?.parts?.[k] : undefined;
+    if (g && !isNoPart(g)) out[k] = g;
+  }
+  return out;
+}
+/** 같은 자모 조정(group) 위에 이 글자만의 조정(own)을 더한다: 크기·가로·세로는 곱하고 이동은 더한다 */
+export const combinePart = (g: PartValues, o: PartValues): PartValues => ({
+  width: Math.round(((g.width * o.width) / 100) * 10) / 10,
+  height: Math.round(((g.height * o.height) / 100) * 10) / 10,
+  scale: Math.round(((g.scale * o.scale) / 100) * 10) / 10,
+  tx: g.tx + o.tx,
+  ty: g.ty + o.ty,
+});
+/** combinePart의 거꾸로: 합친 값(effective)에서 같은 자모 조정을 뺀 이 글자만의 값 */
+export const ownPart = (g: PartValues, e: PartValues): PartValues => ({
+  width: Math.round(((e.width / g.width) * 100) * 10) / 10,
+  height: Math.round(((e.height / g.height) * 100) * 10) / 10,
+  scale: Math.round(((e.scale / g.scale) * 100) * 10) / 10,
+  tx: e.tx - g.tx,
+  ty: e.ty - g.ty,
+});
+/** 글자에 실제로 걸리는 부분 조정 = 같은 자모 조정 + 글자 자신의 조정(표의 글자별 값은 같은 자모 조정에 더한 만큼이다) */
+export function effectiveParts(table: Record<string, EditTweak>, ch: string): Partial<Record<PartKey, PartValues>> {
+  const g = groupParts(table, ch);
+  const own = table[ch]?.parts ?? {};
+  const out: Partial<Record<PartKey, PartValues>> = {};
+  for (const k of PART_KEYS) {
+    if (g[k] && own[k]) out[k] = combinePart(g[k]!, own[k]!);
+    else if (g[k] || own[k]) out[k] = (g[k] ?? own[k])!;
+  }
+  return out;
+}
+/** 화면의 합친 값(effective)을 저장할 이 글자만의 값으로 */
+export function ownParts(effective: EditTweak["parts"], group: Partial<Record<PartKey, PartValues>>): EditTweak["parts"] {
+  const out: Partial<Record<PartKey, PartValues>> = {};
+  for (const k of PART_KEYS) {
+    const e = effective?.[k] ?? (group[k] ? NO_PART : undefined);
+    if (!e) continue;
+    out[k] = group[k] ? ownPart(group[k]!, e) : e;
+  }
+  return out;
+}
+
 // SVG 행렬 (a b c d e f): x' = a·x + c·y + e, y' = b·x + d·y + f (폰트 단위, y 위쪽)
 export type Mat = [number, number, number, number, number, number];
 const mul = (m: Mat, n: Mat): Mat => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
