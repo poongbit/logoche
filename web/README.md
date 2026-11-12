@@ -1,108 +1,82 @@
-# 로고체 웹 (본선 데모)
+# 로고체 웹
 
-design.md에서 합의한 여섯 화면을 Next.js 16(App Router)으로 구현했다. API 라우트는 OpenAI(GPT Image)·Claude와 Python 엔진 서버(`../engine`)를 부른다. 그리기는 GPT Image, 이미지를 보는 일(로고 해석·참고 글자 검사·OCR)은 Claude가 한다(10/27 결정: Gemini는 쓰지 않는다. 10/29: 말로 고치기는 뺐다). 10/30 결정: MX-Font를 뺐다. GPT Image가 화면 3에서 참고 글자 30자를 그리고, 화면 4에서 그 글자표를 참고로 나머지 글자까지 2,350자를 그리면, 엔진이 그 그림으로 바로 TTF를 만든다.
+Next.js 16(App Router)으로 만든 화면과 API입니다. API 라우트가 OpenAI(GPT Image)·Claude와 Python 엔진(`../engine`)을 부르고, 폰트 하나를 만드는 일을 서버에서 이어서 돌립니다. 그리기는 GPT Image가, 이미지를 보는 일(로고 해석·글자 검사·판독)은 Claude가 맡습니다. 키는 라우트 핸들러(서버)에서만 읽습니다.
 
 ## 실행
 
-터미널 두 개가 필요하다.
+터미널 두 개가 필요합니다.
 
 ```bash
-# 1. 엔진 서버 (../engine/README.md)
-cd engine && uv sync   # 처음 한 번
+# 1. 엔진 (자세한 내용은 ../engine/README.md)
+cd engine && uv sync
 uv run uvicorn logoche_engine.main:app --port 8000 --reload
 
 # 2. 웹
 cd web
-cp .env.example .env.local   # OPENAI_API_KEY, ANTHROPIC_API_KEY를 채운다
+cp .env.example .env.local   # 키를 채운다(아래 '설정')
 npm install
 npm run dev                  # http://localhost:3000
 ```
 
-`.env.local`을 바꾸면 `npm run dev`를 다시 켠다. 키 없이 화면만 보려면 `.env.local`에 `LOGOCHE_MOCK=1`을 넣는다(모의 응답, 엔진도 필요 없음).
+`.env.local`을 바꾸면 `npm run dev`를 다시 켭니다. 키 없이 화면만 보려면 `.env.local`에 `LOGOCHE_MOCK=1`을 넣습니다(모의 응답, 엔진도 필요 없음).
 
-진행 상태는 브라우저 탭의 sessionStorage에 저장되어 새로 고침해도 이어진다. 참고 글자 그림은 `web/.data/glyphs/<작업>/`에, 화면 4에서 그린 나머지 글자는 그 아래 `rest/`에, 만든 TTF는 `engine/data/builds/`에 남는다.
+작업 파일은 `web/.data/`에 남습니다(`projects/` 폰트 작업, `glyphs/<작업>/` 그린 글자와 조정 표, `samples/` 견본, `mail/` 메일 카드, `auth.sqlite` 계정). 만든 TTF는 `engine/data/builds/`에 남습니다. 두 폴더 모두 저장소에는 올리지 않습니다.
 
 ## 화면
 
-| # | 경로 | 화면 |
-|---|---|---|
-| 1 | `/` | 로고 업로드 |
-| 2 | `/style` | AI가 읽은 방향(슬라이더 없음, '초안 그리기') |
-| 3 | `/draft` | AI 초안(참고 글자 30자) |
-| 4 | `/build` | 폰트 만들기·다듬기 |
-| 5 | `/kit` | 브랜드 적용 키트 |
-| 6 | `/download` | 다운로드 |
+| 경로 | 화면 |
+|---|---|
+| `/` | 메인. 로고와 가게 이름을 넣는 접수증, 만드는 순서, 예시 폰트, 받는 것과 쓸 수 있는 범위, 자주 묻는 질문 |
+| `/make/[step]` | 질문. 업종 → 사업 내용 → 글씨 모양 → 로고 권리를 한 가지씩 묻고, 구글 로그인을 거칩니다 |
+| `/fonts` | 내 폰트 목록 |
+| `/fonts/[id]` | 폰트 하나. 로고 읽기·견본 고르기·기준 글자 확인·그리는 중은 이 주소에서 단계별로 보이고, 다 만들면 스튜디오(써 보기, 시안, 글자 표와 글자 다듬기, 검사 결과, 제작 기록, 받기)가 됩니다 |
+| `/dev/making`, `/ds-preview` | 개발용 미리보기(만드는 중 화면, 공통 부품) |
 
-## API 연결
+## API
 
-요청·응답 타입은 `lib/types.ts`, 서버 코드는 `lib/server/`에 있다. 키는 라우트 핸들러(서버)에서만 읽는다.
+요청·응답 타입은 `lib/types.ts`, 서버 코드는 `lib/server/`에 있습니다. 폰트와 글자 그림은 만든 사람만 받을 수 있고, 메인에 진열하는 폰트만 누구나 받습니다.
 
-> **11/4 정리**: 아래 표의 옛 단계 화면(화면 2~4) API(`/api/style/analyze`, `/api/style/samples` POST, `/api/glyphs/jobs` 생성·진행·다시 그리기·고치기, `/api/build/jobs`, `/api/preview`)와 그 화면(`/draft`, `/build`, `/style`, `/download`, `/kit`)은 삭제했다. 지금 흐름은 `/api/projects/*`(만들기·고르기·확인·중단·다듬기·직접 그리기)와 `/api/font/*`, `/api/account`가 맡는다. 글자 그림을 보여 주는 `GET /api/glyphs/jobs/[id]/images/[index]`·`rest/[hex]`와 견본 그림 `GET /api/style/samples/[id]`만 남았다. 표는 옛 설명이라 새 문서로 바꿀 때까지 참고용이다.
+| 경로 | 하는 일 |
+|---|---|
+| `GET·POST /api/projects` | 내 폰트 목록, 새 폰트 만들기(바로 id를 돌려주고 로고 읽기부터 폰트 파일까지 서버가 이어서 돌립니다) |
+| `GET·PATCH·DELETE /api/projects/[id]` | 폰트 하나의 진행 상황과 스튜디오 내용, 이름·즐겨찾기 바꾸기, 지우기 |
+| `POST /api/projects/[id]/choose` | 견본 고르는 단계: 기다리기, 다시 시간 세기, 고르기 |
+| `POST /api/projects/[id]/review` | 기준 글자 확인 단계: 고르기, 풀기, 계속, 고른 글자 다시 그리기 |
+| `POST /api/projects/[id]/cancel` | 만드는 중인 일 멈추기(그린 글자는 남습니다) |
+| `POST /api/projects/[id]/rebuild` | 빠진 글자만 그려 폰트 다시 만들기(멈춘 작업 이어 하기 포함) |
+| `POST /api/projects/[id]/redraw` | 다시 볼 글자 중 고른 글자를 다시 그려 폰트 다시 만들기 |
+| `GET·PUT /api/projects/[id]/tweaks` | 글자 다듬기 조정 저장·기록. 글자 하나는 폰트에 바로 반영하고, 전체(`*`)나 같은 초성·중성·종성(`cho:ㅂ`)은 폰트를 다시 만듭니다 |
+| `POST /api/projects/[id]/glyph-parts` | 글자를 초성·중성·종성 영역으로 나눈 외곽선과 경계선(부분 끌어서 바꾸기) |
+| `POST·PUT /api/projects/[id]/glyph-edit` | 직접 그리기: 그림판에 띄울 그림, 그린 글자 저장(저장하면 폰트에 바로 바꿔 끼웁니다) |
+| `GET /api/projects/[id]/logo` | 올린 로고 그림 |
+| `GET /api/font/[id]` | 폰트 파일(TTF, `?format=otf·woff·woff2`). `?download=1`이면 발급 대장에 올립니다 |
+| `POST /api/font/[id]/bundle` | 모두 받기 zip(TTF·OTF, 웹폰트, OFL 원문, 제작 기록) |
+| `GET /api/glyphs/jobs/[id]/images/[index]`, `…/rest/[hex]` | 그린 기준 글자·나머지 글자 그림(PNG) |
+| `GET /api/style/samples/[id]` | 견본 그림(PNG) |
+| `GET·DELETE /api/account` | 탈퇴 안내와 탈퇴(폰트·글자·로고·계정 삭제, 만드는 중인 폰트가 있으면 거절) |
+| `/api/auth/[...all]` | 구글 로그인(Better Auth) |
+| `GET /mail-card/[file]` | 메일에 넣는 카드 이미지 |
 
-| 경로 | 화면 | 하는 일 | 부르는 곳 |
-|---|---|---|---|
-| `POST /api/style/analyze` | 2 | 로고 측정과 분위기 해석을 함께 부르고, 분위기 사전 규칙으로 7축을 정한다. 부딪히면 3안 | 엔진 `/measure`, Claude(로고 해석) |
-| `POST /api/style/samples` | 2 | 표현 방식 견본: 가게 이름(한글 4자까지)을 그 방식으로 그린 그림 한 장. AI 제안 셋을 함께 그린다(약 35초). 고른 견본은 화면 3 초안의 참고 이미지가 된다 | GPT Image(`OPENAI_SAMPLE_QUALITY`, 기본 medium), 엔진 `/sheets/word` |
-| `GET /api/style/samples/[id]` | 2 | 견본 PNG | `web/.data/samples/` |
-| `POST /api/glyphs/jobs` | 3 | 참고 글자 30자 글자표를 한 장 그리고, 칸별로 잘라 검사하고, 떨어진 글자만 한 자씩 다시 그린다 | GPT Image(이미지 생성), Claude(참고 글자 검사), 엔진 `/sheets/glyphs` |
-| `GET /api/glyphs/jobs/[id]` | 3 | 글자별 진행과 그림 주소 | |
-| `POST /api/glyphs/jobs/[id]/retry` | 3 | `index`가 있으면 그 글자만 한 번(글자 카드의 '다시 그리기', 글자당 `GLYPH_USER_REDRAWS`번), 없으면 실패한 글자를 모두 다시 그린다. 통과한 글자를 다시 그리면 전 글자를 남겨 두고, 새 글자가 떨어지면 전 글자를 그대로 둔다 | GPT Image, Claude |
-| `POST /api/glyphs/jobs/[id]/items/[index]/edit` | 3 | 참고 글자를 편집 화면에서 직접 고친 그림으로 바꾼다(검사 없이, 칸 형식으로 잘라서) | 엔진 `/glyphs/normalize` |
-| `POST /api/glyphs/jobs/[id]/items/[index]/restore` | 3 | 바꾸기 전 글자와 맞바꾼다(되돌리기) | |
-| `GET /api/glyphs/structure?char=` | 3 | 기준 서체로 그린 글자(실패한 글자를 직접 그릴 때 밑그림) | 엔진 `/sheets/glyph` |
-| `GET /api/glyphs/jobs/[id]/images/[index]` | 3 | 참고 글자 그림 PNG | `web/.data/glyphs/` |
-| `POST /api/glyphs/jobs/[id]/edits` | 4 | 글자 고치기: 편집 화면에 띄울 그림(지금 조절값으로 만든 글자·AI가 만든 그대로·글자 틀 자리) | 엔진 `/glyphs/edit-source` |
-| `PUT /api/glyphs/jobs/[id]/edits` | 4 | 고친 글자 저장(`image: null`이면 AI가 만든 그대로). `buildId`가 있으면 그 폰트에서 이 글자만 바로 바꿔 끼운다(약 1초). 다시 만들 때도 들어간다 | 엔진 `/builds/{id}/glyph` |
-| `POST /api/preview` | 4 | 그린 글자와 조절값으로 글 몇 자(최대 80자)만 빌드와 같은 방법(그린 글자 → 외곽선)으로 만든 글자별 SVG 패스. 화면 4의 반영 전 견본이 부른다. 그리지 않은 글자는 화면이 기본 글꼴로 흐리게 그린다 | 엔진 `/preview` |
-| `POST /api/build/jobs` | 4 | 나머지 글자 그리기(이미 그린 글자는 건너뜀) → 참고 글자와 함께 TTF 빌드. `upload`·`style`을 함께 보낸다(나머지 글자 지시문) | GPT Image, Claude, 엔진 `/sheets/glyphs/place`·`/builds` |
-| `GET /api/build/jobs/[id]` | 4 | 나머지 글자 그리기·외곽선 진행, 7항목·유사도. 엔진이 끝나면 OCR을 한 번 돌린다 | 엔진, Claude(OCR) |
-| `GET /api/font/[id]` | 4~6 | TTF(`?format=otf·woff·woff2`면 그 형식). `?v=`는 글자를 고친 횟수(캐시를 나눈다). `?download=1`이면 발급 대장에 올린다 | 엔진 |
-| `POST /api/font/[id]/bundle` | 6 | 모두 받기 zip: TTF·OTF, 웹폰트(WOFF2·WOFF·CSS 예시), OFL 원문, 제작 기록. 발급 대장에 올린다 | 엔진 `/builds/{id}/bundle` |
+`LOGOCHE_MOCK=1`에서는 글자 다듬기·직접 그리기·부분 나누기 API가 501을 돌려줍니다.
 
-모델 id 기본값은 `lib/server/env.ts`에 있고 `.env.local`에서 바꿀 수 있다(`.env.example` 참고). 응답의 `models`에 실제로 쓴 모델 id가 들어가고, 화면이 그대로 제작 기록의 "AI 모델명"에 남긴다. Claude 호출에는 거절 시 다른 모델로 넘기는 server-side fallback(`fallbacks: "default"`)을 켜 두었다.
+## 설정
 
-### 기본 작업: 참고 글자 30자 → 나머지 글자 → 2,350자 TTF (10/30 결정)
+값은 `.env.local`에 둡니다(`.env.example` 참고).
 
-참고 글자는 `lib/constants.ts` `REFERENCE_CHARS` 30자다(팬그램 11자 + 자주 쓰는 음절 + 쌍자음·복합 모음·받침이 든 글자). 화면 3이 GPT Image로 6열×5행 글자표 한 장을 그리고, 엔진이 칸별로 자르고, Claude가 칸마다 그 글자로 읽히는지와 다른 칸과 스타일이 맞는지 검사한다. 떨어진 글자만 처음 글자표를 스타일 참고로 붙여 한 자씩 다시 그린다(작업당 `GLYPH_MAX_REDRAWS`, 기본 10회, 글자당 2번까지). 통과한 글자가 20자(`MIN_REFERENCE_READY`) 이상이면 떨어진 글자는 빼고 폰트를 만들 수 있다. 그래도 떨어진 글자는 카드를 누르면 그 글자만 한 번 다시 그린다(이미지 1장, 작업 상한에 세지 않음, 10/29 사용자 제안). 떨어지면 카드에 다시 '다시 그리기'가 나오고 떨어진 이유를 보여 준다. 2자 이상 떨어지면 '실패한 글자 모두 다시 그리기'(글자당 2번까지)도 있다.
-
-화면 4에서 GPT Image가 참고 글자 글자표를 스타일 참고로 붙여 나머지 글자를 30자씩 그린다(`lib/server/rest.ts`). 순서는 가게 이름 → 견본 글 → 자주 쓰는 글자(`lib/hangulOrder.ts`, 엔진 `scripts/hangul_order.py`가 만든다). 엔진이 장마다 칸별로 잘라 폰트 틀에 자리를 맞추고(획 두께는 참고 글자에 맞춤), Claude가 장마다 검사한다. 떨어진 글자는 떨어진 글자끼리 모아 글자표로 다시 그린다(한 번 만들 때 2바퀴). 그래도 떨어진 글자는 서체에서 빠지고 글자 세트 검사가 알려 준다. 글자 고치기로 그려 넣으면 바로 들어가고, 다시 만들면 못 그린 글자만 또 그린다. 2,320자면 78장, 장당 약 $0.12(서버 로그의 토큰)와 Claude 검사, 동시 8장이면 약 5분 걸린다. 같은 참고 글자 작업으로 다시 만들면 그린 글자를 그대로 써서 약 20초다. 다듬기는 전체 굵기·너비·기울기·자간 슬라이더와 글자 고치기(10/29)다. 글자 고치기는 그림판 같은 편집 화면(붓·지우개·직선·네모·동그라미·채우기·선택해 옮기기, 되돌리기, 확대, 글자 틀, AI가 만든 글자 겹쳐 보기)에서 글자 하나를 고쳐 폰트에 바로 바꿔 끼운다(`components/GlyphEditor.tsx`, `lib/server/edits.ts`). 말로 고치기는 슬라이더만 옮길 수 있어 모양 주문을 들어주지 못해 뺐다. 만든 서체는 10/29 결정대로 SIL OFL 1.1이다(그때 이유는 MX-Font 학습 데이터. 10/30 MX-Font를 뺀 뒤 바꿀지는 사용자 결정, 엔진 `LICENSE-NOTES.md`). 화면 6이 라이선스 원문(`public/licenses/OFL-1.1.txt`)을 함께 준다.
-
-화면 3 작업 하나의 이미지 생성은 글자표 1장 + 다시 그린 글자 수다.
-
-설정(`.env.local`): `GLYPH_REST_LIMIT`(서체 글자 수, 기본 2350. 줄이면 자주 쓰는 글자만 그려 싸게 시험한다. 글자 세트 검사는 떨어진다), `GLYPH_SHEET_CONCURRENCY`(나머지 글자를 동시에 그리는 장 수, 기본 8. OpenAI 한도에 걸리면 줄인다), `GLYPH_CHECK_CONCURRENCY`(동시에 검사하는 장 수, 기본 8). GPT Image는 값을 토큰으로 매기고(서버 로그의 `GPT Image … 토큰: 입력 n, 출력 n`), 실측은 아직이다. 서버 로그와 작업 폴더의 `report.json`에 이미지 생성·다시 그리기 횟수와 떨어진 이유가 남는다. 그림 모델이 다른 글자로 끌려가는 자소는 구조 설명을 붙인다(`lib/server/glyphs.ts` `STRUCTURE_HINTS`, 10/28: 붓글씨 표현에서 ㅊ이 한자 '大'로 그려졌다).
+| 이름 | 설명 |
+|---|---|
+| `OPENAI_API_KEY` | 견본·기준 글자·나머지 글자 그리기(GPT Image) |
+| `ANTHROPIC_API_KEY` | 로고 해석·글자 검사·판독(Claude) |
+| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | 구글 로그인. 리디렉션 URI는 `<BETTER_AUTH_URL>/api/auth/callback/google` |
+| `FONT_ENGINE_URL` | 엔진 주소(기본 `http://127.0.0.1:8000`) |
+| `OPENAI_IMAGE_MODEL`, `OPENAI_REF_IMAGE_MODEL`, `CLAUDE_VISION_MODEL` | 모델 id(쉼표로 여러 개면 앞 모델이 붐빌 때 다음 모델로 넘어갑니다). 기본은 `lib/server/env.ts`: 그리기 `gpt-image-2.5-sunburst` → `gpt-image-2.5-flare`, 보기 `claude-opus-5-5` |
+| `OPENAI_IMAGE_QUALITY` | 그리기 품질(기본 high). 쓴 모델 id는 제작 기록에 남습니다 |
+| `GLYPH_REST_LIMIT` | 폰트에 넣을 글자 수(기본 2350). 줄이면 자주 쓰는 글자만 그려 싸게 시험하고, 글자 세트 검사는 떨어집니다 |
+| `GLYPH_SHEET_CONCURRENCY`, `GLYPH_CHECK_CONCURRENCY` | 동시에 그리고 검사하는 장 수(기본 8). OpenAI 한도에 걸리면 줄입니다 |
+| `LOGOCHE_MOCK` | `1`이면 AI·엔진 대신 모의 응답 |
 
 ### 처음 키를 넣고 확인할 것
 
-- 모델 id: 기본값(`gpt-image-2.5-flare`, `claude-opus-5-5`)이 키로 쓸 수 있는 모델인지. 없는 모델이면 화면에 "OpenAI 404"가 뜨고 참고 글자 작업이 바로 멈춘다.
-- OpenAI 조직 인증: GPT Image가 조직 인증을 요구하면 "조직 인증이 필요해요"가 뜨고 참고 글자 작업이 멈춘다. platform.openai.com 설정에서 인증한다.
-- 이미지 API가 기준 글자표와 같은 격자로 그리는지. 칸이 어긋나면 많은 칸이 검사에서 떨어져 다시 그리기 상한에 걸린다.
+- 모델 id가 키로 쓸 수 있는 모델인지. 없는 모델이면 화면에 "OpenAI 404"가 뜨고 작업이 멈춥니다.
+- OpenAI 조직 인증이 필요하면 "조직 인증이 필요해요"가 뜨고 작업이 멈춥니다. platform.openai.com 설정에서 인증합니다.
 - 엔진 `/health`의 `ok`가 `true`인지(기준 서체 파일이 있는지).
-
-## 모의 응답으로 볼 수 있는 상태 (`LOGOCHE_MOCK=1`)
-
-- 다시 그리는 중(화면 3): 몇몇 참고 글자가 검사에 걸려 다시 그려진다.
-- 낮은 신뢰도 글자(화면 4): 아·버·호가 표시된다.
-- 유사도 초과(화면 4): 가게 이름에 "상용테스트"를 넣으면 상용 폰트와 닮았다는 결과와 라이선스 안내가 뜬다.
-- TTF 없음(화면 5·6): 근사 글씨로 시안을 그리고, TTF 받기는 "모의 응답 모드" 오류를 보여 준다.
-
-## design.md의 '정할 것'에 둔 임시 선택
-
-화면이 돌아가도록 아래처럼 정해 두었다. 결정이 나면 바꾼다.
-
-| 정할 것 | 지금 구현 |
-|---|---|
-| 1. "3안"의 단위 | 10/29: MX-Font로 바꾸며 안은 하나(표현 방식 안)다. 아래는 10/28까지의 자소 방식 기록. 10/28부터 기본은 자유 안 하나(`JASO_VARIANTS=three`면 3안). 자소표를 안마다 그린다. 중간(화면 2 값 그대로)·로고 충실(로고 측정값, 로고를 강하게 참고)·자유(10/27, 기획서의 톤 강조 안을 바꿈). 중간과 로고 충실은 둥글기·굵기 대비·손맛을 축 폭의 25% 이상 벌린다. 자유 안은 화면 2에서 사용자가 고르거나 쓴 표현 방식(예: 풍선처럼 부풀린 획)으로 그리고, 기준 자소표는 자소와 획 연결만 따르며, 획 견본은 붙이지 않고 로고는 획 끝·질감 참고로 가볍게 붙인다(10/28). 검사도 읽히는지와 획 연결만 본다. 자유 안 자소는 엔진이 그린 굵기를 지킨다(`keepWeight`). 같은 안의 중성·종성표는 그 안의 초성표를 스타일 참고로 붙여 그린다 |
-| 2. 직접 고를 자소 수 | 10/29: 없음(참고 글자 30자를 보여 주기만 하고, 다시 그리기만 고른다) |
-| 3. 화면 2 미리보기 | 기준 서체에 굵기·너비·기울기·자간을 흉내 낸 근사 글씨 |
-| 4. 슬라이더 | 10/28: 모두 화면 4에 둔다(초안 → 폰트 만들기 → 다듬기). 값을 바꾸면 견본은 바로 바뀌고, 폰트 파일은 '적용해 보기'를 누를 때 한 번 다시 만들고, 통과하면 바로 화면 5로 간다(`lib/store.tsx` `buildDirty`). 다시 만들 때마다 OCR(Claude)도 다시 돌아서 슬라이더마다 만들지 않는다. 전체 다듬기는 굵기·너비·기울기·자간(엔진이 외곽선을 딸 때 적용하는 축). 10/29에 자소 다듬기는 없앴다. 둥글기·대비·흔들림은 그리기 방향이라 화면 2에서 AI가 정하고, 바꾸려면 다시 그린다. 굵기는 참고 글자를 그릴 때의 굵기(`drawnWeight`, 작업 보고에 저장)에서 바뀐 만큼 획을 굵히거나 가늘인다 |
-| 5. 상용 폰트 비교 | `engine/compare/commercial/`에 파일을 넣으면 비교한다. 지금은 비어 있다 |
-| 6. 출처 "잘 모르겠어요" | 경고만 띄우고 진행 |
-| 7. 유사도 초과 시 | "다시 만들기"와 "초안 다시 보기"를 모두 둔다 |
-| 8. 낮은 신뢰도 글자 수정 | 10/29: 다르게 읽힌 글자를 보여 주기만 한다(자소 다듬기를 없애 고칠 곳이 없다). 고치려면 초안을 다시 그린다 |
-
-분위기 사전의 톤별 범위와 업종별 추천 톤, 주 사용처별 굵기 하한, 굵기 상한(850)은 임시 값이다(`lib/constants.ts`, `lib/server/style.ts`). 유사도 기준값(0.85)과 OCR 통과 기준(60자 중 6자까지 잘못 읽어도 통과)도 임시 값이다(`engine/logoche_engine/checks.py`, `lib/server/build.ts`).
-
-## 아직 없는 것
-
-- 적용 시안 3종 이미지 내보내기 (화면 6에 "준비 중")
-- 로그인·결제 (본선 범위 밖)
