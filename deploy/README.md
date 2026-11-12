@@ -1,7 +1,7 @@
 # 서버 배포 (11/2)
 
 AWS EC2 한 대(c7i-flex.large, Ubuntu 24.04, 서울)에 웹과 엔진을 함께 올린다. Vercel 같은 서버리스에는 올리지 않는다:
-작업 파일을 `web/.data`·`engine/data`에 쓰고, 폰트 한 벌을 서버 메모리에서 13~18분 이어서 만들기 때문이다(`web/lib/server/projects.ts`).
+작업 파일을 `web/.data`·`engine/data`에 쓰고, 폰트 한 벌을 서버 메모리에서 13–18분 이어서 만들기 때문이다(`web/lib/server/projects.ts`).
 
 | 무엇 | 어디 |
 |---|---|
