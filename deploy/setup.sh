@@ -4,7 +4,7 @@
 # 작업 파일은 지금처럼 web/.data와 engine/data에 둔다(서버 디스크). 키는 web/.env.local에 따로 넣는다(깃에 없음).
 #
 #   git clone https://github.com/poongbit/logoche.git ~/logoche
-#   bash ~/logoche/deploy/setup.sh <도메인> [옛 주소...]     예: logoche.my 13-125-103-118.sslip.io
+#   bash ~/logoche/deploy/setup.sh <도메인> [옛 주소...]     예: logoche.my old.example.com
 # www.<도메인>과 옛 주소로 들어오면 https://<도메인>으로 넘긴다.
 #
 # 다시 돌려도 된다(이미 깔린 것은 건너뛴다). 코드만 바꿨을 때는 deploy/update.sh.

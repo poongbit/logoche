@@ -5,20 +5,20 @@ AWS EC2 한 대(c7i-flex.large, Ubuntu 24.04, 서울)에 웹과 엔진을 함께
 
 | 무엇 | 어디 |
 |---|---|
-| 주소 | https://logoche.my (가비아, A 레코드 @·www → 13.125.103.118). www와 처음 쓰던 13-125-103-118.sslip.io는 이 주소로 넘긴다 |
-| 서버 | `ssh -i ~/.ssh/logoche-key.pem ubuntu@13.125.103.118`, 코드는 `~/logoche` |
+| 주소 | https://logoche.my (가비아 DNS의 A 레코드 @·www가 서버를 가리킨다). www와 처음 쓰던 임시 주소는 이 주소로 넘긴다 |
+| 서버 | SSH로 접속한다(접속 정보는 저장소에 두지 않는다). 코드는 `~/logoche` |
 | 웹 | `logoche-web` 서비스, 127.0.0.1:3000 |
 | 엔진 | `logoche-engine` 서비스, 127.0.0.1:8000 (밖에서는 못 부른다) |
 | HTTPS | Caddy가 인증서를 받아 웹으로 넘긴다. `/etc/caddy/Caddyfile` |
 | 키 | 서버의 `~/logoche/web/.env.local` (깃에 없음). `BETTER_AUTH_URL`은 위 주소 |
-| 메일 | 완성·멈춤 알림을 Resend로 보낸다(`web/lib/server/mail.ts`). `.env.local`에 `RESEND_API_KEY=re_...`(선택: `MAIL_FROM="로고체 <noreply@logoche.my>"`). DNS(가비아): resend._domainkey TXT, send·rsend CNAME, _dmarc TXT. 키가 없으면 보내지 않고 기록만 남는다 |
+| 메일 | 완성·멈춤 알림을 Resend로 보낸다(`web/lib/server/mail.ts`). `.env.local`에 `RESEND_API_KEY=re_...`(선택: `MAIL_FROM="로고체 <noreply@logoche.my>"`). DNS(가비아)에는 Resend가 알려 주는 TXT·CNAME 레코드를 넣는다. 키가 없으면 보내지 않고 기록만 남는다 |
 
 ## 처음 한 번
 
 ```bash
 git clone https://github.com/poongbit/logoche.git ~/logoche
 # 노트북에서 web/.env.local을 서버 ~/logoche/web/.env.local로 복사하고 BETTER_AUTH_URL을 바꾼다
-bash ~/logoche/deploy/setup.sh logoche.my 13-125-103-118.sslip.io
+bash ~/logoche/deploy/setup.sh logoche.my <옛 주소>
 ```
 
 구글 콘솔(프로젝트 logoche-project → 사용자 인증 정보 → 웹 클라이언트)에 더한다:
