@@ -85,6 +85,25 @@ npm run dev                  # http://localhost:3000
 - API 키와 `.env.local`은 올리지 마세요. 닮은 폰트 검사용 폰트 파일도 저장소에 넣지 않습니다.
 - 자료의 출처와 라이선스는 [`engine/LICENSE-NOTES.md`](engine/LICENSE-NOTES.md)에 기록합니다.
 
+## 팀
+
+<table>
+  <tr>
+    <td align="center" width="160">
+      <a href="https://github.com/poongbit"><img src="https://github.com/poongbit.png?size=96" width="80" alt="김용휘"></a><br>
+      <b>김용휘</b><br>팀장 · 기획 · 개발<br>
+      <a href="https://github.com/poongbit">poongbit</a>
+    </td>
+    <td align="center" width="160">
+      <a href="https://github.com/paraenjoy"><img src="https://github.com/paraenjoy.png?size=96" width="80" alt="임낙원"></a><br>
+      <b>임낙원</b><br>디자인 · 프론트엔드<br>
+      <a href="https://github.com/paraenjoy">paraenjoy</a>
+    </td>
+  </tr>
+</table>
+
+팀 **/eli30**. 2026 청년취업사관학교 AI 인재 페스티벌 우수 프로젝트 발표회 우수상.
+
 ## 라이선스
 
 - **만든 폰트**: SIL Open Font License 1.1. AI로 만들었다는 표시는 폰트 이름 정보와 권리 카드에 들어갑니다. 닮은 폰트 검사는 선별용이고 권리를 보증하지 않습니다.
