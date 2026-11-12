@@ -1,5 +1,7 @@
 # 우리 서체끼리의 유사도 분석 1차 (2026-11-05)
 
+> **참고**: 이 문서가 가리키는 실험 기록(`*-20261105-*.jsonl`), 실험 스크립트(`web/scripts/gen-*-test.ts`, `engine/scripts`의 일부), 후속 실험 설명서(`l1-steering-experiment-design.md` 등)는 지금 서비스와 맞지 않아 2026-11-12에 저장소에서 정리했습니다. 정리 직전 상태는 커밋 `b4fe062`에서 볼 수 있습니다. 결론과 기준값(0.85)의 근거는 이 문서에 남깁니다.
+
 질문: 실존 폰트뿐 아니라 우리 서비스가 만든 서체들끼리도 얼마나 닮는가? 사용자가 늘면 먼저 만들어진 서체와 비슷해지는 일을 어떻게 막을 것인가?
 재현: `engine/.venv/bin/python engine/scripts/similarity_analysis.py` (`engine/data/builds`의 서체를 쓴다)
 

@@ -1,8 +1,0 @@
-{"variant":"base-1","over":{},"buildId":"9990be3214874ae58d4be22a2599c4c3","jobId":"e0d5f113-9d1a-41b2-8ae9-80813b55f85d","ready":30,"phase":"done","seconds":65}
-{"variant":"base-2","over":{},"buildId":"4a948b41a215424191a33569ffbe802a","jobId":"ba21bda5-0ad6-471a-a01a-882f4ddb9517","ready":30,"phase":"done","seconds":49}
-{"variant":"round-mid","over":{"roundness":0.5},"buildId":"a74adae5e031454092d7dad3986aa00c","jobId":"8961a92b-a8c4-4b6e-9ac0-d083f2aa96cc","ready":30,"phase":"done","seconds":45}
-{"variant":"round-sharp","over":{"roundness":0.15},"buildId":"20f29e052b2a44d2bcc94f118b3c4e1a","jobId":"ecb8eeae-a83b-444e-8914-6c43b84bd1a7","ready":30,"phase":"done","seconds":67}
-{"variant":"contrast-mid","over":{"contrast":0.8},"buildId":"79521d46dee64606a6e6236366341945","jobId":"34406551-809c-48b0-aeb2-be15e78ba0af","ready":30,"phase":"done","seconds":21}
-{"variant":"contrast-high","over":{"contrast":0.6},"buildId":"e0d2148e767140e4869b8356244f01ad","jobId":"2c55ffda-2baf-48af-9e7a-d5ad18a32823","ready":30,"phase":"done","seconds":23}
-{"variant":"hand-mid","over":{"wobble":0.3},"buildId":"098808ff634c4a839fa0a8dcd209c862","jobId":"943c9e9e-9824-4bdf-85ad-2bad20d62125","ready":30,"phase":"done","seconds":23}
-{"variant":"hand-brush","over":{"wobble":0.6},"buildId":"1eec9e3d3b7347ec8437228aa1b5ed9e","jobId":"505846ee-ef33-475a-9f75-d3938aef7ff9","ready":30,"phase":"done","seconds":65}

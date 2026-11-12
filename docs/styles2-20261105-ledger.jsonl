@@ -1,9 +1,0 @@
-{"t":1793874062786,"kind":"claude","model":"claude-opus-5-5","input":6269,"output":1631,"cacheRead":0,"cacheWrite":0,"ms":19576}
-{"t":1793874075231,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":3083,"output":556,"ms":12395,"estUsd":0.0403332,"totalEstUsd":0.0403332}
-{"t":1793874084588,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":984,"cacheRead":0,"cacheWrite":0,"ms":9050}
-{"t":1793874097128,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":3080,"output":556,"ms":11217,"estUsd":0.0403104,"totalEstUsd":0.08064360000000001}
-{"t":1793874109345,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":1189,"cacheRead":0,"cacheWrite":0,"ms":11923}
-{"t":1793874123487,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":3094,"output":556,"ms":12392,"estUsd":0.0404168,"totalEstUsd":0.12106040000000001}
-{"t":1793874134127,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":987,"cacheRead":0,"cacheWrite":0,"ms":10219}
-{"t":1793874147792,"kind":"image","model":"gpt-image-2.5-flare","quality":"medium","size":"2048x1536","input":3079,"output":556,"ms":11572,"estUsd":0.0403028,"totalEstUsd":0.1613632}
-{"t":1793874167263,"kind":"claude","model":"claude-opus-5-5","input":3219,"output":1882,"cacheRead":0,"cacheWrite":0,"ms":19171}
